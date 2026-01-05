@@ -8,66 +8,62 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check active sessions and sets the user
-        const getSession = async () => {
+        // 1. Check active sessions and set basic user immediately
+        const initAuth = async () => {
             try {
-                console.log('Auth: Checking session...');
-                // Direct session check without arbitrary timeout to prevent race conditions
-                const { data, error } = await supabase.auth.getSession();
+                // Quick check for session
+                const { data: { session }, error } = await supabase.auth.getSession();
 
                 if (error) throw error;
 
-                if (data?.session?.user) {
-                    console.log('Auth: Session found');
-                    const session = data.session;
+                if (session?.user) {
+                    console.log('Auth: Session found (Basic)');
+                    setUser(session.user); // Set basic user immediately to unblock UI
 
-                    const { data: profile, error: profileError } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    if (profileError) {
-                        console.warn('Profile fetch error - using basic user data:', profileError.message);
-                        setUser(session.user);
-                    } else {
-                        setUser({ ...session.user, ...profile });
-                    }
+                    // 2. Fetch Profile in Background
+                    fetchProfile(session.user);
                 } else {
                     console.log('Auth: No active session');
                     setUser(null);
                 }
             } catch (err) {
                 console.error('Auth Check Failed:', err);
-                // If it's a timeout or network error, we should still let the app load (as logged out)
-                // rather than waiting forever or crashing.
                 setUser(null);
             } finally {
-                setLoading(false);
+                setLoading(false); // Unblock UI immediately
             }
         };
 
-        getSession();
+        const fetchProfile = async (basicUser) => {
+            try {
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', basicUser.id)
+                    .single();
 
-        // Listen for changes on auth state (logged in, signed out, etc.)
+                if (error) {
+                    console.warn('Profile fetch error:', error.message);
+                } else if (profile) {
+                    console.log('Auth: Profile loaded');
+                    // Update user state with full profile
+                    setUser(prev => ({ ...prev, ...profile }));
+                }
+            } catch (err) {
+                console.error('Profile fetch failed:', err);
+            }
+        };
+
+        initAuth();
+
+        // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (session?.user) {
-                // Fetch profile on auth change too
-                try {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-                    setUser({ ...session.user, ...profile });
-                } catch (err) {
-                    console.error('Profile update failed:', err);
-                    setUser(session.user);
-                }
+                setUser(session.user);
+                fetchProfile(session.user);
             } else {
                 setUser(null);
             }
-            // Ensure loading is false when auth state changes
             setLoading(false);
         });
 
