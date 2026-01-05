@@ -12,11 +12,8 @@ export const AuthProvider = ({ children }) => {
         const getSession = async () => {
             try {
                 console.log('Auth: Checking session...');
-                // Timeout reduced to 2 seconds to fail fast if connection is bad
-                const { data, error } = await Promise.race([
-                    supabase.auth.getSession(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Auth check timed out (2000ms)')), 2000))
-                ]);
+                // Direct session check without arbitrary timeout to prevent race conditions
+                const { data, error } = await supabase.auth.getSession();
 
                 if (error) throw error;
 
