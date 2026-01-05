@@ -11,17 +11,19 @@ export const AuthProvider = ({ children }) => {
         // Check active sessions and sets the user
         const getSession = async () => {
             try {
-                // Add a timeout to prevent infinite loading if Supabase connection hangs
+                console.log('Auth: Checking session...');
+                // Timeout reduced to 2 seconds to fail fast if connection is bad
                 const { data, error } = await Promise.race([
                     supabase.auth.getSession(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Auth check timed out (2000ms)')), 2000))
                 ]);
 
                 if (error) throw error;
 
                 if (data?.session?.user) {
+                    console.log('Auth: Session found');
                     const session = data.session;
-                    // Try to fetch profile, but don't block everything if it fails
+
                     const { data: profile, error: profileError } = await supabase
                         .from('profiles')
                         .select('*')
@@ -29,16 +31,19 @@ export const AuthProvider = ({ children }) => {
                         .single();
 
                     if (profileError) {
-                        console.warn('Profile fetch error:', profileError);
-                        setUser(session.user); // Fallback to basic auth user
+                        console.warn('Profile fetch error - using basic user data:', profileError.message);
+                        setUser(session.user);
                     } else {
                         setUser({ ...session.user, ...profile });
                     }
                 } else {
+                    console.log('Auth: No active session');
                     setUser(null);
                 }
             } catch (err) {
-                console.error('Auth check failed or timed out:', err);
+                console.error('Auth Check Failed:', err);
+                // If it's a timeout or network error, we should still let the app load (as logged out)
+                // rather than waiting forever or crashing.
                 setUser(null);
             } finally {
                 setLoading(false);

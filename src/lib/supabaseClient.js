@@ -12,4 +12,14 @@ console.log('Supabase Config:', {
     keyStart: supabaseAnonKey?.substring(0, 10)
 });
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('CRITICAL ERROR: Supabase URL or Anon Key is missing! Check your .env file.');
+    alert('시스템 설정 오류: 서버 연결 정보를 찾을 수 없습니다. 관리자에게 문의하세요.');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        persistSession: true, // Ensure session persistence
+        autoRefreshToken: true,
+    }
+});

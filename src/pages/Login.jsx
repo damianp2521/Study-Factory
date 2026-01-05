@@ -12,6 +12,8 @@ const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
+    const [loading, setLoading] = useState(false);
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
@@ -22,12 +24,16 @@ const Login = () => {
             return;
         }
 
+        setLoading(true);
         try {
             await login(memberId, password);
             navigate('/dashboard');
         } catch (err) {
-            console.error(err);
-            setError('로그인 정보가 일치하지 않습니다.');
+            console.error('Login Error:', err);
+            // Show specific error message from Supabase if available
+            setError(err.message || '로그인 정보가 일치하지 않습니다.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -98,6 +104,7 @@ const Login = () => {
                                 background: 'transparent'
                             }}
                             inputMode="numeric"
+                            disabled={loading}
                         />
                     </div>
 
@@ -127,6 +134,7 @@ const Login = () => {
                                 background: 'transparent'
                             }}
                             inputMode="numeric"
+                            disabled={loading}
                         />
                     </div>
 
@@ -138,8 +146,13 @@ const Login = () => {
                 </div>
 
                 <div className="flex-center flex-col" style={{ width: '100%' }}>
-                    <button type="submit" className="btn-primary" style={{ marginBottom: 'var(--spacing-md)' }}>
-                        로그인
+                    <button
+                        type="submit"
+                        className="btn-primary"
+                        style={{ marginBottom: 'var(--spacing-md)', opacity: loading ? 0.7 : 1 }}
+                        disabled={loading}
+                    >
+                        {loading ? '로그인 중...' : '로그인'}
                     </button>
 
                     <button
