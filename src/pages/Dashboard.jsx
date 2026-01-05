@@ -6,13 +6,23 @@ import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user } = useAuth(); // Get user from context
+    const { user, logout } = useAuth(); // Get user and logout from context
 
     const menuItems = [
         { title: '공지사항', icon: <Megaphone size={32} />, path: '/notices' },
         { title: '마이페이지', icon: <User size={32} />, path: '/mypage' },
         { title: '문의하기', icon: <HelpCircle size={32} />, path: '/inquiry' },
     ];
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+            navigate('/login'); // Force navigation anyway
+        }
+    };
 
     return (
         <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)' }}>
@@ -33,10 +43,7 @@ const Dashboard = () => {
                     </p>
                 </div>
                 <button
-                    onClick={() => {
-                        // Consider adding logout logic here
-                        navigate('/login');
-                    }}
+                    onClick={handleLogout}
                     style={{
                         background: 'none',
                         color: 'var(--color-text-secondary)',
