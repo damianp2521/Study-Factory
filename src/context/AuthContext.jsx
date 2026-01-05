@@ -85,13 +85,29 @@ export const AuthProvider = ({ children }) => {
         // ex) 12345678 -> 12345678@studyfactory.com
         const email = `${id}@studyfactory.com`;
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        console.log(`Auth: Attempting login for ${email}`);
 
-        if (error) throw error;
-        return data;
+        try {
+            // Add a 5-second timeout to the login request
+            const { data, error } = await Promise.race([
+                supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Login request timed out (5s). Check your network connection.')), 5000))
+            ]);
+
+            if (error) {
+                console.error('Auth: Login failed', error);
+                throw error;
+            }
+
+            console.log('Auth: Login successful', data);
+            return data;
+        } catch (err) {
+            console.error('Auth: Message during login:', err.message);
+            throw err;
+        }
     };
 
     const logout = async () => {
