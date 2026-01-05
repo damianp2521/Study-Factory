@@ -167,9 +167,10 @@ const Login = () => {
                             cursor: 'pointer',
                             padding: 'var(--spacing-xs)'
                         }}
+                    >
                         로그인 오류 문의하기
                     </button>
-        </div>
+                </div>
             </form >
         </div >
     );
