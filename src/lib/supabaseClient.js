@@ -19,8 +19,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-        persistSession: false, // Changed to false to prevent storage hanging issues
+        persistSession: true, // Re-enable persistence
+        storage: window.sessionStorage, // Use Session Storage (survives refresh, clears on close) to avoid LocalStorage corruption hangs
         autoRefreshToken: true,
-        detectSessionInUrl: false // Disable URL hash parsing
+        detectSessionInUrl: false
     }
 });

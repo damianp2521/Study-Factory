@@ -4,7 +4,6 @@ import { KeyRound, Lock } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 import { useAuth } from '../context/AuthContext';
-import ConnectionTest from '../components/ConnectionTest';
 
 const Login = () => {
     const [memberId, setMemberId] = useState('');
@@ -168,13 +167,11 @@ const Login = () => {
                             cursor: 'pointer',
                             padding: 'var(--spacing-xs)'
                         }}
-                    >
+                        로그인 오류 문의하기
                     </button>
-                </div>
-            </form>
-
-            <ConnectionTest />
         </div>
+            </form >
+        </div >
     );
 };
 
