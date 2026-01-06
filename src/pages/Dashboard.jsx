@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MessageSquare, LogOut } from 'lucide-react';
+import { Calendar, MessageSquare, LogOut, Users, Edit } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -8,10 +8,21 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth(); // Get user and logout from context
 
-    const menuItems = [
+    // Define menus for each role
+    const memberMenus = [
         { title: '휴가 사용', icon: <Calendar size={32} />, path: '/vacation' },
         { title: '스탭에게 건의하기', icon: <MessageSquare size={32} />, path: '/suggestion' },
     ];
+
+    const staffMenus = [
+        { title: '회원 관리', icon: <Users size={32} />, path: '/manage-members' },
+        { title: '공지사항 작성', icon: <Edit size={32} />, path: '/write-notice' },
+    ];
+
+    // Determine which menu to show based on user role
+    // Default to 'member' if no role is found
+    const role = user?.role || 'member';
+    const menuItems = (role === 'staff' || role === 'admin') ? staffMenus : memberMenus;
 
     const handleLogout = async () => {
         try {

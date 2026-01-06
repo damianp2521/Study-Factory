@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import VacationRequest from './pages/VacationRequest';
 import Suggestion from './pages/Suggestion';
+import ManageMembers from './pages/ManageMembers';
+import WriteNotice from './pages/WriteNotice';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -44,6 +46,16 @@ function App() {
             <Route path="/suggestion" element={
               <ProtectedRoute>
                 <Suggestion />
+              </ProtectedRoute>
+            } />
+            <Route path="/manage-members" element={
+              <ProtectedRoute>
+                <ManageMembers />
+              </ProtectedRoute>
+            } />
+            <Route path="/write-notice" element={
+              <ProtectedRoute>
+                <WriteNotice />
               </ProtectedRoute>
             } />
           </Route>
