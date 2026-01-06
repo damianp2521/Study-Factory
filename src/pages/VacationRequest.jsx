@@ -213,7 +213,8 @@ const VacationRequest = () => {
                                     border: '1px solid #ddd',
                                     fontSize: '1.1rem',
                                     fontFamily: 'inherit',
-                                    outline: 'none'
+                                    outline: 'none',
+                                    boxSizing: 'border-box' // Fix overflow
                                 }}
                             />
                         </div>
