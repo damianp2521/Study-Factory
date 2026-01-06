@@ -45,7 +45,14 @@ const AdminPage = () => {
                         key={item.path}
                         onClick={() => navigate(item.path)}
                         className="btn-icon"
-                        style={{ width: '100%', height: 'auto', aspectRatio: '1/1' }}
+                        style={{
+                            width: '100%',
+                            height: 'auto',
+                            aspectRatio: '1/1',
+                            boxShadow: '0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.1)', // Stronger 3D shadow
+                            transform: 'translateY(0)',
+                            transition: 'all 0.3s ease'
+                        }}
                     >
                         <div className="icon-wrapper">
                             {item.icon}
