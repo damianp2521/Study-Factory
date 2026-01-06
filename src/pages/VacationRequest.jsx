@@ -12,10 +12,11 @@ const VacationRequest = () => {
     const [viewMode, setViewMode] = useState('create');
     const [myRequests, setMyRequests] = useState([]);
 
-    // Type: 'full' | 'half'
+    // Type: 'full' | 'half' | 'special'
     const [type, setType] = useState('full');
     const [date, setDate] = useState('');
     const [selectedPeriods, setSelectedPeriods] = useState([]);
+    const [specialReason, setSpecialReason] = useState(''); // '병가' | '기타'
     const [loading, setLoading] = useState(false);
 
     // Periods 1 to 7
@@ -59,7 +60,6 @@ const VacationRequest = () => {
             if (error) throw error;
 
             alert('취소되었습니다.');
-            // Update UI list
             setMyRequests(prev => prev.filter(item => item.id !== id));
         } catch (err) {
             console.error('Error cancelling request:', err);
@@ -71,7 +71,6 @@ const VacationRequest = () => {
         if (selectedPeriods.includes(p)) {
             setSelectedPeriods(prev => prev.filter(item => item !== p));
         } else {
-            // Max 4 periods allowed for Half Day (Must work at least 3 periods)
             if (selectedPeriods.length >= 4) {
                 alert('반차는 최대 4개 교시까지만 쉴 수 있습니다.\n(하루 최소 3교시 근무 필수)');
                 return;
@@ -89,36 +88,43 @@ const VacationRequest = () => {
             alert('사용할 교시를 선택해주세요.');
             return;
         }
+        if (type === 'special' && !specialReason) {
+            alert('사유(병가/기타)를 선택해주세요.');
+            return;
+        }
 
-        const confirmMsg = type === 'full'
-            ? `${date}에 월차(하루 휴무)를 신청하시겠습니까?`
-            : `${date}에 ${selectedPeriods.join(', ')}교시 반차를 신청하시겠습니까?`;
+        let confirmMsg = '';
+        if (type === 'full') confirmMsg = `${date}에 월차를 신청하시겠습니까?`;
+        else if (type === 'half') confirmMsg = `${date}에 ${selectedPeriods.join(', ')}교시 반차를 신청하시겠습니까?`;
+        else confirmMsg = `${date}에 특별휴가(${specialReason})를 신청하시겠습니까?`;
 
         if (!confirm(confirmMsg)) return;
 
         setLoading(true);
         try {
+            const payload = {
+                user_id: user.id,
+                type,
+                date,
+                periods: type === 'half' ? selectedPeriods : null,
+                reason: type === 'special' ? specialReason : null
+            };
+
             const { error } = await supabase
                 .from('vacation_requests')
-                .insert([
-                    {
-                        user_id: user.id,
-                        type,
-                        date,
-                        periods: type === 'half' ? selectedPeriods : null
-                    }
-                ]);
+                .insert([payload]);
 
             if (error) throw error;
 
             alert('휴가 신청이 완료되었습니다.');
-            // Go to history to confirm
             setViewMode('history');
             setDate('');
             setSelectedPeriods([]);
+            setSpecialReason('');
+            setType('full'); // Reset type to default or keep it? User might want to add another. Resetting is safer.
         } catch (err) {
             console.error('Error submitting vacation request:', err);
-            alert('신청에 실패했습니다. 다시 시도해주세요.');
+            alert('신청에 실패했습니다. (DB 업데이트가 필요할 수 있습니다)');
         } finally {
             setLoading(false);
         }
@@ -165,40 +171,26 @@ const VacationRequest = () => {
                         borderRadius: '12px',
                         marginBottom: '30px'
                     }}>
-                        <button
-                            onClick={() => { setType('full'); setSelectedPeriods([]); }}
-                            style={{
-                                flex: 1,
-                                padding: '12px',
-                                borderRadius: '10px',
-                                border: 'none',
-                                background: type === 'full' ? 'white' : 'transparent',
-                                color: type === 'full' ? 'var(--color-primary)' : '#718096',
-                                fontWeight: 'bold',
-                                boxShadow: type === 'full' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                                transition: 'all 0.2s',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            월차 (하루)
-                        </button>
-                        <button
-                            onClick={() => setType('half')}
-                            style={{
-                                flex: 1,
-                                padding: '12px',
-                                borderRadius: '10px',
-                                border: 'none',
-                                background: type === 'half' ? 'white' : 'transparent',
-                                color: type === 'half' ? 'var(--color-primary)' : '#718096',
-                                fontWeight: 'bold',
-                                boxShadow: type === 'half' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                                transition: 'all 0.2s',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            반차 (시간제)
-                        </button>
+                        {['full', 'half', 'special'].map((t) => (
+                            <button
+                                key={t}
+                                onClick={() => { setType(t); setSelectedPeriods([]); setSpecialReason(''); }}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    borderRadius: '10px',
+                                    border: 'none',
+                                    background: type === t ? 'white' : 'transparent',
+                                    color: type === t ? 'var(--color-primary)' : '#718096',
+                                    fontWeight: 'bold',
+                                    boxShadow: type === t ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                                    transition: 'all 0.2s',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {t === 'full' ? '월차' : t === 'half' ? '반차' : '특별휴가'}
+                            </button>
+                        ))}
                     </div>
 
                     {/* Content */}
@@ -259,14 +251,60 @@ const VacationRequest = () => {
                             </div>
                         )}
 
-                        {/* Info Box */}
-                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'start' }}>
-                            <AlertCircle size={20} color="#4a5568" style={{ marginTop: '2px', flexShrink: 0 }} />
-                            <div style={{ fontSize: '0.9rem', color: '#4a5568', lineHeight: '1.5' }}>
-                                주 1.5일(월차 1회+반차 1회 또는 반차 3회)을 초과하여 사용할 경우,
-                                관리자 확인 후 조정될 수 있습니다.
+                        {/* Reason Selection (Only for Special) */}
+                        {type === 'special' && (
+                            <div className="fade-in">
+                                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
+                                    <CheckCircle size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+                                    사유 선택
+                                </label>
+                                <div style={{ display: 'flex', gap: '15px' }}>
+                                    {['병가', '기타'].map((r) => (
+                                        <button
+                                            key={r}
+                                            onClick={() => setSpecialReason(r)}
+                                            style={{
+                                                flex: 1,
+                                                padding: '15px 0',
+                                                borderRadius: '12px',
+                                                border: specialReason === r ? '2px solid var(--color-primary)' : '1px solid #e2e8f0',
+                                                background: specialReason === r ? '#ebf8ff' : 'white',
+                                                color: specialReason === r ? 'var(--color-primary)' : '#4a5568',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.1s'
+                                            }}
+                                        >
+                                            {r}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div style={{
+                                    marginTop: '15px',
+                                    padding: '12px',
+                                    background: '#fff5f5',
+                                    borderRadius: '8px',
+                                    color: '#c53030',
+                                    fontSize: '0.9rem',
+                                    lineHeight: '1.5',
+                                    fontWeight: 'bold',
+                                    textAlign: 'center'
+                                }}>
+                                    특별휴가는 사장님과 상의 후 사용하여주시기 바랍니다.
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* Info Box (Only for Full/Half) */}
+                        {type !== 'special' && (
+                            <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'start' }}>
+                                <AlertCircle size={20} color="#4a5568" style={{ marginTop: '2px', flexShrink: 0 }} />
+                                <div style={{ fontSize: '0.9rem', color: '#4a5568', lineHeight: '1.5' }}>
+                                    주 1.5일(월차 1회+반차 1회 또는 반차 3회)을 초과하여 사용할 경우,
+                                    관리자 확인 후 조정될 수 있습니다.
+                                </div>
+                            </div>
+                        )}
 
                         {/* Submit Button */}
                         <button
@@ -314,7 +352,7 @@ const VacationRequest = () => {
                                     borderRadius: '12px',
                                     padding: '20px',
                                     boxShadow: 'var(--shadow-sm)',
-                                    borderLeft: `5px solid ${req.type === 'full' ? '#805ad5' : '#3182ce'}`,
+                                    borderLeft: `5px solid ${req.type === 'full' ? '#805ad5' : req.type === 'special' ? '#e53e3e' : '#3182ce'}`,
                                     position: 'relative'
                                 }}
                             >
@@ -323,20 +361,25 @@ const VacationRequest = () => {
                                         {req.date}
                                     </span>
                                     <span style={{
-                                        background: req.type === 'full' ? '#e9d8fd' : '#ebf8ff',
-                                        color: req.type === 'full' ? '#553c9a' : '#2c5282',
+                                        background: req.type === 'full' ? '#e9d8fd' : req.type === 'special' ? '#fed7d7' : '#ebf8ff',
+                                        color: req.type === 'full' ? '#553c9a' : req.type === 'special' ? '#c53030' : '#2c5282',
                                         padding: '4px 8px',
                                         borderRadius: '6px',
                                         fontSize: '0.85rem',
                                         fontWeight: 'bold'
                                     }}>
-                                        {req.type === 'full' ? '월차' : '반차'}
+                                        {req.type === 'full' ? '월차' : req.type === 'special' ? '특별휴가' : '반차'}
                                     </span>
                                 </div>
 
                                 {req.type === 'half' && req.periods && (
                                     <div style={{ color: '#4a5568', marginBottom: '15px' }}>
                                         <span style={{ fontWeight: '600' }}>사용 교시:</span> {req.periods.join(', ')}교시
+                                    </div>
+                                )}
+                                {req.type === 'special' && req.reason && (
+                                    <div style={{ color: '#c53030', marginBottom: '15px' }}>
+                                        <span style={{ fontWeight: '600' }}>사유:</span> {req.reason}
                                     </div>
                                 )}
                                 {req.type === 'full' && (
