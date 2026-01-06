@@ -76,13 +76,7 @@ const Dashboard = () => {
             </div>
 
             {/* Menu Grid */}
-            <div
-                style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: 'var(--spacing-md)'
-                }}
-            >
+            <div className="responsive-grid">
                 {visibleMenus.map((item) => (
                     <button
                         key={item.path}
