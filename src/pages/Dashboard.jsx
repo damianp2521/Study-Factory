@@ -86,6 +86,7 @@ return (
                     key={item.path}
                     onClick={() => navigate(item.path)}
                     className="btn-icon"
+                    style={item.style} // Apply custom styles for role buttons
                 >
                     <div className="icon-wrapper">
                         {item.icon}
