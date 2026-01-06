@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 const VacationRequest = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+
+    // View Mode: 'create' | 'history'
+    const [viewMode, setViewMode] = useState('create');
+    const [myRequests, setMyRequests] = useState([]);
 
     // Type: 'full' | 'half'
     const [type, setType] = useState('full');
@@ -16,6 +20,52 @@ const VacationRequest = () => {
 
     // Periods 1 to 7
     const periodOptions = [1, 2, 3, 4, 5, 6, 7];
+
+    // Fetch history on view toggle
+    useEffect(() => {
+        if (viewMode === 'history' && user) {
+            fetchMyRequests();
+        }
+    }, [viewMode, user]);
+
+    const fetchMyRequests = async () => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('vacation_requests')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            setMyRequests(data || []);
+        } catch (err) {
+            console.error('Error fetching requests:', err);
+            alert('내역을 불러오는데 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancel = async (id, date) => {
+        if (!confirm(`${date} 휴가 신청을 취소하시겠습니까?`)) return;
+
+        try {
+            const { error } = await supabase
+                .from('vacation_requests')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            alert('취소되었습니다.');
+            // Update UI list
+            setMyRequests(prev => prev.filter(item => item.id !== id));
+        } catch (err) {
+            console.error('Error cancelling request:', err);
+            alert('취소에 실패했습니다.');
+        }
+    };
 
     const togglePeriod = (p) => {
         if (selectedPeriods.includes(p)) {
@@ -62,7 +112,10 @@ const VacationRequest = () => {
             if (error) throw error;
 
             alert('휴가 신청이 완료되었습니다.');
-            navigate('/dashboard');
+            // Go to history to confirm
+            setViewMode('history');
+            setDate('');
+            setSelectedPeriods([]);
         } catch (err) {
             console.error('Error submitting vacation request:', err);
             alert('신청에 실패했습니다. 다시 시도해주세요.');
@@ -86,146 +139,246 @@ const VacationRequest = () => {
                         휴가 사용
                     </h2>
                 </div>
-            </div>
-
-            {/* Type Toggle */}
-            <div style={{
-                display: 'flex',
-                background: '#edf2f7',
-                padding: '5px',
-                borderRadius: '12px',
-                marginBottom: '30px'
-            }}>
                 <button
-                    onClick={() => { setType('full'); setSelectedPeriods([]); }}
+                    onClick={() => setViewMode(viewMode === 'create' ? 'history' : 'create')}
                     style={{
-                        flex: 1,
-                        padding: '12px',
-                        borderRadius: '10px',
+                        background: 'none',
                         border: 'none',
-                        background: type === 'full' ? 'white' : 'transparent',
-                        color: type === 'full' ? 'var(--color-primary)' : '#718096',
+                        fontSize: '0.9rem',
                         fontWeight: 'bold',
-                        boxShadow: type === 'full' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                        transition: 'all 0.2s',
+                        color: 'var(--color-text-secondary)',
+                        textDecoration: 'underline',
                         cursor: 'pointer'
                     }}
                 >
-                    월차 (하루)
-                </button>
-                <button
-                    onClick={() => setType('half')}
-                    style={{
-                        flex: 1,
-                        padding: '12px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        background: type === 'half' ? 'white' : 'transparent',
-                        color: type === 'half' ? 'var(--color-primary)' : '#718096',
-                        fontWeight: 'bold',
-                        boxShadow: type === 'half' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                        transition: 'all 0.2s',
-                        cursor: 'pointer'
-                    }}
-                >
-                    반차 (시간제)
+                    {viewMode === 'create' ? '신청 현황' : '휴가 신청'}
                 </button>
             </div>
 
-            {/* Content */}
-            <div className="flex-col" style={{ gap: '25px' }}>
+            {viewMode === 'create' ? (
+                <>
+                    {/* Type Toggle */}
+                    <div style={{
+                        display: 'flex',
+                        background: '#edf2f7',
+                        padding: '5px',
+                        borderRadius: '12px',
+                        marginBottom: '30px'
+                    }}>
+                        <button
+                            onClick={() => { setType('full'); setSelectedPeriods([]); }}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                background: type === 'full' ? 'white' : 'transparent',
+                                color: type === 'full' ? 'var(--color-primary)' : '#718096',
+                                fontWeight: 'bold',
+                                boxShadow: type === 'full' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                                transition: 'all 0.2s',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            월차 (하루)
+                        </button>
+                        <button
+                            onClick={() => setType('half')}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                borderRadius: '10px',
+                                border: 'none',
+                                background: type === 'half' ? 'white' : 'transparent',
+                                color: type === 'half' ? 'var(--color-primary)' : '#718096',
+                                fontWeight: 'bold',
+                                boxShadow: type === 'half' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                                transition: 'all 0.2s',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            반차 (시간제)
+                        </button>
+                    </div>
 
-                {/* Date Picker */}
-                <div>
-                    <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
-                        <Calendar size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-                        날짜 선택
-                    </label>
-                    <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '15px',
-                            borderRadius: '12px',
-                            border: '1px solid #ddd',
-                            fontSize: '1.1rem',
-                            fontFamily: 'inherit',
-                            outline: 'none'
-                        }}
-                    />
-                </div>
+                    {/* Content */}
+                    <div className="flex-col" style={{ gap: '25px' }}>
 
-                {/* Period Selection (Only for Half) */}
-                {type === 'half' && (
-                    <div className="fade-in">
-                        <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
-                            <Clock size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-                            쉬고 싶은 교시 선택 <span style={{ fontSize: '0.85rem', color: '#e53e3e', fontWeight: 'normal' }}>(최대 4개)</span>
-                        </label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                            {periodOptions.map((p) => (
+                        {/* Date Picker */}
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
+                                <Calendar size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+                                날짜 선택
+                            </label>
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '15px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #ddd',
+                                    fontSize: '1.1rem',
+                                    fontFamily: 'inherit',
+                                    outline: 'none'
+                                }}
+                            />
+                        </div>
+
+                        {/* Period Selection (Only for Half) */}
+                        {type === 'half' && (
+                            <div className="fade-in">
+                                <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
+                                    <Clock size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+                                    쉬고 싶은 교시 선택 <span style={{ fontSize: '0.85rem', color: '#e53e3e', fontWeight: 'normal' }}>(최대 4개)</span>
+                                </label>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                                    {periodOptions.map((p) => (
+                                        <button
+                                            key={p}
+                                            onClick={() => togglePeriod(p)}
+                                            style={{
+                                                padding: '15px 0',
+                                                borderRadius: '12px',
+                                                border: selectedPeriods.includes(p) ? '2px solid var(--color-primary)' : '1px solid #e2e8f0',
+                                                background: selectedPeriods.includes(p) ? '#ebf8ff' : 'white',
+                                                color: selectedPeriods.includes(p) ? 'var(--color-primary)' : '#4a5568',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.1s'
+                                            }}
+                                        >
+                                            {p}교시
+                                        </button>
+                                    ))}
+                                </div>
+                                <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#718096' }}>
+                                    * 하루 최소 3교시는 근무해야 합니다.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Info Box */}
+                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'start' }}>
+                            <AlertCircle size={20} color="#4a5568" style={{ marginTop: '2px', flexShrink: 0 }} />
+                            <div style={{ fontSize: '0.9rem', color: '#4a5568', lineHeight: '1.5' }}>
+                                주 1.5일(월차 1회+반차 1회 또는 반차 3회)을 초과하여 사용할 경우,
+                                관리자 확인 후 조정될 수 있습니다.
+                            </div>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className="btn-primary" // Assuming global class or reuse style
+                            style={{
+                                width: '100%',
+                                padding: '18px',
+                                marginTop: '20px',
+                                background: 'var(--color-primary)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '12px',
+                                fontSize: '1.1rem',
+                                fontWeight: 'bold',
+                                cursor: loading ? 'wait' : 'pointer',
+                                boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}
+                        >
+                            <CheckCircle size={20} />
+                            {loading ? '신청 중...' : '신청하기'}
+                        </button>
+                    </div>
+                </>
+            ) : (
+                /* History Mode */
+                <div className="flex-col" style={{ gap: '15px' }}>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', color: '#999' }}>로딩 중...</div>
+                    ) : myRequests.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#999', marginTop: '50px' }}>
+                            신청된 휴가가 없습니다.
+                        </div>
+                    ) : (
+                        myRequests.map((req) => (
+                            <div
+                                key={req.id}
+                                style={{
+                                    background: 'white',
+                                    borderRadius: '12px',
+                                    padding: '20px',
+                                    boxShadow: 'var(--shadow-sm)',
+                                    borderLeft: `5px solid ${req.type === 'full' ? '#805ad5' : '#3182ce'}`,
+                                    position: 'relative'
+                                }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
+                                        {req.date}
+                                    </span>
+                                    <span style={{
+                                        background: req.type === 'full' ? '#e9d8fd' : '#ebf8ff',
+                                        color: req.type === 'full' ? '#553c9a' : '#2c5282',
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        {req.type === 'full' ? '월차' : '반차'}
+                                    </span>
+                                </div>
+
+                                {req.type === 'half' && req.periods && (
+                                    <div style={{ color: '#4a5568', marginBottom: '15px' }}>
+                                        <span style={{ fontWeight: '600' }}>사용 교시:</span> {req.periods.join(', ')}교시
+                                    </div>
+                                )}
+                                {req.type === 'full' && (
+                                    <div style={{ color: '#aaa', marginBottom: '15px', fontSize: '0.9rem' }}>
+                                        하루 종일 휴무
+                                    </div>
+                                )}
+
                                 <button
-                                    key={p}
-                                    onClick={() => togglePeriod(p)}
+                                    onClick={() => handleCancel(req.id, req.date)}
                                     style={{
-                                        padding: '15px 0',
-                                        borderRadius: '12px',
-                                        border: selectedPeriods.includes(p) ? '2px solid var(--color-primary)' : '1px solid #e2e8f0',
-                                        background: selectedPeriods.includes(p) ? '#ebf8ff' : 'white',
-                                        color: selectedPeriods.includes(p) ? 'var(--color-primary)' : '#4a5568',
+                                        width: '100%',
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e53e3e',
+                                        background: 'white',
+                                        color: '#e53e3e',
                                         fontWeight: 'bold',
                                         cursor: 'pointer',
-                                        transition: 'all 0.1s'
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '6px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.currentTarget.style.background = '#e53e3e';
+                                        e.currentTarget.style.color = 'white';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.currentTarget.style.background = 'white';
+                                        e.currentTarget.style.color = '#e53e3e';
                                     }}
                                 >
-                                    {p}교시
+                                    <Trash2 size={16} />
+                                    취소하기
                                 </button>
-                            ))}
-                        </div>
-                        <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#718096' }}>
-                            * 하루 최소 3교시는 근무해야 합니다.
-                        </p>
-                    </div>
-                )}
-
-                {/* Info Box */}
-                <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', display: 'flex', gap: '10px', alignItems: 'start' }}>
-                    <AlertCircle size={20} color="#4a5568" style={{ marginTop: '2px', flexShrink: 0 }} />
-                    <div style={{ fontSize: '0.9rem', color: '#4a5568', lineHeight: '1.5' }}>
-                        주 1.5일(월차 1회+반차 1회 또는 반차 3회)을 초과하여 사용할 경우,
-                        관리자 확인 후 조정될 수 있습니다.
-                    </div>
+                            </div>
+                        ))
+                    )}
                 </div>
-
-                {/* Submit Button */}
-                <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="btn-primary" // Assuming global class or reuse style
-                    style={{
-                        width: '100%',
-                        padding: '18px',
-                        marginTop: '20px',
-                        background: 'var(--color-primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '12px',
-                        fontSize: '1.1rem',
-                        fontWeight: 'bold',
-                        cursor: loading ? 'wait' : 'pointer',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.2)',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        gap: '8px'
-                    }}
-                >
-                    <CheckCircle size={20} />
-                    {loading ? '신청 중...' : '신청하기'}
-                </button>
-            </div>
+            )}
         </div>
     );
 };
