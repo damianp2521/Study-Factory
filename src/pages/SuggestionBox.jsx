@@ -9,7 +9,19 @@ const SuggestionBox = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchSuggestions();
+        // 1. Run cleanup (delete old resolved items)
+        const runCleanup = async () => {
+            try {
+                await supabase.rpc('delete_old_resolved_suggestions');
+            } catch (err) {
+                console.error('Cleanup failed (function might not exist yet):', err);
+            }
+        };
+
+        runCleanup().then(() => {
+            // 2. Fetch fresh list
+            fetchSuggestions();
+        });
     }, []);
 
     const fetchSuggestions = async () => {
@@ -48,7 +60,10 @@ const SuggestionBox = () => {
         try {
             const { error } = await supabase
                 .from('suggestions')
-                .update({ status: 'resolved' })
+                .update({
+                    status: 'resolved',
+                    resolved_at: new Date().toISOString() // Record completion time
+                })
                 .eq('id', id);
 
             if (error) throw error;
@@ -58,7 +73,7 @@ const SuggestionBox = () => {
             alert('처리되었습니다.');
         } catch (err) {
             console.error('Error resolving suggestion:', err);
-            alert('처리에 실패했습니다.');
+            alert('처리에 실패했습니다. (DB 컬럼 업데이트가 필요할 수 있습니다)');
         }
     };
 
