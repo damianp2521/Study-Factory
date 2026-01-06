@@ -12,6 +12,7 @@ import TodayLeaves from './pages/TodayLeaves';
 
 import StaffPage from './pages/StaffPage';
 import AdminPage from './pages/AdminPage';
+import MonthlyLeaveStatus from './pages/MonthlyLeaveStatus';
 
 import AdminSettings from './pages/AdminSettings';
 import Unauthorized from './pages/Unauthorized';
@@ -79,6 +80,11 @@ function App() {
             <Route path="/admin-settings" element={
               <RoleProtectedRoute allowedRoles={['admin']}>
                 <AdminSettings />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin/monthly-leaves" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <MonthlyLeaveStatus />
               </RoleProtectedRoute>
             } />
 
