@@ -208,13 +208,16 @@ const VacationRequest = () => {
                                 onChange={(e) => setDate(e.target.value)}
                                 style={{
                                     width: '100%',
+                                    maxWidth: '100%',     // Force stay within parent
+                                    minWidth: '0',        // Prevent flex item sizing refusal
+                                    display: 'block',     // Ensure block behavior
                                     padding: '15px',
                                     borderRadius: '12px',
                                     border: '1px solid #ddd',
                                     fontSize: '1.1rem',
                                     fontFamily: 'inherit',
                                     outline: 'none',
-                                    boxSizing: 'border-box' // Fix overflow
+                                    boxSizing: 'border-box'
                                 }}
                             />
                         </div>
