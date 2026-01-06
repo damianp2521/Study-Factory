@@ -33,26 +33,13 @@ const AdminPage = () => {
             </div>
 
             {/* Grid Menu */}
-            <div
-                style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: 'var(--spacing-md)'
-                }}
-            >
+            <div className="responsive-grid">
                 {menuItems.map((item) => (
                     <button
                         key={item.path}
                         onClick={() => navigate(item.path)}
                         className="btn-icon"
-                        style={{
-                            width: '100%',
-                            height: 'auto',
-                            aspectRatio: '1/1',
-                            boxShadow: '0 10px 20px rgba(0,0,0,0.1), 0 6px 6px rgba(0,0,0,0.1)', // Stronger 3D shadow
-                            transform: 'translateY(0)',
-                            transition: 'all 0.3s ease'
-                        }}
+                    // Removed inline styles to match Dashboard size
                     >
                         <div className="icon-wrapper">
                             {item.icon}
