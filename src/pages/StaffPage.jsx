@@ -47,20 +47,13 @@ const StaffPage = () => {
                     <button
                         key={item.path}
                         onClick={() => navigate(item.path)}
-                        className="card flex-center flex-col"
-                        style={{
-                            border: 'none',
-                            background: 'white',
-                            cursor: 'pointer',
-                            padding: 'var(--spacing-lg)',
-                            gap: 'var(--spacing-sm)',
-                            height: '140px'
-                        }}
+                        className="btn-icon"
+                        style={{ width: '100%', height: 'auto', aspectRatio: '1/1' }}
                     >
-                        <div style={{ color: 'var(--color-primary)' }}>
+                        <div className="icon-wrapper">
                             {item.icon}
                         </div>
-                        <span style={{ fontSize: '1rem', fontWeight: '500' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--color-text-main)' }}>
                             {item.title}
                         </span>
                     </button>
