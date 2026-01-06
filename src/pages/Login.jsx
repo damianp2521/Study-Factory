@@ -170,7 +170,6 @@ const Login = () => {
                     >
                         로그인 오류 문의하기
                     </button>
-                    <div style={{ marginTop: '20px', fontSize: '0.7rem', color: '#ccc' }}>v2.3 (Non-Blocking Fix)</div>
                 </div>
             </form >
         </div >

@@ -8,6 +8,7 @@ import Suggestion from './pages/Suggestion';
 import ManageMembers from './pages/ManageMembers';
 import WriteNotice from './pages/WriteNotice';
 
+
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
@@ -58,6 +59,7 @@ function App() {
                 <WriteNotice />
               </ProtectedRoute>
             } />
+
           </Route>
         </Routes>
       </BrowserRouter>
