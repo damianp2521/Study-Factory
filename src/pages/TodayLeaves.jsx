@@ -38,6 +38,7 @@ const TodayLeaves = () => {
                     id,
                     type,
                     periods,
+                    reason,
                     user_id,
                     profiles (name, id)
                 `)
@@ -149,20 +150,26 @@ const TodayLeaves = () => {
                                     </span>
                                 </div>
                                 <span style={{
-                                    background: item.type === 'full' ? '#e9d8fd' : '#ebf8ff',
-                                    color: item.type === 'full' ? '#553c9a' : '#2c5282',
+                                    background: item.type === 'full' ? '#e9d8fd' : item.type === 'special' ? '#fed7d7' : '#ebf8ff',
+                                    color: item.type === 'full' ? '#553c9a' : item.type === 'special' ? '#c53030' : '#2c5282',
                                     padding: '4px 8px',
                                     borderRadius: '6px',
                                     fontSize: '0.85rem',
                                     fontWeight: 'bold'
                                 }}>
-                                    {item.type === 'full' ? '월차' : '반차'}
+                                    {item.type === 'full' ? '월차' : item.type === 'special' ? '특별휴가' : '반차'}
                                 </span>
                             </div>
 
                             {item.type === 'half' && item.periods && (
                                 <div style={{ marginLeft: '28px', color: '#4a5568', marginBottom: '10px' }}>
                                     <span style={{ fontWeight: '600' }}>사용 교시:</span> {item.periods.join(', ')}교시
+                                </div>
+                            )}
+
+                            {item.type === 'special' && item.reason && (
+                                <div style={{ marginLeft: '28px', color: '#c53030', marginBottom: '10px' }}>
+                                    <span style={{ fontWeight: '600' }}>사유:</span> {item.reason}
                                 </div>
                             )}
 
