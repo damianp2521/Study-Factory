@@ -1,36 +1,37 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MessageSquare, LogOut, Users, Edit, Settings } from 'lucide-react';
+import { Calendar, MessageSquare, LogOut, Shield, Key } from 'lucide-react';
 
 // ... inside component ...
 const { user, logout } = useAuth();
 const role = user?.role || 'member';
 
-// 1. Common Menus (For Everyone)
+// 1. Common Menus (Always Visible)
 const commonMenus = [
     { title: '휴가 사용', icon: <Calendar size={32} />, path: '/vacation' },
     { title: '스탭에게 건의하기', icon: <MessageSquare size={32} />, path: '/suggestion' },
 ];
 
-// 2. Staff Menus (For Staff & Admin)
-const staffMenus = [
-    { title: '회원 관리', icon: <Users size={32} />, path: '/manage-members' },
-    { title: '공지사항 작성', icon: <Edit size={32} />, path: '/write-notice' },
-];
-
-// 3. Admin Menus (For Admin Only)
-const adminMenus = [
-    { title: '관리자 설정', icon: <Settings size={32} />, path: '/admin-settings' },
-];
-
-// Combine menus based on role
-let visibleMenus = [...commonMenus];
+// 2. Extra Role Buttons
+const roleButtons = [];
 if (role === 'staff' || role === 'admin') {
-    visibleMenus = [...visibleMenus, ...staffMenus];
+    roleButtons.push({
+        title: '스탭 전용 메뉴',
+        icon: <Shield size={32} />,
+        path: '/staff-menu',
+        style: { background: '#edf2f7', color: '#2d3748' } // visual distinction
+    });
 }
 if (role === 'admin') {
-    visibleMenus = [...visibleMenus, ...adminMenus];
+    roleButtons.push({
+        title: '관리자 전용 메뉴',
+        icon: <Key size={32} />,
+        path: '/admin-menu',
+        style: { background: '#2d3748', color: 'white' } // visual distinction
+    });
 }
+
+const visibleMenus = [...commonMenus, ...roleButtons];
 
 const handleLogout = async () => {
     try {

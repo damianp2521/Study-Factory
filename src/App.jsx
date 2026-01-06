@@ -8,6 +8,9 @@ import Suggestion from './pages/Suggestion';
 import ManageMembers from './pages/ManageMembers';
 import WriteNotice from './pages/WriteNotice';
 
+import StaffPage from './pages/StaffPage';
+import AdminPage from './pages/AdminPage';
+
 import AdminSettings from './pages/AdminSettings';
 import Unauthorized from './pages/Unauthorized';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
@@ -64,6 +67,18 @@ function App() {
             <Route path="/admin-settings" element={
               <RoleProtectedRoute allowedRoles={['admin']}>
                 <AdminSettings />
+              </RoleProtectedRoute>
+            } />
+
+            {/* Role Menu Pages */}
+            <Route path="/staff-menu" element={
+              <RoleProtectedRoute allowedRoles={['staff', 'admin']}>
+                <StaffPage />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-menu" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <AdminPage />
               </RoleProtectedRoute>
             } />
 
