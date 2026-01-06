@@ -7,6 +7,7 @@ import VacationRequest from './pages/VacationRequest';
 import Suggestion from './pages/Suggestion';
 import ManageMembers from './pages/ManageMembers';
 import WriteNotice from './pages/WriteNotice';
+import SuggestionBox from './pages/SuggestionBox';
 
 import StaffPage from './pages/StaffPage';
 import AdminPage from './pages/AdminPage';
@@ -62,6 +63,11 @@ function App() {
             <Route path="/write-notice" element={
               <RoleProtectedRoute allowedRoles={['staff', 'admin']}>
                 <WriteNotice />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/suggestion-box" element={
+              <RoleProtectedRoute allowedRoles={['staff', 'admin']}>
+                <SuggestionBox />
               </RoleProtectedRoute>
             } />
             <Route path="/admin-settings" element={

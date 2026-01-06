@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Edit, ArrowLeft } from 'lucide-react';
+import { Users, Edit, ArrowLeft, Inbox } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const StaffPage = () => {
@@ -10,6 +10,7 @@ const StaffPage = () => {
     const menuItems = [
         { title: '회원 관리', icon: <Users size={32} />, path: '/manage-members' },
         { title: '공지사항 작성', icon: <Edit size={32} />, path: '/write-notice' },
+        { title: '건의함', icon: <Inbox size={32} />, path: '/suggestion-box' },
     ];
 
     return (
