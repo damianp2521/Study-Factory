@@ -115,7 +115,7 @@ const Dashboard = () => {
                 </p>
             </div>
             <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.7rem', color: '#eee' }}>
-                System v5.0 (Conditional Role-Based)
+                System v5.1 (Debug) | Role: {role || 'undefined'} | User: {user?.email}
             </div>
         </div >
     );
