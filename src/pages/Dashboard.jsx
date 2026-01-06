@@ -29,7 +29,7 @@ const Dashboard = () => {
             title: '관리자 전용 메뉴',
             icon: <Key size={32} />,
             path: '/admin-menu',
-            style: { background: '#2d3748', color: 'white' } // visual distinction
+            style: { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' } // Premium bright gradient
         });
     }
 
@@ -114,9 +114,6 @@ const Dashboard = () => {
                 <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
                     "끈기는 모든 것을 이겨낸다."
                 </p>
-            </div>
-            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.7rem', color: '#888' }}>
-                System v5.3 (Fixed) | My Role: {String(role)}
             </div>
         </div >
     );
