@@ -113,6 +113,9 @@ return (
                 "끈기는 모든 것을 이겨낸다."
             </p>
         </div>
+        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.7rem', color: '#eee' }}>
+            System v3.0 (Hierarchical Dashboard)
+        </div>
     </div >
 );
 };
