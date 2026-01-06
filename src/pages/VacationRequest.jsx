@@ -197,29 +197,49 @@ const VacationRequest = () => {
                     {/* Content */}
                     <div className="flex-col" style={{ gap: '25px' }}>
 
-                        {/* Date Picker */}
-                        <div style={{ width: '100%', overflow: 'hidden' }}> {/* Added overflow hidden wrapper */}
+                        {/* Date Picker - Custom UI with Overlay Input */}
+                        <div style={{ position: 'relative', width: '100%' }}>
                             <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
                                 <Calendar size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
                                 날짜 선택
                             </label>
+
+                            {/* Visible Custom UI */}
+                            <div style={{
+                                width: '100%',
+                                padding: '15px',
+                                borderRadius: '12px',
+                                border: '1px solid #ddd',
+                                background: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                cursor: 'pointer'
+                            }}>
+                                <span style={{
+                                    fontSize: '1.1rem',
+                                    color: date ? 'var(--color-text-main)' : '#a0aec0',
+                                    fontWeight: date ? 'bold' : 'normal'
+                                }}>
+                                    {date ? date : '날짜를 선택해주세요'}
+                                </span>
+                                <Calendar size={20} color="#718096" />
+                            </div>
+
+                            {/* Invisible Native Input Overlay */}
                             <input
                                 type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
                                 style={{
+                                    position: 'absolute',
+                                    top: '30px', // Below label
+                                    left: 0,
                                     width: '100%',
-                                    // maxWidth: '100%', // Handled by global CSS now
-                                    // minWidth: '0',
-                                    display: 'block',
-                                    padding: '15px',
-                                    borderRadius: '12px',
-                                    border: '1px solid #ddd',
-                                    fontSize: '1.1rem',
-                                    fontFamily: 'inherit',
-                                    outline: 'none',
-                                    boxSizing: 'border-box',
-                                    background: 'white', // Ensure background
+                                    height: 'calc(100% - 30px)', // Cover the custom UI div
+                                    opacity: 0,
+                                    zIndex: 10,
+                                    cursor: 'pointer'
                                 }}
                             />
                         </div>
