@@ -1,4 +1,3 @@
-```javascript
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, CheckCircle, Clock } from 'lucide-react';
@@ -10,7 +9,7 @@ const Suggestion = () => {
     const { user } = useAuth();
     const [customInput, setCustomInput] = useState('');
     const [loading, setLoading] = useState(false);
-    
+
     // View Mode: 'create' | 'history'
     const [viewMode, setViewMode] = useState('create');
     const [mySuggestions, setMySuggestions] = useState([]);
@@ -55,7 +54,7 @@ const Suggestion = () => {
             return;
         }
 
-        if (!confirm(`"${content}"\n건의사항을 보내시겠습니까 ? `)) return;
+        if (!confirm(`"${content}"\n건의사항을 보내시겠습니까?`)) return;
 
         setLoading(true);
         try {
@@ -214,7 +213,7 @@ const Suggestion = () => {
                                     borderRadius: '12px',
                                     padding: '20px',
                                     boxShadow: 'var(--shadow-sm)',
-                                    borderLeft: `5px solid ${ item.status === 'resolved' ? 'var(--color-success)' : '#ddd' } `
+                                    borderLeft: `5px solid ${item.status === 'resolved' ? 'var(--color-success)' : '#ddd'}`
                                 }}
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -249,4 +248,3 @@ const Suggestion = () => {
 };
 
 export default Suggestion;
-```
