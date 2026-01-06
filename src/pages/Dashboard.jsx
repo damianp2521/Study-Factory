@@ -8,11 +8,6 @@ const Dashboard = () => {
     const { user, logout } = useAuth();
     const role = user?.role || 'member';
 
-    // DEBUG: Force alert to confirm code update
-    React.useEffect(() => {
-        console.log('Dashboard v5.2 Loaded. Role:', role);
-    }, [role]);
-
     // 1. Common Menus (Always Visible)
     const commonMenus = [
         { title: '휴가 사용', icon: <Calendar size={32} />, path: '/vacation' },
@@ -52,13 +47,6 @@ const Dashboard = () => {
 
     return (
         <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)' }}>
-            {/* DEBUG BANNER - REMOVE LATER */}
-            <div style={{ background: '#ff4444', color: 'white', padding: '10px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' }}>
-                🛑 디버그 모드 v5.2 🛑<br />
-                내 역할: {role}<br />
-                이 빨간 박스가 보여야 최신 버전입니다.
-            </div>
-
             {/* Header */}
             <div
                 className="flex-center"
@@ -127,8 +115,8 @@ const Dashboard = () => {
                     "끈기는 모든 것을 이겨낸다."
                 </p>
             </div>
-            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.7rem', color: '#eee' }}>
-                System v5.1 (Debug) | Role: {role || 'undefined'} | User: {user?.email}
+            <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.7rem', color: '#888' }}>
+                System v5.3 (Fixed) | My Role: {String(role)}
             </div>
         </div >
     );
