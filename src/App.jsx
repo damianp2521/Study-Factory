@@ -8,7 +8,9 @@ import Suggestion from './pages/Suggestion';
 import ManageMembers from './pages/ManageMembers';
 import WriteNotice from './pages/WriteNotice';
 
-
+import AdminSettings from './pages/AdminSettings';
+import Unauthorized from './pages/Unauthorized';
+import RoleProtectedRoute from './components/RoleProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
@@ -50,15 +52,23 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/manage-members" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['staff', 'admin']}>
                 <ManageMembers />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/write-notice" element={
-              <ProtectedRoute>
+              <RoleProtectedRoute allowedRoles={['staff', 'admin']}>
                 <WriteNotice />
-              </ProtectedRoute>
+              </RoleProtectedRoute>
             } />
+            <Route path="/admin-settings" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <AdminSettings />
+              </RoleProtectedRoute>
+            } />
+
+            {/* Unauthorized Page */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
 
           </Route>
         </Routes>
