@@ -131,9 +131,10 @@ const VacationRequest = () => {
     };
 
     return (
-        <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)' }}>
+        <div className="page-content">
             {/* Header */}
             <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: 'var(--spacing-xl)' }}>
+                {/* ... existing header code ... */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button
                         onClick={() => navigate('/dashboard')}
@@ -197,7 +198,7 @@ const VacationRequest = () => {
                     <div className="flex-col" style={{ gap: '25px' }}>
 
                         {/* Date Picker */}
-                        <div>
+                        <div style={{ width: '100%', overflow: 'hidden' }}> {/* Added overflow hidden wrapper */}
                             <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
                                 <Calendar size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
                                 날짜 선택
@@ -208,16 +209,17 @@ const VacationRequest = () => {
                                 onChange={(e) => setDate(e.target.value)}
                                 style={{
                                     width: '100%',
-                                    maxWidth: '100%',     // Force stay within parent
-                                    minWidth: '0',        // Prevent flex item sizing refusal
-                                    display: 'block',     // Ensure block behavior
+                                    // maxWidth: '100%', // Handled by global CSS now
+                                    // minWidth: '0',
+                                    display: 'block',
                                     padding: '15px',
                                     borderRadius: '12px',
                                     border: '1px solid #ddd',
                                     fontSize: '1.1rem',
                                     fontFamily: 'inherit',
                                     outline: 'none',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    background: 'white', // Ensure background
                                 }}
                             />
                         </div>

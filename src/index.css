@@ -167,6 +167,28 @@ button {
   aspect-ratio: 1/1;
 }
 
+/* Page Content Container */
+.page-content {
+  padding: var(--spacing-lg) var(--spacing-sm);
+  /* Standard Mobile Padding: 1rem sides */
+}
+
+@media (min-width: 768px) {
+  .page-content {
+    padding: var(--spacing-lg) var(--spacing-md);
+    /* Desktop Padding */
+  }
+}
+
+/* Strict Input Reset for Mobile */
+input[type="date"],
+input[type="text"],
+input[type="password"] {
+  -webkit-appearance: none;
+  appearance: none;
+  max-width: 100%;
+}
+
 .btn-icon:hover {
   transform: translateY(-5px);
   box-shadow: var(--shadow-md);
