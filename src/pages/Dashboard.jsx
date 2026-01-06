@@ -13,24 +13,21 @@ const Dashboard = () => {
         { title: '스탭에게 건의하기', icon: <MessageSquare size={32} />, path: '/suggestion' },
     ];
 
-    // 2. Extra Role Buttons
-    const roleButtons = [];
-    if (role === 'staff' || role === 'admin') {
-        roleButtons.push({
+    // 2. Role Buttons (Always visible, access controlled by Router)
+    const roleButtons = [
+        {
             title: '스탭 전용 메뉴',
             icon: <Shield size={32} />,
             path: '/staff-menu',
-            style: { background: '#edf2f7', color: '#2d3748' } // visual distinction
-        });
-    }
-    if (role === 'admin') {
-        roleButtons.push({
+            style: { background: '#edf2f7', color: '#2d3748' }
+        },
+        {
             title: '관리자 전용 메뉴',
             icon: <Key size={32} />,
             path: '/admin-menu',
-            style: { background: '#2d3748', color: 'white' } // visual distinction
-        });
-    }
+            style: { background: '#2d3748', color: 'white' }
+        }
+    ];
 
     const visibleMenus = [...commonMenus, ...roleButtons];
 
@@ -115,7 +112,7 @@ const Dashboard = () => {
                 </p>
             </div>
             <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.7rem', color: '#eee' }}>
-                System v3.0 (Hierarchical Dashboard)
+                System v4.0 (Universal Buttons)
             </div>
         </div >
     );
