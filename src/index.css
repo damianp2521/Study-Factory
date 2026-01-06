@@ -181,12 +181,21 @@ button {
 }
 
 /* Strict Input Reset for Mobile */
-input[type="date"],
 input[type="text"],
 input[type="password"] {
   -webkit-appearance: none;
   appearance: none;
   max-width: 100%;
+}
+
+/* Ensure Native Date Picker UI */
+input[type="date"] {
+  /* Do not strip appearance for date inputs to keep calendar icon */
+  min-height: 45px;
+  /* Ensure touch target */
+  width: 100%;
+  display: block;
+  background-color: white;
 }
 
 .btn-icon:hover {
