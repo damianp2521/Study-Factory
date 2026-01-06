@@ -22,7 +22,7 @@ const SuggestionBox = () => {
                     id,
                     content,
                     created_at,
-                    user:user_id (
+                    profiles (
                         name,
                         email
                     )
@@ -34,7 +34,10 @@ const SuggestionBox = () => {
             setSuggestions(data || []);
         } catch (err) {
             console.error('Error fetching suggestions:', err);
-            alert('건의함 목록을 불러오는데 실패했습니다.');
+
+            // Detailed error for debugging
+            if (err.message) alert(`건의함 오류: ${err.message}`);
+            else alert('건의함 목록을 불러오는데 실패했습니다.');
         } finally {
             setLoading(false);
         }
@@ -102,10 +105,10 @@ const SuggestionBox = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <User size={16} color="var(--color-primary)" />
                                     <span style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                                        {item.user?.name || '알 수 없음'}
+                                        {item.profiles?.name || '알 수 없음'}
                                     </span>
                                     <span style={{ fontSize: '0.85rem', color: '#999' }}>
-                                        ({item.user?.email ? item.user.email.split('@')[0] : 'No ID'})
+                                        ({item.profiles?.email ? item.profiles.email.split('@')[0] : 'No ID'})
                                     </span>
                                 </div>
                                 <span style={{ fontSize: '0.8rem', color: '#999' }}>
