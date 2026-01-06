@@ -23,8 +23,7 @@ const SuggestionBox = () => {
                     content,
                     created_at,
                     profiles (
-                        name,
-                        email
+                        name
                     )
                 `)
                 .eq('status', 'pending')
@@ -106,9 +105,6 @@ const SuggestionBox = () => {
                                     <User size={16} color="var(--color-primary)" />
                                     <span style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>
                                         {item.profiles?.name || '알 수 없음'}
-                                    </span>
-                                    <span style={{ fontSize: '0.85rem', color: '#999' }}>
-                                        ({item.profiles?.email ? item.profiles.email.split('@')[0] : 'No ID'})
                                     </span>
                                 </div>
                                 <span style={{ fontSize: '0.8rem', color: '#999' }}>
