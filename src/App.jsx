@@ -3,9 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Notices from './pages/Notices';
-import MyPage from './pages/MyPage';
-import Inquiry from './pages/Inquiry';
+import VacationRequest from './pages/VacationRequest';
+import Suggestion from './pages/Suggestion';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -37,19 +36,14 @@ function App() {
                 <Dashboard />
               </ProtectedRoute>
             } />
-            <Route path="/notices" element={
+            <Route path="/vacation" element={
               <ProtectedRoute>
-                <Notices />
+                <VacationRequest />
               </ProtectedRoute>
             } />
-            <Route path="/mypage" element={
+            <Route path="/suggestion" element={
               <ProtectedRoute>
-                <MyPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/inquiry" element={
-              <ProtectedRoute>
-                <Inquiry />
+                <Suggestion />
               </ProtectedRoute>
             } />
           </Route>

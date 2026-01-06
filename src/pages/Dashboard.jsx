@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Megaphone, User, HelpCircle, LogOut } from 'lucide-react';
+import { Calendar, MessageSquare, LogOut } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -9,9 +9,8 @@ const Dashboard = () => {
     const { user, logout } = useAuth(); // Get user and logout from context
 
     const menuItems = [
-        { title: '공지사항', icon: <Megaphone size={32} />, path: '/notices' },
-        { title: '마이페이지', icon: <User size={32} />, path: '/mypage' },
-        { title: '문의하기', icon: <HelpCircle size={32} />, path: '/inquiry' },
+        { title: '휴가 사용', icon: <Calendar size={32} />, path: '/vacation' },
+        { title: '스탭에게 건의하기', icon: <MessageSquare size={32} />, path: '/suggestion' },
     ];
 
     const handleLogout = async () => {
