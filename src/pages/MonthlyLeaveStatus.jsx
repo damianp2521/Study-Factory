@@ -10,7 +10,8 @@ const MonthlyLeaveStatus = () => {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBranch, setSelectedBranch] = useState('전체 지점');
-    const [branchOptions, setBranchOptions] = useState(['전체 지점', '망미점', '센텀점', '미지정']); // Default fallback
+    const [branchOptions, setBranchOptions] = useState(['전체 지점', '망미점', '센텀점', '미지정']);
+    const [selectedUserId, setSelectedUserId] = useState(null);
 
     // Grid State
     const [calendarDays, setCalendarDays] = useState([]);
