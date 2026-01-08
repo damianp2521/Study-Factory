@@ -94,21 +94,7 @@ const Dashboard = () => {
                 ))}
             </div>
 
-            {/* Info Card (Optional Decoration) */}
-            <div
-                className="glass-card"
-                style={{
-                    marginTop: 'var(--spacing-xl)',
-                    padding: 'var(--spacing-md)',
-                }}
-            >
-                <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: 'var(--spacing-xs)', color: 'var(--color-primary)' }}>
-                    오늘의 한마디
-                </h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>
-                    "끈기는 모든 것을 이겨낸다."
-                </p>
-            </div>
+
         </div >
     );
 };
