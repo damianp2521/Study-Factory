@@ -68,13 +68,23 @@ const VacationRequest = () => {
     };
 
     const togglePeriod = (p) => {
+        // Special "All" button logic (p === 'all')
+        if (p === 'all') {
+            setSelectedPeriods(prev => prev.length === 7 ? [] : [1, 2, 3, 4, 5, 6, 7]);
+            return;
+        }
+
         if (selectedPeriods.includes(p)) {
             setSelectedPeriods(prev => prev.filter(item => item !== p));
         } else {
-            if (selectedPeriods.length >= 4) {
-                alert('반차는 최대 4개 교시까지만 쉴 수 있습니다.\n(하루 최소 3교시 근무 필수)');
-                return;
+            // Check logic based on type
+            if (type === 'half') {
+                if (selectedPeriods.length >= 4) {
+                    alert('반차는 최대 4개 교시까지만 쉴 수 있습니다.\n(하루 최소 3교시 근무 필수)');
+                    return;
+                }
             }
+            // type === 'special' has no max limit (except 7 total)
             setSelectedPeriods(prev => [...prev, p].sort((a, b) => a - b));
         }
     };
@@ -88,15 +98,21 @@ const VacationRequest = () => {
             alert('사용할 교시를 선택해주세요.');
             return;
         }
-        if (type === 'special' && !specialReason) {
-            alert('사유(병가/기타)를 선택해주세요.');
-            return;
+        if (type === 'special') {
+            if (!specialReason) {
+                alert('사유(병가/기타)를 선택해주세요.');
+                return;
+            }
+            if (selectedPeriods.length === 0) {
+                alert('사용할 교시를 선택해주세요 (최소 1개 이상).');
+                return;
+            }
         }
 
         let confirmMsg = '';
         if (type === 'full') confirmMsg = `${date}에 월차를 신청하시겠습니까?`;
         else if (type === 'half') confirmMsg = `${date}에 ${selectedPeriods.join(', ')}교시 반차를 신청하시겠습니까?`;
-        else confirmMsg = `${date}에 특별휴가(${specialReason})를 신청하시겠습니까?`;
+        else confirmMsg = `${date}에 특별휴가(${specialReason}, ${selectedPeriods.length === 7 ? '전체' : selectedPeriods.join(', ') + '교시'})를 신청하시겠습니까?`;
 
         if (!confirm(confirmMsg)) return;
 
@@ -106,7 +122,7 @@ const VacationRequest = () => {
                 user_id: user.id,
                 type,
                 date,
-                periods: type === 'half' ? selectedPeriods : null,
+                periods: (type === 'half' || type === 'special') ? selectedPeriods : null,
                 reason: type === 'special' ? specialReason : null
             };
 
@@ -244,12 +260,13 @@ const VacationRequest = () => {
                             />
                         </div>
 
-                        {/* Period Selection (Only for Half) */}
-                        {type === 'half' && (
+                        {/* Period Selection (For Half AND Special) */}
+                        {(type === 'half' || type === 'special') && (
                             <div className="fade-in">
                                 <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
                                     <Clock size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-                                    쉬고 싶은 교시 선택 <span style={{ fontSize: '0.85rem', color: '#e53e3e', fontWeight: 'normal' }}>(최대 4개)</span>
+                                    쉬고 싶은 교시 선택
+                                    {type === 'half' && <span style={{ fontSize: '0.85rem', color: '#e53e3e', fontWeight: 'normal', marginLeft: '5px' }}>(최대 4개)</span>}
                                 </label>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                                     {periodOptions.map((p) => (
@@ -270,10 +287,30 @@ const VacationRequest = () => {
                                             {p}교시
                                         </button>
                                     ))}
+                                    {/* 'All' Button for Special Leave */}
+                                    {type === 'special' && (
+                                        <button
+                                            onClick={() => togglePeriod('all')}
+                                            style={{
+                                                padding: '15px 0',
+                                                borderRadius: '12px',
+                                                border: selectedPeriods.length === 7 ? '2px solid var(--color-primary)' : '1px solid #e2e8f0', // Highlight if all are selected
+                                                background: selectedPeriods.length === 7 ? '#ebf8ff' : 'white',
+                                                color: selectedPeriods.length === 7 ? 'var(--color-primary)' : '#4a5568',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.1s'
+                                            }}
+                                        >
+                                            전체
+                                        </button>
+                                    )}
                                 </div>
-                                <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#718096' }}>
-                                    * 하루 최소 3교시는 근무해야 합니다.
-                                </p>
+                                {type === 'half' && (
+                                    <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#718096' }}>
+                                        * 하루 최소 3교시는 근무해야 합니다.
+                                    </p>
+                                )}
                             </div>
                         )}
 
@@ -398,9 +435,9 @@ const VacationRequest = () => {
                                     </span>
                                 </div>
 
-                                {req.type === 'half' && req.periods && (
+                                {(req.type === 'half' || (req.type === 'special' && req.periods)) && (
                                     <div style={{ color: '#4a5568', marginBottom: '15px' }}>
-                                        <span style={{ fontWeight: '600' }}>사용 교시:</span> {req.periods.join(', ')}교시
+                                        <span style={{ fontWeight: '600' }}>사용 교시:</span> {req.periods ? req.periods.join(', ') : ''}교시
                                     </div>
                                 )}
                                 {req.type === 'special' && req.reason && (
