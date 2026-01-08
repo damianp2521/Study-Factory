@@ -1,39 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MessageSquare, LogOut, Shield, Key } from 'lucide-react';
+import { LogOut, Shield, Key } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import WorkPlanReport from '../components/WorkPlanReport';
+import InlineVacationRequest from '../components/InlineVacationRequest';
 
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const role = user?.role || 'member';
-
-    // 1. Common Menus (Always Visible)
-    const commonMenus = [
-        { title: '휴가 사용', icon: <Calendar size={32} />, path: '/vacation' },
-        { title: '스탭에게 건의하기', icon: <MessageSquare size={32} />, path: '/suggestion' },
-    ];
-
-    // 2. Extra Role Buttons
-    const roleButtons = [];
-    if (role === 'staff' || role === 'admin') {
-        roleButtons.push({
-            title: '스탭 전용 메뉴',
-            icon: <Shield size={32} />,
-            path: '/staff-menu',
-            style: { background: '#edf2f7', color: '#2d3748' } // visual distinction
-        });
-    }
-    if (role === 'admin') {
-        roleButtons.push({
-            title: '관리자 전용 메뉴',
-            icon: <Key size={32} />,
-            path: '/admin-menu',
-            style: { background: '#edf2f7', color: '#2d3748' } // Match Staff Menu style
-        });
-    }
-
-    const visibleMenus = [...commonMenus, ...roleButtons];
 
     const handleLogout = async () => {
         try {
@@ -41,18 +16,18 @@ const Dashboard = () => {
             navigate('/login');
         } catch (error) {
             console.error('Logout failed:', error);
-            navigate('/login'); // Force navigation anyway
+            navigate('/login');
         }
     };
 
     return (
-        <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)' }}>
+        <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)', maxWidth: '600px', margin: '0 auto' }}>
             {/* Header */}
             <div
                 className="flex-center"
                 style={{
                     justifyContent: 'space-between',
-                    marginBottom: 'var(--spacing-xl)'
+                    marginBottom: 'var(--spacing-lg)'
                 }}
             >
                 <div>
@@ -68,34 +43,79 @@ const Dashboard = () => {
                     style={{
                         background: 'none',
                         color: 'var(--color-text-secondary)',
-                        padding: 'var(--spacing-xs)'
+                        padding: 'var(--spacing-xs)',
+                        border: 'none',
+                        cursor: 'pointer'
                     }}
                 >
                     <LogOut size={24} />
                 </button>
             </div>
 
-            {/* Menu Grid */}
-            <div className="responsive-grid">
-                {visibleMenus.map((item) => (
+            {/* 1. Work Plan Report */}
+            <WorkPlanReport />
+
+            {/* 2. Inline Vacation Request */}
+            <InlineVacationRequest />
+
+            {/* 3. Role Menus (Bottom) */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '30px' }}>
+                {(role === 'staff' || role === 'admin') && (
                     <button
-                        key={item.path}
-                        onClick={() => navigate(item.path)}
-                        className="btn-icon"
-                        style={item.style} // Apply custom styles for role buttons
+                        onClick={() => navigate('/staff-menu')}
+                        style={{
+                            flex: 1,
+                            padding: '15px',
+                            borderRadius: '12px',
+                            background: '#edf2f7',
+                            color: '#2d3748',
+                            border: 'none',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '5px',
+                            cursor: 'pointer'
+                        }}
                     >
-                        <div className="icon-wrapper">
-                            {item.icon}
-                        </div>
-                        <span style={{ fontWeight: '600', color: 'var(--color-text-main)' }}>
-                            {item.title}
-                        </span>
+                        <Shield size={24} />
+                        <span style={{ fontSize: '0.9rem' }}>스탭 메뉴</span>
                     </button>
-                ))}
+                )}
+                {role === 'admin' && (
+                    <button
+                        onClick={() => navigate('/admin-menu')}
+                        style={{
+                            flex: 1,
+                            padding: '15px',
+                            borderRadius: '12px',
+                            background: '#edf2f7',
+                            color: '#2d3748',
+                            border: 'none',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '5px',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <Key size={24} />
+                        <span style={{ fontSize: '0.9rem' }}>관리자 메뉴</span>
+                    </button>
+                )}
             </div>
 
-
-        </div >
+            {/* Suggestion Link (Optional, kept for accessibility) */}
+            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                <button
+                    onClick={() => navigate('/suggestion')}
+                    style={{ background: 'none', border: 'none', color: '#718096', textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                    스탭에게 건의하기
+                </button>
+            </div>
+        </div>
     );
 };
 
