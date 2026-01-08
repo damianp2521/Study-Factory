@@ -9,7 +9,8 @@ const MonthlyLeaveStatus = () => {
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedBranch, setSelectedBranch] = useState('전체 지점'); // '전체 지점' | '망미점' | '센텀점' | '미지정'
+    const [selectedBranch, setSelectedBranch] = useState('전체 지점');
+    const [branchOptions, setBranchOptions] = useState(['전체 지점', '망미점', '센텀점', '미지정']); // Default fallback
 
     // Grid State
     const [calendarDays, setCalendarDays] = useState([]);
@@ -17,7 +18,29 @@ const MonthlyLeaveStatus = () => {
     useEffect(() => {
         fetchMonthlyLeaves();
         generateCalendar();
+        fetchBranches();
     }, [currentDate]);
+
+    // Fetch unique branches from profiles
+    const fetchBranches = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('branch');
+
+            if (error) throw error;
+
+            if (data) {
+                // Extract unique branches
+                const uniqueBranches = [...new Set(data.map(item => item.branch || '미지정'))];
+                // Sort and add '전체 지점' at start
+                const sortedBranches = ['전체 지점', ...uniqueBranches.filter(b => b !== '전체 지점').sort()];
+                setBranchOptions(sortedBranches);
+            }
+        } catch (err) {
+            console.error('Error fetching branches:', err);
+        }
+    };
 
     // 1. Generate Calendar Grid
     const generateCalendar = () => {
@@ -133,10 +156,9 @@ const MonthlyLeaveStatus = () => {
                             minWidth: '120px'
                         }}
                     >
-                        <option value="전체 지점">전체 지점</option>
-                        <option value="망미점">망미점</option>
-                        <option value="센텀점">센텀점</option>
-                        <option value="미지정">미지정</option>
+                        {branchOptions.map((branch, index) => (
+                            <option key={index} value={branch}>{branch}</option>
+                        ))}
                     </select>
 
                     {/* Name Search */}
