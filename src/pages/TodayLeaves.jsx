@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import CustomDatePicker from '../components/CustomDatePicker';
 
 const TodayLeaves = () => {
     const navigate = useNavigate();
@@ -105,49 +106,11 @@ const TodayLeaves = () => {
                 </div>
             </div>
 
-            {/* Date Selector - Custom UI with Overlay Input */}
-            <div style={{ position: 'relative', width: '100%', marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
-                    날짜 선택
-                </label>
-
-                {/* Visible Custom UI */}
-                <div style={{
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid #ccc',
-                    background: 'white',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer'
-                }}>
-                    <span style={{
-                        fontSize: '1rem',
-                        color: date ? 'var(--color-text-main)' : '#a0aec0',
-                        fontWeight: date ? 'bold' : 'normal'
-                    }}>
-                        {date}
-                    </span>
-                    <Calendar size={20} color="#718096" />
-                </div>
-
-                {/* Invisible Native Input Overlay */}
-                <input
-                    type="date"
+            {/* Date Picker Component */}
+            <div style={{ marginBottom: '20px' }}>
+                <CustomDatePicker
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    style={{
-                        position: 'absolute',
-                        top: '30px', // Below label (approx)
-                        left: 0,
-                        width: '100%',
-                        height: 'calc(100% - 30px)', // Cover the custom UI div
-                        opacity: 0,
-                        zIndex: 10,
-                        cursor: 'pointer'
-                    }}
+                    onChange={setDate}
                 />
             </div>
 
