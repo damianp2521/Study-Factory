@@ -8,7 +8,8 @@ const MonthlyLeaveStatus = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [selectedUserId, setSelectedUserId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedBranch, setSelectedBranch] = useState('전체 지점'); // '전체 지점' | '망미점' | '센텀점' | '미지정'
 
     // Grid State
     const [calendarDays, setCalendarDays] = useState([]);
@@ -20,27 +21,20 @@ const MonthlyLeaveStatus = () => {
 
     // 1. Generate Calendar Grid
     const generateCalendar = () => {
+        // ... (existing code, unchanged)
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth(); // 0-11
-
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-
         const daysInMonth = lastDay.getDate();
-        const startDayOfWeek = firstDay.getDay(); // 0 (Sun) - 6 (Sat)
-
+        const startDayOfWeek = firstDay.getDay();
         const days = [];
-
-        // Empty slots for previous month
         for (let i = 0; i < startDayOfWeek; i++) {
             days.push(null);
         }
-
-        // Actual days
         for (let i = 1; i <= daysInMonth; i++) {
             days.push(new Date(year, month, i));
         }
-
         setCalendarDays(days);
     };
 
@@ -50,9 +44,7 @@ const MonthlyLeaveStatus = () => {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
 
-        // Start and End of month string YYYY-MM-DD
         const startStr = `${year}-${String(month).padStart(2, '0')}-01`;
-        // Careful with end date logic, just grab fully covering range
         const endStr = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
 
         try {
@@ -60,7 +52,7 @@ const MonthlyLeaveStatus = () => {
                 .from('vacation_requests')
                 .select(`
                     id, type, date, periods, reason, user_id,
-                    profiles (name)
+                    profiles (name, branch)
                 `)
                 .gte('date', startStr)
                 .lte('date', endStr);
@@ -74,11 +66,32 @@ const MonthlyLeaveStatus = () => {
         }
     };
 
-    // Helper to get leaves for a specific day
+    // 3. Filter Leaves
+    const getFilteredLeaves = () => {
+        return leaves.filter(leaf => {
+            const memberName = leaf.profiles?.name || '';
+            const memberBranch = leaf.profiles?.branch || '미지정'; // Handle null/undefined as '미지정' if needed
+
+            // Filter by Branch
+            if (selectedBranch !== '전체 지점' && memberBranch !== selectedBranch) {
+                return false;
+            }
+
+            // Filter by Name (Search)
+            if (searchTerm.trim() && !memberName.includes(searchTerm.trim())) {
+                return false;
+            }
+
+            return true;
+        });
+    };
+
+    // Helper to get leaves for a specific day using FILTERED data
     const getLeavesForDay = (dayDate) => {
         if (!dayDate) return [];
         const dateStr = dayDate.toISOString().split('T')[0];
-        return leaves.filter(l => l.date === dateStr);
+        const filtered = getFilteredLeaves(); // Use filtered list
+        return filtered.filter(l => l.date === dateStr);
     };
 
     const handlePrevMonth = () => {
@@ -91,8 +104,8 @@ const MonthlyLeaveStatus = () => {
 
     return (
         <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)' }}>
-            {/* Header */}
-            <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: 'var(--spacing-md)' }}>
+            {/* Header with Search and Filter */}
+            <div className="flex-col" style={{ gap: '15px', marginBottom: 'var(--spacing-md)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button
                         onClick={() => navigate('/admin-menu')}
@@ -103,6 +116,46 @@ const MonthlyLeaveStatus = () => {
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
                         월별 휴가 현황
                     </h2>
+                </div>
+
+                {/* Search and Filters */}
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {/* Branch Filter */}
+                    <select
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
+                        style={{
+                            padding: '10px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddd',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            minWidth: '120px'
+                        }}
+                    >
+                        <option value="전체 지점">전체 지점</option>
+                        <option value="망미점">망미점</option>
+                        <option value="센텀점">센텀점</option>
+                        <option value="미지정">미지정</option>
+                    </select>
+
+                    {/* Name Search */}
+                    <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                        <User size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#a0aec0' }} />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="이름 검색"
+                            style={{
+                                width: '100%',
+                                padding: '10px 10px 10px 36px',
+                                borderRadius: '8px',
+                                border: '1px solid #ddd',
+                                fontSize: '1rem'
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 
