@@ -29,7 +29,7 @@ const Dashboard = () => {
             title: '관리자 전용 메뉴',
             icon: <Key size={32} />,
             path: '/admin-menu',
-            style: { background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' } // Brighter sky blue gradient
+            style: { background: '#edf2f7', color: '#2d3748' } // Match Staff Menu style
         });
     }
 
