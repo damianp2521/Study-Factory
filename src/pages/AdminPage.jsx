@@ -1,13 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, Users } from 'lucide-react';
 
 const AdminPage = () => {
     const navigate = useNavigate();
 
     const menuItems = [
         { title: '월별 휴가 현황', icon: <Calendar size={32} />, path: '/admin/monthly-leaves' },
-        { title: '관리자 설정', icon: <Settings size={32} />, path: '/admin-settings' },
+        { title: '회원 관리', icon: <Users size={32} />, path: '/manage-members' },
     ];
 
     return (

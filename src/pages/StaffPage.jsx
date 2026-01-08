@@ -9,8 +9,6 @@ const StaffPage = () => {
 
     const menuItems = [
         { title: '금일 휴무 사원', icon: <Calendar size={32} />, path: '/today-leaves' },
-        { title: '회원 관리', icon: <Users size={32} />, path: '/manage-members' },
-        { title: '공지사항 작성', icon: <Edit size={32} />, path: '/write-notice' },
         { title: '건의함', icon: <Inbox size={32} />, path: '/suggestion-box' },
     ];
 
