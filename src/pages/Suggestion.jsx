@@ -155,42 +155,48 @@ const Suggestion = () => {
                         <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>
                             기타 건의사항
                         </label>
-                        <div style={{ position: 'relative' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <textarea
                                 value={customInput}
                                 onChange={(e) => setCustomInput(e.target.value)}
                                 placeholder="건의하실 내용을 입력해주세요..."
                                 style={{
                                     width: '100%',
-                                    height: '100px',
+                                    height: '120px',
                                     padding: '15px',
                                     borderRadius: '12px',
                                     border: '1px solid #ddd',
                                     fontSize: '1rem',
                                     resize: 'none',
-                                    fontFamily: 'inherit'
+                                    fontFamily: 'inherit',
+                                    outline: 'none',
+                                    boxSizing: 'border-box'
                                 }}
                             />
                             <button
                                 onClick={() => handleSubmit(customInput)}
                                 disabled={loading || !customInput.trim()}
+                                className="btn-primary" // Use global class if available, or inline styles
                                 style={{
-                                    position: 'absolute',
-                                    bottom: '10px',
-                                    right: '10px',
+                                    width: '100%',
+                                    padding: '15px',
                                     background: 'var(--color-primary)',
                                     color: 'white',
                                     border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '8px 16px',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    fontWeight: 'bold',
                                     cursor: 'pointer',
                                     display: 'flex',
+                                    justifyContent: 'center',
                                     alignItems: 'center',
-                                    gap: '5px'
+                                    gap: '8px',
+                                    opacity: (!customInput.trim() || loading) ? 0.7 : 1,
+                                    transition: 'all 0.2s'
                                 }}
                             >
-                                <span>전송</span>
-                                <Send size={16} />
+                                <span>전송하기</span>
+                                <Send size={18} />
                             </button>
                         </div>
                     </div>
