@@ -17,7 +17,7 @@ const Unauthorized = () => {
             </p>
             <button
                 className="btn-primary"
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/')}
             >
                 대시보드로 돌아가기
             </button>
