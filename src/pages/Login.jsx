@@ -26,8 +26,17 @@ const Login = () => {
 
         setLoading(true);
         try {
-            await login(memberId, password);
-            navigate('/dashboard');
+            const data = await login(memberId, password);
+            const userRole = data?.user?.user_metadata?.role || 'member'; // Fallback to member
+
+            // Navigate based on role
+            if (userRole === 'admin') {
+                navigate('/admindashboard');
+            } else if (userRole === 'staff') {
+                navigate('/staffdashboard');
+            } else {
+                navigate('/memberdashboard'); // Default for member
+            }
         } catch (err) {
             console.error('Login Error:', err);
             // Show specific error message from Supabase if available
