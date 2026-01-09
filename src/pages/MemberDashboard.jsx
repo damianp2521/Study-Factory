@@ -86,9 +86,8 @@ const MemberDashboard = () => {
                     style={{
                         position: 'absolute',
                         left: '20px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        paddingTop: 'calc(env(safe-area-inset-top) + 20px)', // Adjust for container padding
+                        top: 'calc(env(safe-area-inset-top) + 20px)',
+                        paddingTop: 0,
                         background: 'none',
                         border: 'none',
                         color: 'var(--color-text-secondary)',
