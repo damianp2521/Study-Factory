@@ -132,7 +132,7 @@ const MemberDashboard = () => {
                         >
                             <ChevronLeft size={24} />
                         </button>
-                        <span>&lt; {slides[activeIndex].title} &gt;</span>
+                        <span>{slides[activeIndex].title}</span>
                         <button
                             onClick={handleNext}
                             disabled={activeIndex === slides.length - 1}
