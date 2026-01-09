@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import VacationRequest from './pages/VacationRequest';
 import Suggestion from './pages/Suggestion';
 import ManageMembers from './pages/ManageMembers';
@@ -59,11 +58,6 @@ function App() {
             <Route path="/" element={<RootRedirect />} />
 
             {/* Protected Routes */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
             <Route path="/vacation" element={
               <ProtectedRoute>
                 <VacationRequest />
@@ -119,13 +113,6 @@ function App() {
             <Route path="/admindashboard" element={
               <RoleProtectedRoute allowedRoles={['admin']}>
                 <AdminDashboard />
-              </RoleProtectedRoute>
-            } />
-
-            {/* Legacy Dashboard Route (can redirect to based on role or keep as fallback) */}
-            <Route path="/dashboard" element={
-              <RoleProtectedRoute allowedRoles={['member', 'staff', 'admin']}>
-                <Dashboard />
               </RoleProtectedRoute>
             } />
 

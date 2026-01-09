@@ -17,8 +17,8 @@ const MemberDashboard = () => {
     const [touchEnd, setTouchEnd] = useState(0);
 
     const slides = [
-        { title: '작업보고', component: <WorkPlanReport /> },
-        { title: '휴무신청', component: <InlineVacationRequest /> },
+        { title: '작업계획', component: <WorkPlanReport /> },
+        { title: '휴무계획', component: <InlineVacationRequest /> },
         { title: '건의사항', component: <InlineSuggestion /> },
     ];
 
