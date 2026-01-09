@@ -14,9 +14,9 @@ import StaffPage from './pages/StaffPage';
 import AdminPage from './pages/AdminPage';
 import MonthlyLeaveStatus from './pages/MonthlyLeaveStatus';
 
-import MemberHome from './pages/MemberHome';
-import StaffHome from './pages/StaffHome';
-import AdminHome from './pages/AdminHome';
+import MemberDashboard from './pages/MemberDashboard';
+import StaffDashboard from './pages/StaffDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 import AdminSettings from './pages/AdminSettings';
 import Unauthorized from './pages/Unauthorized';
@@ -44,9 +44,9 @@ const RootRedirect = () => {
   if (!user) return <Navigate to="/login" replace />;
 
   const role = user.role || 'member';
-  if (role === 'admin') return <Navigate to="/admin-home" replace />;
-  if (role === 'staff') return <Navigate to="/staff-home" replace />;
-  return <Navigate to="/member-home" replace />;
+  if (role === 'admin') return <Navigate to="/admindashboard" replace />;
+  if (role === 'staff') return <Navigate to="/staffdashboard" replace />;
+  return <Navigate to="/memberdashboard" replace />;
 };
 
 function App() {
@@ -105,20 +105,20 @@ function App() {
               </RoleProtectedRoute>
             } />
 
-            {/* Role-Based Home Pages */}
-            <Route path="/member-home" element={
+            {/* Role-Based Dashboard Routes */}
+            <Route path="/memberdashboard" element={
               <RoleProtectedRoute allowedRoles={['member', 'staff', 'admin']}>
-                <MemberHome />
+                <MemberDashboard />
               </RoleProtectedRoute>
             } />
-            <Route path="/staff-home" element={
+            <Route path="/staffdashboard" element={
               <RoleProtectedRoute allowedRoles={['staff', 'admin']}>
-                <StaffHome />
+                <StaffDashboard />
               </RoleProtectedRoute>
             } />
-            <Route path="/admin-home" element={
+            <Route path="/admindashboard" element={
               <RoleProtectedRoute allowedRoles={['admin']}>
-                <AdminHome />
+                <AdminDashboard />
               </RoleProtectedRoute>
             } />
 
