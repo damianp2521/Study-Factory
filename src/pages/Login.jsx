@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { KeyRound, Lock } from 'lucide-react';
-import logo from '../assets/logo.png';
 
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -81,42 +80,53 @@ const Login = () => {
     };
 
     return (
-        <div className="flex-center flex-col" style={{ minHeight: '80vh', padding: 'var(--spacing-lg)' }}>
-            {/* Logo */}
-            <div className="flex-center flex-col" style={{ marginBottom: '3rem' }}>
-                <div
-                    style={{
-                        width: '180px',
-                        padding: '20px',
-                        borderRadius: 'var(--radius-lg)',
-                        background: 'white',
-                        boxShadow: 'var(--shadow-md)',
-                        marginBottom: 'var(--spacing-md)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                >
-                    <img src={logo} alt="자격증공장" style={{ width: '100%', height: 'auto', display: 'block' }} />
-                </div>
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            background: '#f8fafc', // Very light blue/gray background
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+        }}>
+
+            {/* Motivational Quote Section */}
+            <div style={{
+                marginBottom: '50px',
+                textAlign: 'center',
+                maxWidth: '320px',
+                lineHeight: '1.6'
+            }}>
+                <h1 style={{
+                    fontSize: '1.25rem',
+                    fontWeight: '600',
+                    color: '#2d3748', // Dark gray
+                    marginBottom: '10px',
+                    wordBreak: 'keep-all',
+                    letterSpacing: '-0.5px'
+                }}>
+                    "매일 같은 노력을<br />정확하게 반복하는 자가<br />운명을 뚫는<br />막대한 힘을 가진다."
+                </h1>
+                <div style={{ width: '40px', height: '2px', background: '#cbd5e0', margin: '20px auto 0' }}></div>
             </div>
 
             {/* Login Form */}
-            <form onSubmit={handleLogin} style={{ width: '100%' }}>
-                <div style={{ marginBottom: 'var(--spacing-lg)' }}>
+            <form onSubmit={handleLogin} style={{ width: '100%', maxWidth: '320px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
                     {/* Member ID Input */}
-                    <div
-                        className="flex-center"
-                        style={{
-                            background: 'var(--color-surface)',
-                            borderRadius: 'var(--radius-md)',
-                            padding: '0 var(--spacing-md)',
-                            boxShadow: 'var(--shadow-sm)',
-                            border: '1px solid transparent',
-                            marginBottom: 'var(--spacing-md)'
-                        }}
-                    >
-                        <KeyRound size={20} style={{ color: 'var(--color-text-secondary)', marginRight: 'var(--spacing-xs)' }} />
+                    <div style={{ position: 'relative' }}>
+                        <div style={{
+                            position: 'absolute',
+                            left: '15px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#a0aec0',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}>
+                            <KeyRound size={20} strokeWidth={1.5} />
+                        </div>
                         <input
                             type="text"
                             value={memberId}
@@ -124,29 +134,36 @@ const Login = () => {
                             placeholder="회원번호 8자리"
                             style={{
                                 width: '100%',
-                                padding: '1rem 0',
-                                border: 'none',
-                                outline: 'none',
+                                padding: '15px 15px 15px 45px',
+                                borderRadius: '12px',
+                                border: '1px solid #e2e8f0',
+                                background: 'white',
                                 fontSize: '1rem',
-                                background: 'transparent'
+                                outline: 'none',
+                                transition: 'border-color 0.2s',
+                                boxSizing: 'border-box',
+                                color: '#4a5568'
                             }}
+                            onFocus={(e) => e.target.style.borderColor = '#3182ce'}
+                            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                             inputMode="numeric"
                             disabled={loading}
                         />
                     </div>
 
                     {/* Password Input */}
-                    <div
-                        className="flex-center"
-                        style={{
-                            background: 'var(--color-surface)',
-                            borderRadius: 'var(--radius-md)',
-                            padding: '0 var(--spacing-md)',
-                            boxShadow: 'var(--shadow-sm)',
-                            border: '1px solid transparent'
-                        }}
-                    >
-                        <Lock size={20} style={{ color: 'var(--color-text-secondary)', marginRight: 'var(--spacing-xs)' }} />
+                    <div style={{ position: 'relative' }}>
+                        <div style={{
+                            position: 'absolute',
+                            left: '15px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#a0aec0',
+                            display: 'flex',
+                            alignItems: 'center'
+                        }}>
+                            <Lock size={20} strokeWidth={1.5} />
+                        </div>
                         <input
                             type="password"
                             value={password}
@@ -154,52 +171,76 @@ const Login = () => {
                             placeholder="비밀번호 6자리"
                             style={{
                                 width: '100%',
-                                padding: '1rem 0',
-                                border: 'none',
-                                outline: 'none',
+                                padding: '15px 15px 15px 45px',
+                                borderRadius: '12px',
+                                border: '1px solid #e2e8f0',
+                                background: 'white',
                                 fontSize: '1rem',
-                                background: 'transparent'
+                                outline: 'none',
+                                transition: 'border-color 0.2s',
+                                boxSizing: 'border-box',
+                                color: '#4a5568'
                             }}
+                            onFocus={(e) => e.target.style.borderColor = '#3182ce'}
+                            onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
                             inputMode="numeric"
                             disabled={loading}
                         />
                     </div>
-
-                    {error && (
-                        <p style={{ color: 'var(--color-error)', fontSize: '0.8rem', marginTop: 'var(--spacing-xs)', paddingLeft: '4px' }}>
-                            {error}
-                        </p>
-                    )}
                 </div>
 
-                <div className="flex-center flex-col" style={{ width: '100%' }}>
-                    <button
-                        type="submit"
-                        className="btn-primary"
-                        style={{ marginBottom: 'var(--spacing-md)', opacity: loading ? 0.7 : 1 }}
-                        disabled={loading}
-                    >
-                        {loading ? '로그인 중...' : '로그인'}
-                    </button>
+                {error && (
+                    <div style={{
+                        color: '#e53e3e',
+                        fontSize: '0.85rem',
+                        textAlign: 'center',
+                        marginBottom: '20px',
+                        background: '#fff5f5',
+                        padding: '10px',
+                        borderRadius: '8px'
+                    }}>
+                        {error}
+                    </div>
+                )}
 
+                <button
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                        width: '100%',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        background: '#2d3748', // Dark gray/black button for sophistication
+                        color: 'white',
+                        border: 'none',
+                        fontSize: '1rem',
+                        fontWeight: '600',
+                        cursor: loading ? 'wait' : 'pointer',
+                        transition: 'background 0.2s',
+                        marginBottom: '10px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                >
+                    {loading ? '로그인 중...' : '로그인'}
+                </button>
+
+                <div style={{ textAlign: 'center' }}>
                     <button
                         type="button"
-                        onClick={() => { }}
                         style={{
                             background: 'none',
                             border: 'none',
-                            color: 'var(--color-text-secondary)',
-                            fontSize: '0.9rem',
-                            textDecoration: 'underline',
+                            color: '#a0aec0',
+                            fontSize: '0.85rem',
                             cursor: 'pointer',
-                            padding: 'var(--spacing-xs)'
+                            textDecoration: 'none'
                         }}
                     >
-                        로그인 오류 문의하기
+                        로그인 정보를 잊으셨나요?
                     </button>
                 </div>
-            </form >
-        </div >
+            </form>
+        </div>
     );
 };
 
