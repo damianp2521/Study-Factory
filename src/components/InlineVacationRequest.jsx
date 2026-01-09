@@ -209,7 +209,7 @@ const InlineVacationRequest = () => {
                         <ChevronLeft size={20} color="#4a5568" />
                     </button>
                     <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                        {selectedMonth.getFullYear()}.{selectedMonth.getMonth() + 1} ({selectedMonth.toLocaleString('default', { month: 'short' })})
+                        {selectedMonth.getFullYear()}.{selectedMonth.getMonth() + 1}
                     </span>
                     <button onClick={handleNextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
                         <ChevronRight size={20} color="#4a5568" />
