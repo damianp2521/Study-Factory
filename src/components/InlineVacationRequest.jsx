@@ -1,5 +1,6 @@
+```javascript
 import React, { useState, useEffect } from 'react';
-import { Calendar, CheckCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import CustomDatePicker from './CustomDatePicker';
@@ -10,7 +11,7 @@ const InlineVacationRequest = () => {
     const [type, setType] = useState('full'); // 'full' | 'half_am' | 'half_pm'
     const [loading, setLoading] = useState(false);
     const [myRequests, setMyRequests] = useState([]);
-    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [selectedMonth, setSelectedMonth] = useState(new Date());
 
     // Fetch requests
     useEffect(() => {
@@ -34,6 +35,18 @@ const InlineVacationRequest = () => {
         }
     };
 
+    const handlePrevMonth = () => {
+        const newDate = new Date(selectedMonth);
+        newDate.setMonth(newDate.getMonth() - 1);
+        setSelectedMonth(newDate);
+    };
+
+    const handleNextMonth = () => {
+        const newDate = new Date(selectedMonth);
+        newDate.setMonth(newDate.getMonth() + 1);
+        setSelectedMonth(newDate);
+    };
+
     const handleSubmit = async () => {
         if (!date) {
             alert('날짜를 선택해주세요.');
@@ -53,7 +66,7 @@ const InlineVacationRequest = () => {
 
         let typeName = type === 'full' ? '월차' : type === 'half_am' ? '오전반차' : '오후반차';
 
-        if (!confirm(`${date}에 ${typeName}를 신청하시겠습니까?`)) return;
+        if (!confirm(`${ date }에 ${ typeName }를 신청하시겠습니까 ? `)) return;
 
         setLoading(true);
         try {
@@ -82,13 +95,17 @@ const InlineVacationRequest = () => {
         }
     };
 
-    // Filter requests
+    // Filter requests by selected month
     const todayStr = new Date().toISOString().split('T')[0];
-    // Sort by date descending (newest first)
-    const sortedRequests = [...myRequests].sort((a, b) => b.date.localeCompare(a.date));
+    const yearMonthStr = `${ selectedMonth.getFullYear() } -${ String(selectedMonth.getMonth() + 1).padStart(2, '0') } `;
+    
+    // List for the selected month
+    const filteredRequests = myRequests.filter(req => req.date.startsWith(yearMonthStr));
+    // Sort by date (oldest to newest for list view? or newest? Usually calendar order is nice, let's do Date Ascending)
+    const sortedRequests = [...filteredRequests].sort((a, b) => a.date.localeCompare(b.date));
 
     const handleCancel = async (id, date) => {
-        if (!confirm(`${date} 휴가 신청을 취소하시겠습니까?`)) return;
+        if (!confirm(`${ date } 휴가 신청을 취소하시겠습니까 ? `)) return;
 
         try {
             const { error } = await supabase
@@ -117,20 +134,20 @@ const InlineVacationRequest = () => {
     };
 
     const renderCalendar = () => {
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth();
-        const daysInMonth = getDaysInMonth(currentMonth);
-        const firstDay = getFirstDayOfMonth(currentMonth);
+        const year = selectedMonth.getFullYear();
+        const month = selectedMonth.getMonth();
+        const daysInMonth = getDaysInMonth(selectedMonth);
+        const firstDay = getFirstDayOfMonth(selectedMonth);
 
         const days = [];
         // Empty cells
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty-${i}`} style={{ height: '35px' }}></div>);
+            days.push(<div key={`empty - ${ i } `} style={{ height: '35px' }}></div>);
         }
 
         // Days
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const dateStr = `${ year } -${ String(month + 1).padStart(2, '0') } -${ String(d).padStart(2, '0') } `;
             const req = myRequests.find(r => r.date === dateStr);
             let bgColor = 'transparent';
             let textColor = '#2d3748';
@@ -186,6 +203,21 @@ const InlineVacationRequest = () => {
             height: '100%',
             overflowY: 'auto'
         }}>
+            {/* Month Navigation */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: '#f7fafc', padding: '8px 15px', borderRadius: '20px' }}>
+                    <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                        <ChevronLeft size={20} color="#4a5568" />
+                    </button>
+                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                        {selectedMonth.getFullYear()}.{selectedMonth.getMonth() + 1} ({selectedMonth.toLocaleString('default', { month: 'short' })})
+                    </span>
+                    <button onClick={handleNextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
+                        <ChevronRight size={20} color="#4a5568" />
+                    </button>
+                </div>
+            </div>
+
             {/* Button Group */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
                 <button
@@ -277,23 +309,25 @@ const InlineVacationRequest = () => {
                     marginBottom: '25px'
                 }}
             >
-                {/* Check Icon Removed */}
                 {loading ? '신청 중...' : '신청하기'}
             </button>
 
-            {/* Request List (Mixed) */}
+            {/* Request List (Filtered by Month) */}
             <div style={{ marginBottom: '25px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '10px' }}>
-                    📅 휴무 신청 현황
-                </h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                    <CalendarIcon size={18} color="#2d3748" />
+                    <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
+                        {selectedMonth.getMonth() + 1}월 휴무 신청 내역
+                    </h4>
+                </div>
                 {sortedRequests.length === 0 ? (
-                    <div style={{ color: '#a0aec0', fontSize: '0.9rem' }}>신청 내역이 없습니다.</div>
+                    <div style={{ color: '#a0aec0', fontSize: '0.9rem', paddingLeft: '24px' }}>해당 월의 내역이 없습니다.</div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {sortedRequests.map(req => {
                             const isPast = req.date < todayStr;
                             let bgColor, borderColor, textColor;
-
+                            
                             if (isPast) {
                                 bgColor = '#f7fafc'; // Gray
                                 borderColor = '#cbd5e0';
@@ -301,7 +335,7 @@ const InlineVacationRequest = () => {
                             } else {
                                 // Future
                                 if (req.type === 'full') {
-                                    bgColor = '#fff5f5';
+                                    bgColor = '#fff5f5'; 
                                     borderColor = '#e53e3e';
                                     textColor = '#c53030';
                                 } else {
@@ -317,20 +351,20 @@ const InlineVacationRequest = () => {
                                     padding: '12px',
                                     background: bgColor,
                                     borderRadius: '8px',
-                                    borderLeft: `4px solid ${borderColor}`
+                                    borderLeft: `4px solid ${ borderColor } `
                                 }}>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                         <span style={{ fontWeight: 'bold', color: isPast ? '#a0aec0' : '#2d3748' }}>{req.date}</span>
-                                        <span style={{
-                                            fontSize: '0.9rem',
-                                            fontWeight: 'bold',
-                                            color: textColor
+                                        <span style={{ 
+                                            fontSize: '0.9rem', 
+                                            fontWeight: 'bold', 
+                                            color: textColor 
                                         }}>
                                             {req.type === 'full' ? '월차' : '반차'}
                                         </span>
                                     </div>
                                     {!isPast && (
-                                        <button
+                                        <button 
                                             onClick={() => handleCancel(req.id, req.date)}
                                             style={{
                                                 background: '#fee2e2',
@@ -355,21 +389,19 @@ const InlineVacationRequest = () => {
 
             {/* Monthly Calendar */}
             <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                    <CalendarIcon size={18} color="#2d3748" />
                     <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
-                        📅 이번 달 휴무 현황
+                        {selectedMonth.getMonth() + 1}월 달력
                     </h4>
-                    <span style={{ fontSize: '0.9rem', color: '#718096' }}>
-                        {currentMonth.getFullYear()}.{currentMonth.getMonth() + 1}
-                    </span>
                 </div>
-
+                
                 {/* Calendar Grid */}
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(7, 1fr)',
-                    textAlign: 'center',
-                    fontSize: '0.8rem',
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(7, 1fr)', 
+                    textAlign: 'center', 
+                    fontSize: '0.8rem', 
                     color: '#718096',
                     marginBottom: '5px'
                 }}>
