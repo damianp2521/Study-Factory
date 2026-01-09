@@ -54,9 +54,7 @@ const InlineSuggestion = () => {
             display: 'flex',
             flexDirection: 'column'
         }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-text-main)', margin: '0 0 20px 0' }}>
-                🗳️ 건의함
-            </h3>
+
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {/* Presets */}

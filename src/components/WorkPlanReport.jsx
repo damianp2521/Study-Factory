@@ -128,16 +128,13 @@ const WorkPlanReport = () => {
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             marginBottom: '20px'
         }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-text-main)', margin: 0 }}>
-                    📝 작업 계획 보고
-                </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f7fafc', padding: '5px 10px', borderRadius: '8px' }}>
+            {/* Header / Date Navigation */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: '#f7fafc', padding: '8px 15px', borderRadius: '20px' }}>
                     <button onClick={handlePrevWeek} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
                         <ChevronLeft size={20} color="#4a5568" />
                     </button>
-                    <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#4a5568' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
                         {weekStart.getMonth() + 1}.{weekStart.getDate()} ~ {weekEnd.getMonth() + 1}.{weekEnd.getDate()}
                     </span>
                     <button onClick={handleNextWeek} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>

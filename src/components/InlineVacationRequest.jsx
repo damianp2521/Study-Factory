@@ -65,9 +65,7 @@ const InlineVacationRequest = () => {
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             marginBottom: '20px'
         }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--color-text-main)', margin: '0 0 15px 0' }}>
-                🏖️ 간편 휴가 신청
-            </h3>
+
 
             {/* Button Group */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
