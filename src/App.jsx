@@ -14,6 +14,10 @@ import StaffPage from './pages/StaffPage';
 import AdminPage from './pages/AdminPage';
 import MonthlyLeaveStatus from './pages/MonthlyLeaveStatus';
 
+import MemberHome from './pages/MemberHome';
+import StaffHome from './pages/StaffHome';
+import AdminHome from './pages/AdminHome';
+
 import AdminSettings from './pages/AdminSettings';
 import Unauthorized from './pages/Unauthorized';
 import RoleProtectedRoute from './components/RoleProtectedRoute';
@@ -32,6 +36,19 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+const RootRedirect = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return null; // Or a spinner
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  const role = user.role || 'member';
+  if (role === 'admin') return <Navigate to="/admin-home" replace />;
+  if (role === 'staff') return <Navigate to="/staff-home" replace />;
+  return <Navigate to="/member-home" replace />;
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -39,7 +56,7 @@ function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<RootRedirect />} />
 
             {/* Protected Routes */}
             <Route path="/dashboard" element={
@@ -85,6 +102,30 @@ function App() {
             <Route path="/admin/monthly-leaves" element={
               <RoleProtectedRoute allowedRoles={['admin']}>
                 <MonthlyLeaveStatus />
+              </RoleProtectedRoute>
+            } />
+
+            {/* Role-Based Home Pages */}
+            <Route path="/member-home" element={
+              <RoleProtectedRoute allowedRoles={['member', 'staff', 'admin']}>
+                <MemberHome />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/staff-home" element={
+              <RoleProtectedRoute allowedRoles={['staff', 'admin']}>
+                <StaffHome />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/admin-home" element={
+              <RoleProtectedRoute allowedRoles={['admin']}>
+                <AdminHome />
+              </RoleProtectedRoute>
+            } />
+
+            {/* Legacy Dashboard Route (can redirect to based on role or keep as fallback) */}
+            <Route path="/dashboard" element={
+              <RoleProtectedRoute allowedRoles={['member', 'staff', 'admin']}>
+                <Dashboard />
               </RoleProtectedRoute>
             } />
 
