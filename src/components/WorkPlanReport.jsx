@@ -189,7 +189,7 @@ const WorkPlanReport = () => {
             </div>
 
             {/* Add Task Input */}
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                 <input
                     type="text"
                     value={newTask}
@@ -222,6 +222,42 @@ const WorkPlanReport = () => {
                     }}
                 >
                     <Plus size={24} />
+                </button>
+            </div>
+
+            {/* Scale/Report Buttons */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button
+                    onClick={() => alert('작업 계획이 보고되었습니다. (준비 중)')}
+                    style={{
+                        padding: '12px',
+                        borderRadius: '8px',
+                        background: '#edf2f7',
+                        color: '#2d3748',
+                        border: 'none',
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                    }}
+                >
+                    계획 보고
+                </button>
+                <button
+                    onClick={() => alert('작업 결과가 보고되었습니다. (준비 중)')}
+                    style={{
+                        padding: '12px',
+                        borderRadius: '8px',
+                        background: '#edf2f7',
+                        color: '#2d3748',
+                        border: 'none',
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                    }}
+                >
+                    결과 보고
                 </button>
             </div>
         </div>
