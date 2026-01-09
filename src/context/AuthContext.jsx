@@ -18,10 +18,10 @@ export const AuthProvider = ({ children }) => {
 
                 if (session?.user) {
                     console.log('Auth: Session found (Basic)');
-                    setUser(session.user); // Set basic user immediately to unblock UI
+                    setUser(session.user); // Set basic user immediately
 
-                    // 2. Fetch Profile in Background
-                    fetchProfile(session.user);
+                    // 2. Fetch Profile in Background (Awaited now)
+                    await fetchProfile(session.user);
                 } else {
                     console.log('Auth: No active session');
                     setUser(null);
@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
                 console.error('Auth Check Failed:', err);
                 setUser(null);
             } finally {
-                setLoading(false); // Unblock UI immediately
+                setLoading(false); // Unblock UI only after profile is loaded
             }
         };
 
