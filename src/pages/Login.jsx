@@ -4,6 +4,7 @@ import { KeyRound, Lock } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 const Login = () => {
     const [memberId, setMemberId] = useState('');
@@ -27,15 +28,32 @@ const Login = () => {
         setLoading(true);
         try {
             const data = await login(memberId, password);
-            const userRole = data?.user?.user_metadata?.role || 'member'; // Fallback to member
+            if (data.user) {
+                // Fetch profile to get role
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', data.user.id)
+                    .single();
 
-            // Navigate based on role
-            if (userRole === 'admin') {
-                navigate('/admindashboard');
-            } else if (userRole === 'staff') {
-                navigate('/staffdashboard');
-            } else {
-                navigate('/memberdashboard'); // Default for member
+                if (profileError) {
+                    console.error('Error fetching role:', profileError);
+                }
+
+                // Determine role: Priority 1: Profile, Priority 2: User Metadata, Default: member
+                let userRole = profile?.role || data.user?.user_metadata?.role || 'member';
+                userRole = userRole.toLowerCase().trim();
+
+                console.log('Login: Detected Role:', userRole);
+
+                // Navigate based on role
+                if (userRole === 'admin') {
+                    navigate('/admindashboard');
+                } else if (userRole === 'staff') {
+                    navigate('/staffdashboard');
+                } else {
+                    navigate('/memberdashboard');
+                }
             }
         } catch (err) {
             console.error('Login Error:', err);
