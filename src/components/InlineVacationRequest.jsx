@@ -1,4 +1,3 @@
-```javascript
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
@@ -66,7 +65,7 @@ const InlineVacationRequest = () => {
 
         let typeName = type === 'full' ? '월차' : type === 'half_am' ? '오전반차' : '오후반차';
 
-        if (!confirm(`${ date }에 ${ typeName }를 신청하시겠습니까 ? `)) return;
+        if (!confirm(`${date}에 ${typeName}를 신청하시겠습니까?`)) return;
 
         setLoading(true);
         try {
@@ -97,15 +96,15 @@ const InlineVacationRequest = () => {
 
     // Filter requests by selected month
     const todayStr = new Date().toISOString().split('T')[0];
-    const yearMonthStr = `${ selectedMonth.getFullYear() } -${ String(selectedMonth.getMonth() + 1).padStart(2, '0') } `;
-    
+    const yearMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
+
     // List for the selected month
     const filteredRequests = myRequests.filter(req => req.date.startsWith(yearMonthStr));
     // Sort by date (oldest to newest for list view? or newest? Usually calendar order is nice, let's do Date Ascending)
     const sortedRequests = [...filteredRequests].sort((a, b) => a.date.localeCompare(b.date));
 
     const handleCancel = async (id, date) => {
-        if (!confirm(`${ date } 휴가 신청을 취소하시겠습니까 ? `)) return;
+        if (!confirm(`${date} 휴가 신청을 취소하시겠습니까?`)) return;
 
         try {
             const { error } = await supabase
@@ -142,12 +141,12 @@ const InlineVacationRequest = () => {
         const days = [];
         // Empty cells
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty - ${ i } `} style={{ height: '35px' }}></div>);
+            days.push(<div key={`empty - ${i} `} style={{ height: '35px' }}></div>);
         }
 
         // Days
         for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${ year } -${ String(month + 1).padStart(2, '0') } -${ String(d).padStart(2, '0') } `;
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
             const req = myRequests.find(r => r.date === dateStr);
             let bgColor = 'transparent';
             let textColor = '#2d3748';
@@ -327,7 +326,7 @@ const InlineVacationRequest = () => {
                         {sortedRequests.map(req => {
                             const isPast = req.date < todayStr;
                             let bgColor, borderColor, textColor;
-                            
+
                             if (isPast) {
                                 bgColor = '#f7fafc'; // Gray
                                 borderColor = '#cbd5e0';
@@ -335,7 +334,7 @@ const InlineVacationRequest = () => {
                             } else {
                                 // Future
                                 if (req.type === 'full') {
-                                    bgColor = '#fff5f5'; 
+                                    bgColor = '#fff5f5';
                                     borderColor = '#e53e3e';
                                     textColor = '#c53030';
                                 } else {
@@ -351,20 +350,20 @@ const InlineVacationRequest = () => {
                                     padding: '12px',
                                     background: bgColor,
                                     borderRadius: '8px',
-                                    borderLeft: `4px solid ${ borderColor } `
+                                    borderLeft: `4px solid ${borderColor} `
                                 }}>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                         <span style={{ fontWeight: 'bold', color: isPast ? '#a0aec0' : '#2d3748' }}>{req.date}</span>
-                                        <span style={{ 
-                                            fontSize: '0.9rem', 
-                                            fontWeight: 'bold', 
-                                            color: textColor 
+                                        <span style={{
+                                            fontSize: '0.9rem',
+                                            fontWeight: 'bold',
+                                            color: textColor
                                         }}>
                                             {req.type === 'full' ? '월차' : '반차'}
                                         </span>
                                     </div>
                                     {!isPast && (
-                                        <button 
+                                        <button
                                             onClick={() => handleCancel(req.id, req.date)}
                                             style={{
                                                 background: '#fee2e2',
@@ -395,13 +394,13 @@ const InlineVacationRequest = () => {
                         {selectedMonth.getMonth() + 1}월 달력
                     </h4>
                 </div>
-                
+
                 {/* Calendar Grid */}
-                <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(7, 1fr)', 
-                    textAlign: 'center', 
-                    fontSize: '0.8rem', 
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(7, 1fr)',
+                    textAlign: 'center',
+                    fontSize: '0.8rem',
                     color: '#718096',
                     marginBottom: '5px'
                 }}>
