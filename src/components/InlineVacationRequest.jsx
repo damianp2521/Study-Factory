@@ -313,6 +313,12 @@ const InlineVacationRequest = () => {
 
             {/* Request List (Filtered by Month) */}
             <div style={{ marginBottom: '25px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                    <CalendarIcon size={18} color="#2d3748" />
+                    <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
+                        {selectedMonth.getMonth() + 1}월 휴무 신청 내역
+                    </h4>
+                </div>
                 {sortedRequests.length === 0 ? (
                     <div style={{ color: '#a0aec0', fontSize: '0.9rem', paddingLeft: '24px' }}>해당 월의 내역이 없습니다.</div>
                 ) : (
