@@ -82,12 +82,30 @@ const InlineVacationRequest = () => {
         }
     };
 
-    // Filter Upcoming (Future)
+    // Filter requests
     const todayStr = new Date().toISOString().split('T')[0];
-    const upcomingRequests = myRequests.filter(req => req.date >= todayStr);
+    // Sort by date descending (newest first)
+    const sortedRequests = [...myRequests].sort((a, b) => b.date.localeCompare(a.date));
+
+    const handleCancel = async (id, date) => {
+        if (!confirm(`${date} 휴가 신청을 취소하시겠습니까?`)) return;
+
+        try {
+            const { error } = await supabase
+                .from('vacation_requests')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            alert('취소되었습니다.');
+            fetchRequests();
+        } catch (err) {
+            console.error('Error cancelling request:', err);
+            alert('취소에 실패했습니다.');
+        }
+    };
 
     // Filter Current Month for Calendar
-    // Simple verification: check month/year match
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -105,9 +123,9 @@ const InlineVacationRequest = () => {
         const firstDay = getFirstDayOfMonth(currentMonth);
 
         const days = [];
-        // Empty cells for padding
+        // Empty cells
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty-${i}`} style={{ height: '30px' }}></div>);
+            days.push(<div key={`empty-${i}`} style={{ height: '35px' }}></div>);
         }
 
         // Days
@@ -116,29 +134,17 @@ const InlineVacationRequest = () => {
             const req = myRequests.find(r => r.date === dateStr);
             let bgColor = 'transparent';
             let textColor = '#2d3748';
+            let borderStyle = 'none';
 
             if (req) {
-                // Determine color based on type
-                // Assuming 'full' is stored as type='full' or type='half' 
-                // Wait, logic above sends 'full' or 'half' to DB.
-                // We need to differentiate half vs full if possible, or just use type.
-                // If the user uses type='full', it is RED.
-                // If type='half', it is BLUE.
-                // Logic in DB: type can be 'full', 'half', 'special'.
-
-                // Correction from submit logic: 
-                // full -> type: 'full' (actually logic sends 'full' to dbType? No, logic above: 
-                // if type='half_am' -> dbType='half'. 
-                // Wait, defaulting to 'full' for dbType if not half?
-                // Line 19: let dbType = 'full';
-                // So yes: 'full' (Red), 'half' (Blue).
-
-                if (req.type === 'full') {
-                    bgColor = '#feb2b2'; // Red-200
+                if (req.type === 'full') { // 월차
+                    bgColor = '#fff5f5'; // Red-50
                     textColor = '#c53030'; // Red-700
-                } else if (req.type === 'half') {
-                    bgColor = '#bee3f8'; // Blue-200
-                    textColor = '#2b6cb0'; // Blue-700
+                    borderStyle = '1px solid #feb2b2';
+                } else if (req.type === 'half') { // 반차
+                    bgColor = '#ebf8ff'; // Blue-50
+                    textColor = '#2c5282'; // Blue-800
+                    borderStyle = '1px solid #bee3f8';
                 }
             }
 
@@ -150,10 +156,12 @@ const InlineVacationRequest = () => {
                     justifyContent: 'center',
                     background: bgColor,
                     color: textColor,
-                    borderRadius: '50%',
+                    border: borderStyle,
+                    borderRadius: '6px', // Rounded Square
                     fontWeight: req ? 'bold' : 'normal',
                     fontSize: '0.9rem',
-                    margin: '2px'
+                    margin: '2px',
+                    cursor: 'default'
                 }}>
                     {d}
                 </div>
@@ -163,7 +171,7 @@ const InlineVacationRequest = () => {
         return days;
     };
 
-    // Max date calculation (2 weeks from today)
+    // Date constraints
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + 14);
     const maxDateStr = maxDate.toISOString().split('T')[0];
@@ -232,6 +240,10 @@ const InlineVacationRequest = () => {
                 <CustomDatePicker
                     value={date}
                     onChange={(val) => {
+                        if (val < todayStr) {
+                            alert('지난 날짜는 신청할 수 없습니다.');
+                            return;
+                        }
                         if (val > maxDateStr) {
                             alert('최대 2주 뒤까지만 신청 가능합니다.');
                             return;
@@ -239,9 +251,7 @@ const InlineVacationRequest = () => {
                         setDate(val);
                     }}
                     label="날짜 선택"
-                    // Note: CustomDatePicker might not support maxDate prop directly depending on implementation, 
-                    // so wrapping onChange is safer. But purely visual max attribute might be needed if it renders native input.
-                    // Assuming CustomDatePicker renders HTML input type="date"
+                    min={todayStr}
                     max={maxDateStr}
                 />
             </div>
@@ -271,33 +281,74 @@ const InlineVacationRequest = () => {
                 {loading ? '신청 중...' : '신청하기'}
             </button>
 
-            {/* Upcoming List */}
+            {/* Request List (Mixed) */}
             <div style={{ marginBottom: '25px' }}>
                 <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '10px' }}>
                     📅 휴무 신청 현황
                 </h4>
-                {upcomingRequests.length === 0 ? (
-                    <div style={{ color: '#a0aec0', fontSize: '0.9rem' }}>예정된 휴무가 없습니다.</div>
+                {sortedRequests.length === 0 ? (
+                    <div style={{ color: '#a0aec0', fontSize: '0.9rem' }}>신청 내역이 없습니다.</div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {upcomingRequests.map(req => (
-                            <div key={req.id} style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '12px',
-                                background: req.type === 'full' ? '#fff5f5' : '#ebf8ff',
-                                borderRadius: '8px',
-                                borderLeft: `4px solid ${req.type === 'full' ? '#e53e3e' : '#3182ce'}`
-                            }}>
-                                <span style={{ fontWeight: 'bold', color: '#2d3748' }}>{req.date}</span>
-                                <span style={{
-                                    fontSize: '0.9rem',
-                                    fontWeight: 'bold',
-                                    color: req.type === 'full' ? '#c53030' : '#2c5282'
+                        {sortedRequests.map(req => {
+                            const isPast = req.date < todayStr;
+                            let bgColor, borderColor, textColor;
+
+                            if (isPast) {
+                                bgColor = '#f7fafc'; // Gray
+                                borderColor = '#cbd5e0';
+                                textColor = '#a0aec0';
+                            } else {
+                                // Future
+                                if (req.type === 'full') {
+                                    bgColor = '#fff5f5';
+                                    borderColor = '#e53e3e';
+                                    textColor = '#c53030';
+                                } else {
+                                    bgColor = '#ebf8ff';
+                                    borderColor = '#3182ce';
+                                    textColor = '#2c5282';
+                                }
+                            }
+
+                            return (
+                                <div key={req.id} style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '12px',
+                                    background: bgColor,
+                                    borderRadius: '8px',
+                                    borderLeft: `4px solid ${borderColor}`
                                 }}>
-                                    {req.type === 'full' ? '월차' : '반차'}
-                                </span>
-                            </div>
-                        ))}
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <span style={{ fontWeight: 'bold', color: isPast ? '#a0aec0' : '#2d3748' }}>{req.date}</span>
+                                        <span style={{
+                                            fontSize: '0.9rem',
+                                            fontWeight: 'bold',
+                                            color: textColor
+                                        }}>
+                                            {req.type === 'full' ? '월차' : '반차'}
+                                        </span>
+                                    </div>
+                                    {!isPast && (
+                                        <button
+                                            onClick={() => handleCancel(req.id, req.date)}
+                                            style={{
+                                                background: '#fee2e2',
+                                                color: '#e53e3e',
+                                                border: 'none',
+                                                padding: '5px 10px',
+                                                borderRadius: '6px',
+                                                fontSize: '0.8rem',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            취소
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

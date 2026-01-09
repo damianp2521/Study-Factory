@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Calendar } from 'lucide-react';
 
-const CustomDatePicker = ({ value, onChange, label = "날짜 선택" }) => {
+const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }) => {
     const inputRef = useRef(null);
 
     const handleContainerClick = () => {
@@ -56,6 +56,8 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택" }) => {
                 type="date"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                min={props.min}
+                max={props.max}
                 style={{
                     position: 'absolute',
                     top: '30px',
