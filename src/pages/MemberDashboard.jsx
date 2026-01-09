@@ -77,9 +77,6 @@ const MemberDashboard = () => {
             <div style={{
                 padding: 'var(--spacing-md)',
                 paddingTop: 'calc(env(safe-area-inset-top) + 20px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
                 position: 'relative',
                 marginBottom: '10px'
             }}>
@@ -89,41 +86,54 @@ const MemberDashboard = () => {
                     style={{
                         position: 'absolute',
                         left: '20px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        paddingTop: 'calc(env(safe-area-inset-top) + 20px)', // Adjust for container padding
                         background: 'none',
                         border: 'none',
                         color: 'var(--color-text-secondary)',
                         cursor: 'pointer',
-                        zIndex: 10
+                        zIndex: 20
                     }}
                 >
                     <LogOut size={24} />
                 </button>
 
-                {/* Center Navigation */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', userSelect: 'none' }}>
-                    {/* Prev Title (Faded) */}
+                {/* Grid for perfect centering */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto 1fr',
+                    alignItems: 'center',
+                    width: '100%',
+                    userSelect: 'none'
+                }}>
+                    {/* Prev Title (Faded) - Align Right */}
                     <div
                         onClick={handlePrev}
                         style={{
+                            textAlign: 'right',
                             opacity: prevTitle ? 0.3 : 0,
                             fontSize: '0.9rem',
                             fontWeight: 'bold',
                             transform: 'scale(0.9)',
                             cursor: 'pointer',
+                            paddingRight: '10px',
                             transition: 'all 0.3s'
                         }}
                     >
                         {prevTitle || '　'}
                     </div>
 
-                    {/* Active Title */}
+                    {/* Active Title (Centered) */}
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         gap: '10px',
                         fontSize: '1.3rem',
                         fontWeight: 'bold',
-                        color: 'var(--color-primary)'
+                        color: 'var(--color-primary)',
+                        whiteSpace: 'nowrap'
                     }}>
                         <button
                             onClick={handlePrev}
@@ -142,15 +152,17 @@ const MemberDashboard = () => {
                         </button>
                     </div>
 
-                    {/* Next Title (Faded) */}
+                    {/* Next Title (Faded) - Align Left */}
                     <div
                         onClick={handleNext}
                         style={{
+                            textAlign: 'left',
                             opacity: nextTitle ? 0.3 : 0,
                             fontSize: '0.9rem',
                             fontWeight: 'bold',
                             transform: 'scale(0.9)',
                             cursor: 'pointer',
+                            paddingLeft: '10px',
                             transition: 'all 0.3s'
                         }}
                     >
