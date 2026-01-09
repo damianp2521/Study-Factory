@@ -388,12 +388,7 @@ const InlineVacationRequest = () => {
 
             {/* Monthly Calendar */}
             <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                    <CalendarIcon size={18} color="#2d3748" />
-                    <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
-                        {selectedMonth.getMonth() + 1}월 달력
-                    </h4>
-                </div>
+
 
                 {/* Calendar Grid */}
                 <div style={{
