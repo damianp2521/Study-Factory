@@ -228,7 +228,29 @@ const WorkPlanReport = () => {
             {/* Scale/Report Buttons */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <button
-                    onClick={() => alert('작업 계획이 보고되었습니다. (준비 중)')}
+                    onClick={async () => {
+                        if (!confirm('현재 작성된 내용을 [작업 계획]으로 보고하시겠습니까?\n보고 후 내용을 수정해도 [계획 보고] 내용은 변하지 않습니다.')) return;
+
+                        setLoading(true);
+                        try {
+                            const { error } = await supabase
+                                .from('weekly_reports')
+                                .upsert({
+                                    user_id: user.id,
+                                    week_start_date: weekStartStr,
+                                    plan_snapshot: tasks, // Snapshot current tasks
+                                    plan_reported_at: new Date().toISOString()
+                                }, { onConflict: 'user_id, week_start_date' });
+
+                            if (error) throw error;
+                            alert('작업 계획 보고가 완료되었습니다!');
+                        } catch (err) {
+                            console.error('Plan report failed:', err);
+                            alert('보고에 실패했습니다.');
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
                     style={{
                         padding: '12px',
                         borderRadius: '8px',
@@ -244,7 +266,29 @@ const WorkPlanReport = () => {
                     계획 보고
                 </button>
                 <button
-                    onClick={() => alert('작업 결과가 보고되었습니다. (준비 중)')}
+                    onClick={async () => {
+                        if (!confirm('현재 작성된 내용을 [작업 결과]로 보고하시겠습니까?\n완료 여부와 최종 수정 내용이 저장됩니다.')) return;
+
+                        setLoading(true);
+                        try {
+                            const { error } = await supabase
+                                .from('weekly_reports')
+                                .upsert({
+                                    user_id: user.id,
+                                    week_start_date: weekStartStr,
+                                    result_snapshot: tasks, // Snapshot current tasks
+                                    result_reported_at: new Date().toISOString()
+                                }, { onConflict: 'user_id, week_start_date' });
+
+                            if (error) throw error;
+                            alert('작업 결과 보고가 완료되었습니다!');
+                        } catch (err) {
+                            console.error('Result report failed:', err);
+                            alert('보고에 실패했습니다.');
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
                     style={{
                         padding: '12px',
                         borderRadius: '8px',
