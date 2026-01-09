@@ -99,16 +99,18 @@ const Login = () => {
                 lineHeight: '1.6'
             }}>
                 <h1 style={{
-                    fontSize: '1.25rem',
-                    fontWeight: '600',
+                    fontSize: '1.4rem',
+                    fontWeight: '500',
                     color: '#2d3748', // Dark gray
-                    marginBottom: '10px',
+                    marginBottom: '15px',
                     wordBreak: 'keep-all',
-                    letterSpacing: '-0.5px'
+                    letterSpacing: '-0.5px',
+                    fontFamily: '"Nanum Myeongjo", "Batang", serif', // Myeongjo/Serif for sophistication
+                    lineHeight: '1.8'
                 }}>
-                    "매일 같은 노력을<br />정확하게 반복하는 자가<br />운명을 뚫는<br />막대한 힘을 가진다."
+                    "매일 같은 노력을<br />정확하게 반복하는 자가<br />운명을 뚫는<br />막대한 힘을 가진다"
                 </h1>
-                <div style={{ width: '40px', height: '2px', background: '#cbd5e0', margin: '20px auto 0' }}></div>
+                <div style={{ width: '30px', height: '1px', background: '#a0aec0', margin: '25px auto 0' }}></div>
             </div>
 
             {/* Login Form */}

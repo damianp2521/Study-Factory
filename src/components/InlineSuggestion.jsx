@@ -32,14 +32,14 @@ const InlineSuggestion = () => {
                     <button
                         key={index}
                         style={{
-                            aspectRatio: '1.2/1', // Make them slightly rectangular/square-ish
+                            height: '110px', // Fixed height for consistent, smaller size
                             width: '100%',
                             padding: '15px',
                             borderRadius: '16px',
                             border: '1px solid #e2e8f0',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '1.1rem',
+                            fontSize: '1rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
