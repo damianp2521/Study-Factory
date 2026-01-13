@@ -421,7 +421,11 @@ const ManagerDashboard = () => {
                             transform: 'scale(0.9)',
                             cursor: 'pointer',
                             paddingRight: '10px',
-                            transition: 'all 0.3s'
+                            paddingLeft: '50px', // Avoid Logout button overlap
+                            transition: 'all 0.3s',
+                            whiteSpace: 'pre-wrap', // Allow wrapping
+                            wordBreak: 'keep-all', // Keep words together if possible
+                            lineHeight: '1.2'
                         }}
                     >
                         {prevTitle || '　'}
@@ -466,7 +470,11 @@ const ManagerDashboard = () => {
                             transform: 'scale(0.9)',
                             cursor: 'pointer',
                             paddingLeft: '10px',
-                            transition: 'all 0.3s'
+                            paddingRight: '10px',
+                            transition: 'all 0.3s',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'keep-all',
+                            lineHeight: '1.2'
                         }}
                     >
                         {nextTitle || '　'}
