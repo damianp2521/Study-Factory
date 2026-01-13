@@ -269,19 +269,95 @@ const EmployeeVacationStatus = () => {
     );
 };
 
+// Stub for Employee Status
+const EmployeeStatus = ({ onBack }) => (
+    <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+            <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: '10px' }}>
+                <ChevronLeft size={24} color="#2d3748" />
+            </button>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>사원 현황</h2>
+        </div>
+        <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '50px' }}>
+            준비 중입니다.
+        </div>
+    </div>
+);
+
 import AdminMemberRegister from './AdminMemberRegister';
 
 // Admin Quick Menu (3x3 Grid)
 const AdminQuickMenu = () => {
-    const [currentView, setCurrentView] = useState('grid');
+    const [currentView, setCurrentView] = useState('grid'); // 'grid', 'management_menu', 'register', 'status'
 
     if (currentView === 'register') {
-        return <AdminMemberRegister onBack={() => setCurrentView('grid')} />;
+        return <AdminMemberRegister onBack={() => setCurrentView('management_menu')} />;
+    }
+    if (currentView === 'status') {
+        return <EmployeeStatus onBack={() => setCurrentView('management_menu')} />;
+    }
+
+    // Sub-menu for Employee Management
+    if (currentView === 'management_menu') {
+        return (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                    <button onClick={() => setCurrentView('grid')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: '10px' }}>
+                        <ChevronLeft size={24} color="#2d3748" />
+                    </button>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>사원 관리</h2>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1, justifyContent: 'center' }}>
+                    <button
+                        onClick={() => setCurrentView('register')}
+                        style={{
+                            padding: '30px',
+                            borderRadius: '16px',
+                            border: 'none',
+                            background: '#f7fafc',
+                            color: '#2d3748',
+                            fontSize: '1.2rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '10px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                    >
+                        <span>📝</span>
+                        <span>사원 사전 등록</span>
+                    </button>
+                    <button
+                        onClick={() => setCurrentView('status')}
+                        style={{
+                            padding: '30px',
+                            borderRadius: '16px',
+                            border: 'none',
+                            background: '#f7fafc',
+                            color: '#2d3748',
+                            fontSize: '1.2rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '10px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                    >
+                        <span>👥</span>
+                        <span>사원 현황</span>
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     const handleMenuClick = (num) => {
         if (num === 1) {
-            setCurrentView('register');
+            setCurrentView('management_menu');
         } else {
             alert('준비 중인 기능입니다.');
         }
@@ -310,8 +386,11 @@ const AdminQuickMenu = () => {
                         gap: '5px'
                     }}
                 >
-                    <span style={{ fontSize: '1.5rem' }}>{num}</span>
-                    {num === 1 && <span style={{ fontSize: '0.6rem', color: '#718096' }}>회원등록</span>}
+                    {num === 1 ? (
+                        <span style={{ fontSize: '1rem', color: '#2d3748', fontWeight: 'bold' }}>사원 관리</span>
+                    ) : (
+                        <span style={{ fontSize: '1.5rem' }}>{num}</span>
+                    )}
                 </button>
             ))}
         </div>
