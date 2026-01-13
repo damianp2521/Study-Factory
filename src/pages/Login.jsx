@@ -266,16 +266,25 @@ const ConnectionStatus = () => {
     const checkConnection = async () => {
         const start = Date.now();
         try {
-            // Simple ping to Auth server
-            const { error } = await supabase.auth.getSession();
+            // Simple ping to Auth server with timeout
+            const { error } = await Promise.race([
+                supabase.auth.getSession(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 5000))
+            ]);
+
             const latency = Date.now() - start;
             if (error) throw error;
             setStatus(`정상 (${latency}ms)`);
             setColor('green');
         } catch (err) {
-            setStatus('연결 실패');
-            setColor('red');
-            console.error('Connection check failed:', err);
+            if (err.message === 'TIMEOUT') {
+                setStatus('응답 없음 (Supabase 프로젝트가 일시정지(Paused) 상태일 가능성이 높습니다)');
+                setColor('orange');
+            } else {
+                setStatus('연결 실패');
+                setColor('red');
+                console.error('Connection check failed:', err);
+            }
         }
     };
 
