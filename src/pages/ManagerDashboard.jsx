@@ -269,13 +269,48 @@ const EmployeeVacationStatus = () => {
     );
 };
 
+// Admin Quick Menu (3x3 Grid)
+const AdminQuickMenu = () => {
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', height: '100%', alignContent: 'center' }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                <button
+                    key={num}
+                    style={{
+                        aspectRatio: '1',
+                        borderRadius: '16px',
+                        border: 'none',
+                        background: '#f7fafc',
+                        color: '#4a5568',
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                >
+                    {num}
+                </button>
+            ))}
+        </div>
+    );
+};
+
 // Manager Dashboard with Carousel
 const ManagerDashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
 
+    // Determine initial slide based on role
+    // Admin: Start at index 1 (Employee Vacation Status), index 0 is Admin Page
+    // Staff: Start at index 0 (Employee Vacation Status)
+    const isAdmin = user?.role === 'admin';
+    const initialIndex = isAdmin ? 1 : 0;
+
     // Carousel State
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(initialIndex);
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
 
@@ -285,8 +320,11 @@ const ManagerDashboard = () => {
         { title: '회원 관리', component: <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#a0aec0' }}>회원 관리 기능 준비중</div> }, // Placeholder
     ];
 
-    // Admin Only Slide
-    if (user?.role === 'admin') {
+    // Admin Only Slides
+    if (isAdmin) {
+        // Prepend Admin Page (0th page)
+        slides.unshift({ title: '관리자 페이지', component: <AdminQuickMenu /> });
+        // Append Monthly Stats as before
         slides.push({ title: '월별 휴가 현황', component: <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#a0aec0' }}>월별 통계 준비중</div> });
     }
 
