@@ -24,7 +24,11 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
 
     if (!allowedRoles.includes(userRole)) {
         console.warn(`Access Denied: User role '${userRole}' is not in allowed list[${allowedRoles.join(', ')}]`);
-        return <Navigate to="/unauthorized" replace />;
+        return <Navigate to="/unauthorized" state={{
+            from: location.pathname,
+            userRole: userRole,
+            requiredRoles: allowedRoles
+        }} replace />;
     }
 
     return children;
