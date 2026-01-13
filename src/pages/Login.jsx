@@ -171,7 +171,7 @@ const Login = () => {
             <div style={{ marginBottom: '20px' }}>
                 <input
                     type="text"
-                    placeholder="이름 (예: 박지민)"
+                    placeholder="이름 (예: 김공장)"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     style={inputStyle}
