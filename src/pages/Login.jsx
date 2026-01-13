@@ -144,10 +144,9 @@ const Login = () => {
 
             // Update authorized_users to is_registered = true
             // Using the Name to match since we might not have ID link easily yet
+            // Use RPC to bypass RLS and mark as registered
             const { error: updateError } = await supabase
-                .from('authorized_users')
-                .update({ is_registered: true })
-                .eq('name', name.trim());
+                .rpc('mark_user_registered', { user_name: name.trim() });
 
             if (updateError) {
                 console.error("Failed to mark as registered", updateError);
