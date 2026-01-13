@@ -241,8 +241,45 @@ const Login = () => {
                     </button>
                 </div>
             </form>
+
+            <div style={{ marginTop: '30px', padding: '10px', background: '#edf2f7', borderRadius: '8px', fontSize: '0.75rem', color: '#718096', width: '100%', maxWidth: '320px', textAlign: 'left' }}>
+                <strong>시스템 진단:</strong>
+                <div style={{ marginTop: '5px' }}>
+                    URL 설정: {import.meta.env.VITE_SUPABASE_URL ? <span style={{ color: 'green' }}>확인됨</span> : <span style={{ color: 'red' }}>누락됨 (환경변수 확인 필요)</span>}
+                </div>
+                <div style={{ marginTop: '5px' }}>
+                    서버 연결: <ConnectionStatus />
+                </div>
+            </div>
         </div>
     );
 };
+
+const ConnectionStatus = () => {
+    const [status, setStatus] = React.useState('확인 중...');
+    const [color, setColor] = React.useState('#a0aec0');
+
+    React.useEffect(() => {
+        checkConnection();
+    }, []);
+
+    const checkConnection = async () => {
+        const start = Date.now();
+        try {
+            // Simple ping to Auth server
+            const { error } = await supabase.auth.getSession();
+            const latency = Date.now() - start;
+            if (error) throw error;
+            setStatus(`정상 (${latency}ms)`);
+            setColor('green');
+        } catch (err) {
+            setStatus('연결 실패');
+            setColor('red');
+            console.error('Connection check failed:', err);
+        }
+    };
+
+    return <span style={{ color, fontWeight: 'bold' }}>{status}</span>;
+}
 
 export default Login;
