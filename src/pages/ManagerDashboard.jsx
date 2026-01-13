@@ -1,10 +1,259 @@
-import React, { useNavigate } from 'react-router-dom';
-import { LogOut, Calendar, Inbox, Users, BarChart } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
+import CustomDatePicker from '../components/CustomDatePicker'; // Assuming this exists as used in other files
 
+// Inline Component for Employee Vacation Status
+const EmployeeVacationStatus = () => {
+    const [selectedBranch, setSelectedBranch] = useState('전체');
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [filters, setFilters] = useState({
+        full: true,    // 월차 - Red
+        half_am: true, // 오전반차 - Red
+        half_pm: true  // 오후반차 - Blue
+    });
+    const [vacations, setVacations] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const branches = ['전체', '구미', '대구']; // Example branches
+
+    useEffect(() => {
+        fetchVacations();
+    }, [selectedBranch, selectedDate, filters]);
+
+    const fetchVacations = async () => {
+        setLoading(true);
+        try {
+            // 1. Fetch requests for the date
+            let query = supabase
+                .from('vacation_requests')
+                .select(`
+                    *,
+                    profiles:user_id (name, branch)
+                `)
+                .eq('date', selectedDate)
+                .order('created_at', { ascending: false }); // Sort by newest first
+
+            const { data, error } = await query;
+
+            if (error) throw error;
+
+            // 2. Client-side Filter by Branch and Type
+            const filtered = data.filter(req => {
+                // Branch Filter
+                if (selectedBranch !== '전체' && req.profiles?.branch !== selectedBranch) return false;
+
+                // Type Filter
+                // Database types: 'full', 'half'. We need to distinguish half_am/pm?
+                // Wait, DB usually stores 'half' and periods. 
+                // Let's assume 'periods' column tells us AM vs PM.
+                // AM: [1,2,3,4], PM: [5,6,7] usually. 
+                // Or user simplified it in previous conversation to just 'half'.
+                // I need to check how to distinguish AM/PM from DB data.
+                // Re-reading 'InlineVacationRequest.jsx':
+                // if (type === 'half_am') periods = [1, 2, 3, 4];
+                // if (type === 'half_pm') periods = [5, 6, 7];
+                // So I check periods to distinguish.
+
+                let typeKey = 'full';
+                if (req.type === 'half') {
+                    // Check periods. 
+                    // If periods includes 1, it's AM (roughly). If it starts with 5, it's PM.
+                    const p = req.periods || [];
+                    if (p.includes(1)) typeKey = 'half_am';
+                    else typeKey = 'half_pm';
+                }
+
+                return filters[typeKey];
+            });
+
+            setVacations(filtered);
+        } catch (err) {
+            console.error('Error fetching vacations:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const toggleFilter = (key) => {
+        setFilters(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    return (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Top Controls: Branch & Date */}
+            <div style={{
+                display: 'flex',
+                gap: '10px',
+                marginBottom: '15px',
+                alignItems: 'center'
+            }}>
+                <select
+                    value={selectedBranch}
+                    onChange={(e) => setSelectedBranch(e.target.value)}
+                    style={{
+                        padding: '10px',
+                        borderRadius: '12px',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        color: '#2d3748',
+                        background: 'white',
+                        minWidth: '80px'
+                    }}
+                >
+                    {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+
+                <div style={{ flex: 1 }}>
+                    <CustomDatePicker
+                        value={selectedDate}
+                        onChange={setSelectedDate}
+                        label="날짜 선택" // Optional
+                    />
+                </div>
+            </div>
+
+            {/* Filter Toggle Buttons */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+                <button
+                    onClick={() => toggleFilter('full')}
+                    style={{
+                        flex: 1,
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: filters.full ? '2px solid #e53e3e' : '1px solid #e2e8f0',
+                        background: filters.full ? '#fff5f5' : 'white',
+                        color: filters.full ? '#c53030' : '#a0aec0',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    월차
+                </button>
+                <button
+                    onClick={() => toggleFilter('half_am')}
+                    style={{
+                        flex: 1,
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: filters.half_am ? '2px solid #e53e3e' : '1px solid #e2e8f0', // Red for AM as requested
+                        background: filters.half_am ? '#fff5f5' : 'white',
+                        color: filters.half_am ? '#c53030' : '#a0aec0',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    오전반차
+                </button>
+                <button
+                    onClick={() => toggleFilter('half_pm')}
+                    style={{
+                        flex: 1,
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: filters.half_pm ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for PM
+                        background: filters.half_pm ? '#ebf8ff' : 'white',
+                        color: filters.half_pm ? '#2c5282' : '#a0aec0',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    오후반차
+                </button>
+            </div>
+
+            {/* List */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+                {loading ? (
+                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>로딩 중...</div>
+                ) : vacations.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>휴무자가 없습니다.</div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {vacations.map(req => {
+                            // Determine type label and color
+                            let typeLabel = '월차';
+                            let color = '#c53030'; // Red
+                            let bg = '#fff5f5';
+
+                            if (req.type === 'half') {
+                                const isAm = (req.periods || []).includes(1);
+                                if (isAm) {
+                                    typeLabel = '오전반차';
+                                    color = '#c53030'; // Red
+                                    bg = '#fff5f5';
+                                } else {
+                                    typeLabel = '오후반차';
+                                    color = '#2c5282'; // Blue
+                                    bg = '#ebf8ff';
+                                }
+                            }
+
+                            return (
+                                <div key={req.id} style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: '15px',
+                                    borderRadius: '12px',
+                                    background: bg,
+                                    border: '1px solid transparent',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}>
+                                    <div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                            {req.profiles?.name || '알 수 없음'}
+                                        </div>
+                                        <div style={{ fontSize: '0.8rem', color: '#718096' }}>
+                                            {req.profiles?.branch || '지점 미정'}
+                                        </div>
+                                    </div>
+                                    <div style={{
+                                        fontSize: '0.9rem',
+                                        fontWeight: 'bold',
+                                        color: color
+                                    }}>
+                                        {typeLabel}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Manager Dashboard with Carousel
 const ManagerDashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
+
+    // Carousel State
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [touchStart, setTouchStart] = useState(0);
+    const [touchEnd, setTouchEnd] = useState(0);
+
+    const slides = [
+        { title: '사원 휴무 현황', component: <EmployeeVacationStatus /> },
+        { title: '건의함', component: <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#a0aec0' }}>건의함 기능 준비중</div> }, // Placeholder
+        { title: '회원 관리', component: <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#a0aec0' }}>회원 관리 기능 준비중</div> }, // Placeholder
+    ];
+
+    // Admin Only Slide
+    if (user?.role === 'admin') {
+        slides.push({ title: '월별 휴가 현황', component: <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#a0aec0' }}>월별 통계 준비중</div> });
+    }
 
     const handleLogout = async () => {
         try {
@@ -16,98 +265,196 @@ const ManagerDashboard = () => {
         }
     };
 
-    // Determine Role
-    const role = user?.role || 'staff'; // Default to staff if undefined, but AuthContext ensures it loads
+    // Handle Swipe
+    const minSwipeDistance = 50;
+    const onTouchStart = (e) => {
+        setTouchEnd(0);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+    const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
 
-    // Define all possible menu items
-    const allMenuItems = [
-        {
-            title: '금일 휴무 사원',
-            icon: <Calendar size={32} />,
-            path: '/today-leaves',
-            allowedRoles: ['staff', 'admin']
-        },
-        {
-            title: '건의함',
-            icon: <Inbox size={32} />,
-            path: '/suggestion-box',
-            allowedRoles: ['staff', 'admin']
-        },
-        {
-            title: '회원 관리',
-            icon: <Users size={32} />,
-            path: '/manage-members',
-            allowedRoles: ['staff', 'admin']
-        },
-        {
-            title: '월별 휴가 현황',
-            icon: <BarChart size={32} />,
-            path: '/admin/monthly-leaves',
-            allowedRoles: ['admin'] // Only Admin
-        },
-    ];
+        if (isLeftSwipe && activeIndex < slides.length - 1) {
+            setActiveIndex(prev => prev + 1);
+        }
+        if (isRightSwipe && activeIndex > 0) {
+            setActiveIndex(prev => prev - 1);
+        }
+    };
 
-    // Filter items based on role
-    const visibleMenuItems = allMenuItems.filter(item => item.allowedRoles.includes(role));
+    const handlePrev = () => {
+        if (activeIndex > 0) setActiveIndex(prev => prev - 1);
+    };
+
+    const handleNext = () => {
+        if (activeIndex < slides.length - 1) setActiveIndex(prev => prev + 1);
+    };
+
+    const prevTitle = activeIndex > 0 ? slides[activeIndex - 1].title : '';
+    const nextTitle = activeIndex < slides.length - 1 ? slides[activeIndex + 1].title : '';
 
     return (
-        <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)', maxWidth: '600px', margin: '0 auto' }}>
-            {/* Header */}
-            <div
-                className="flex-center"
-                style={{
-                    justifyContent: 'space-between',
-                    marginBottom: 'var(--spacing-lg)'
-                }}
-            >
-                <div>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                        관리자 대시보드
-                    </h2>
-                    <p style={{ fontSize: '1.1rem', color: 'var(--color-text-main)' }}>
-                        <span style={{ fontWeight: 'bold' }}>{user?.name || '관리자'}</span>님 환영합니다.
-                    </p>
-                </div>
+        <div style={{
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+        }}>
+            {/* Top Navigation Bar */}
+            <div style={{
+                padding: 'var(--spacing-md)',
+                paddingTop: 'calc(env(safe-area-inset-top) + 20px)',
+                position: 'relative',
+                marginBottom: '10px'
+            }}>
+                {/* Logout Button Absolute Left */}
                 <button
                     onClick={handleLogout}
                     style={{
+                        position: 'absolute',
+                        left: '20px',
+                        top: 'calc(env(safe-area-inset-top) + 20px)',
+                        paddingTop: 0,
                         background: 'none',
-                        color: 'var(--color-text-secondary)',
-                        padding: 'var(--spacing-xs)',
                         border: 'none',
-                        cursor: 'pointer'
+                        color: 'var(--color-text-secondary)',
+                        cursor: 'pointer',
+                        zIndex: 20
                     }}
                 >
                     <LogOut size={24} />
                 </button>
-            </div>
 
-            {/* Grid Menu */}
-            <div className="responsive-grid">
-                {visibleMenuItems.map((item) => (
-                    <button
-                        key={item.path}
-                        onClick={() => navigate(item.path)}
-                        className="btn-icon"
+                {/* Grid for perfect centering */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto 1fr',
+                    alignItems: 'center',
+                    width: '100%',
+                    userSelect: 'none'
+                }}>
+                    {/* Prev Title */}
+                    <div
+                        onClick={handlePrev}
+                        style={{
+                            textAlign: 'right',
+                            opacity: prevTitle ? 0.3 : 0,
+                            fontSize: '0.9rem',
+                            fontWeight: 'bold',
+                            transform: 'scale(0.9)',
+                            cursor: 'pointer',
+                            paddingRight: '10px',
+                            transition: 'all 0.3s'
+                        }}
                     >
-                        <div className="icon-wrapper">
-                            {item.icon}
-                        </div>
-                        <span style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--color-text-main)' }}>
-                            {item.title}
-                        </span>
-                    </button>
-                ))}
+                        {prevTitle || '　'}
+                    </div>
+
+                    {/* Active Title */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        fontSize: '1.3rem',
+                        fontWeight: 'bold',
+                        color: 'var(--color-primary)',
+                        whiteSpace: 'nowrap'
+                    }}>
+                        <button
+                            onClick={handlePrev}
+                            disabled={activeIndex === 0}
+                            style={{ background: 'none', border: 'none', color: 'inherit', opacity: activeIndex === 0 ? 0.2 : 1, cursor: 'pointer' }}
+                        >
+                            <ChevronLeft size={24} />
+                        </button>
+                        <span>{slides[activeIndex].title}</span>
+                        <button
+                            onClick={handleNext}
+                            disabled={activeIndex === slides.length - 1}
+                            style={{ background: 'none', border: 'none', color: 'inherit', opacity: activeIndex === slides.length - 1 ? 0.2 : 1, cursor: 'pointer' }}
+                        >
+                            <ChevronRight size={24} />
+                        </button>
+                    </div>
+
+                    {/* Next Title */}
+                    <div
+                        onClick={handleNext}
+                        style={{
+                            textAlign: 'left',
+                            opacity: nextTitle ? 0.3 : 0,
+                            fontSize: '0.9rem',
+                            fontWeight: 'bold',
+                            transform: 'scale(0.9)',
+                            cursor: 'pointer',
+                            paddingLeft: '10px',
+                            transition: 'all 0.3s'
+                        }}
+                    >
+                        {nextTitle || '　'}
+                    </div>
+                </div>
             </div>
 
-            {/* Link to Member Dashboard */}
-            <div style={{ textAlign: 'center', marginTop: '30px' }}>
-                <button
-                    onClick={() => navigate('/memberdashboard')}
-                    style={{ background: 'none', border: 'none', color: '#718096', textDecoration: 'underline', cursor: 'pointer' }}
+            {/* Main Content Carousel */}
+            <div
+                style={{
+                    flex: 1,
+                    position: 'relative',
+                    width: '100%',
+                    overflow: 'hidden'
+                }}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        width: `${slides.length * 100}%`,
+                        height: '100%',
+                        transform: `translateX(-${activeIndex * (100 / slides.length)}%)`,
+                        transition: 'transform 0.3s ease-out'
+                    }}
                 >
-                    개인 업무(휴가 신청) 보러가기
-                </button>
+                    {slides.map((slide, index) => (
+                        <div
+                            key={index}
+                            style={{
+                                width: `${100 / slides.length}%`,
+                                height: '100%',
+                                padding: '10px 20px 30px 20px',
+                                boxSizing: 'border-box',
+                                overflowY: 'auto'
+                            }}
+                        >
+                            <div style={{ height: '100%', background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                                {slide.component}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Pagination Indicators */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '20px 0', paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)' }}>
+                {slides.map((_, index) => (
+                    <div
+                        key={index}
+                        style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            backgroundColor: index === activeIndex ? 'var(--color-primary)' : '#cbd5e0',
+                            transition: 'background-color 0.3s'
+                        }}
+                    />
+                ))}
             </div>
         </div>
     );
