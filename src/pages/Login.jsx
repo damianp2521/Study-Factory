@@ -14,95 +14,49 @@ const Login = () => {
 
     const [loading, setLoading] = useState(false);
 
-    const [logs, setLogs] = useState([]);
-
-    const addLog = (msg) => {
-        const time = new Date().toLocaleTimeString().split(' ')[0];
-        setLogs(prev => [`[${time}] ${msg}`, ...prev]);
-    };
+    // Force clear stuck Supabase locks on mount
+    React.useEffect(() => {
+        const cleanupStaleAuth = async () => {
+            try {
+                // Clear all Supabase related items from localStorage
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('sb-')) {
+                        localStorage.removeItem(key);
+                    }
+                }
+                // Ensure text is clean
+                setError('');
+            } catch (e) {
+                console.error('Cleanup failed', e);
+            }
+        };
+        cleanupStaleAuth();
+    }, []);
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-        setLogs([]); // Clear logs
-        addLog('로그인 프로세스 시작');
 
         // Basic validation
         if (memberId.length !== 8 || password.length !== 6) {
             setError('회원번호 8자리와 비밀번호 6자리를 정확히 입력해주세요.');
-            addLog('유효성 검사 실패: 길이 불일치');
             return;
         }
 
         setLoading(true);
         try {
-            addLog(`ID: ${memberId} 로 요청 준비`);
-
-            // Direct Supabase Call Verification (Bypassing Context for Diagnosis)
-            addLog('Supabase SDK 요청 전송...');
             const email = `${memberId}@studyfactory.com`;
 
-            // Hybrid Login Strategy: SDK with Fallback
-            let loginData, loginError;
+            // Standard Login
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-            try {
-                // 1. Try SDK with short timeout (3s)
-                const sdkResult = await Promise.race([
-                    supabase.auth.signInWithPassword({ email, password }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('SDK_TIMEOUT')), 3000))
-                ]);
-                loginData = sdkResult.data;
-                loginError = sdkResult.error;
-            } catch (err) {
-                if (err.message === 'SDK_TIMEOUT') {
-                    addLog('SDK 응답 지연 (LocalStorage Lock 의심). Raw Fetch로 전환합니다.');
-
-                    // 2. Fallback to Raw Fetch
-                    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-                    const url = import.meta.env.VITE_SUPABASE_URL;
-
-                    const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
-                        method: 'POST',
-                        headers: {
-                            'apikey': anonKey,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ email, password })
-                    });
-
-                    const rawData = await response.json();
-
-                    if (!response.ok) {
-                        loginError = { message: rawData.error_description || rawData.msg || 'Login failed' };
-                    } else {
-                        // Success! Manually set session
-                        addLog('Raw Fetch 로그인 성공. 세션 복구 시도...');
-                        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-                            access_token: rawData.access_token,
-                            refresh_token: rawData.refresh_token
-                        });
-
-                        if (sessionError) {
-                            addLog(`세션 복구 실패: ${sessionError.message}`);
-                            throw sessionError;
-                        }
-                        loginData = { user: sessionData.user || rawData.user };
-                    }
-                } else {
-                    throw err;
-                }
-            }
-
-            if (loginError) {
-                addLog(`로그인 실패: ${loginError.message}`);
-                throw loginError;
-            }
-
-            addLog('로그인 성공, 토큰 획득 완료');
-            const data = loginData; // Normalize for existing code
+            if (error) throw error;
 
             if (data.user) {
-                addLog('프로필 정보(Role) 조회 중...');
                 // Fetch profile to get role
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
@@ -111,17 +65,14 @@ const Login = () => {
                     .single();
 
                 if (profileError) {
-                    addLog(`프로필 조회 실패: ${profileError.message}`);
                     console.error('Error fetching role:', profileError);
-                } else {
-                    addLog(`프로필 조회 성공: ${profile.role}`);
                 }
 
                 // Determine role
                 let userRole = profile?.role || data.user?.user_metadata?.role || 'member';
                 userRole = userRole.toLowerCase().trim();
 
-                addLog(`최종 권한: ${userRole} -> 이동`);
+                console.log('Login Success. Role:', userRole);
 
                 // Navigate based on role
                 if (userRole === 'admin' || userRole === 'staff') {
@@ -132,12 +83,11 @@ const Login = () => {
             }
         } catch (err) {
             console.error('Login Error:', err);
-            addLog(`최종 에러: ${err.message}`);
-            // Show specific error message from Supabase if available
-            setError(err.message || '로그인 정보가 일치하지 않습니다.');
+            setError(err.message === 'Invalid login credentials'
+                ? '회원번호 또는 비밀번호가 일치하지 않습니다.'
+                : err.message || '로그인 중 오류가 발생했습니다.');
         } finally {
             setLoading(false);
-            addLog('프로세스 종료');
         }
     };
 
@@ -320,14 +270,6 @@ const Login = () => {
                     </button>
                 </div>
             </form>
-
-            {/* Debug Console */}
-            <div style={{ marginTop: '20px', width: '100%', maxWidth: '320px', background: '#2d3748', borderRadius: '8px', padding: '10px', color: '#00ff00', fontFamily: 'monospace', fontSize: '12px' }}>
-                <div style={{ marginBottom: '5px', borderBottom: '1px solid #4a5568', paddingBottom: '5px' }}>🖥️ 정밀 진단 콘솔</div>
-                <div style={{ height: '100px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
-                    {logs.length === 0 ? '대기 중...' : logs.map((log, i) => <div key={i}>{log}</div>)}
-                </div>
-            </div>
         </div>
     );
 };

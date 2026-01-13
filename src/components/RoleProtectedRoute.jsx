@@ -1,27 +1,13 @@
+```javascript
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const RoleProtectedRoute = ({ children, allowedRoles }) => {
-    const { user, loading, isProfileLoaded } = useAuth();
+    const { user, loading } = useAuth();
+    const location = useLocation();
 
-    // 1. Wait for basic session check
     if (loading) {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem' }}>
-                권한 확인 중...
-            </div>
-        );
-    }
-
-    // 2. Not logged in -> Login
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
-
-    // 3. Logged in but profile (role) not loaded yet -> Wait
-    // This prevents the "Unauthorized" flash
-    if (!isProfileLoaded) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem' }}>
                 사용자 정보 불러오는 중...
@@ -37,7 +23,7 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
     const userRole = user.role || 'member'; // Default to member if undefined
 
     if (!allowedRoles.includes(userRole)) {
-        console.warn(`Access Denied: User role '${userRole}' is not in allowed list [${allowedRoles.join(', ')}]`);
+        console.warn(`Access Denied: User role '${userRole}' is not in allowed list[${ allowedRoles.join(', ') }]`);
         return <Navigate to="/unauthorized" replace />;
     }
 
