@@ -8,6 +8,25 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const fetchProfileData = async (userId) => {
+            try {
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) {
+                    console.warn('Profile fetch error:', error.message);
+                    return null;
+                }
+                return profile;
+            } catch (err) {
+                console.error('Profile fetch failed:', err);
+                return null;
+            }
+        };
+
         // 1. Check active sessions and set basic user immediately
         const initAuth = async () => {
             try {
@@ -37,25 +56,6 @@ export const AuthProvider = ({ children }) => {
                 setUser(null);
             } finally {
                 setLoading(false); // Unblock UI only after profile is loaded and user is set
-            }
-        };
-
-        const fetchProfileData = async (userId) => {
-            try {
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', userId)
-                    .single();
-
-                if (error) {
-                    console.warn('Profile fetch error:', error.message);
-                    return null;
-                }
-                return profile;
-            } catch (err) {
-                console.error('Profile fetch failed:', err);
-                return null;
             }
         };
 

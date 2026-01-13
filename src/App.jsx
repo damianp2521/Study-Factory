@@ -37,7 +37,7 @@ const ProtectedRoute = ({ children }) => {
 const RootRedirect = () => {
   const { user, loading } = useAuth();
 
-  if (loading) return null; // Or a spinner
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>로그인 정보 확인 중...</div>;
 
   if (!user) return <Navigate to="/login" replace />;
 
