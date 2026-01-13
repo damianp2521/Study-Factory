@@ -258,6 +258,7 @@ const Login = () => {
 const ConnectionStatus = () => {
     const [status, setStatus] = React.useState('확인 중...');
     const [color, setColor] = React.useState('#a0aec0');
+    const [details, setDetails] = React.useState('');
 
     React.useEffect(() => {
         checkConnection();
@@ -266,10 +267,16 @@ const ConnectionStatus = () => {
     const checkConnection = async () => {
         const start = Date.now();
         try {
-            // Simple ping to Auth server with timeout
+            // Check URL format
+            const url = import.meta.env.VITE_SUPABASE_URL || '';
+            if (!url.includes('supabase.co')) {
+                setDetails(`URL 경고: 'supabase.co'가 포함되지 않음 (${url.substring(0, 15)}...)`);
+            }
+
+            // Simple ping with shorter timeout for quick feedback
             const { error } = await Promise.race([
                 supabase.auth.getSession(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 5000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000))
             ]);
 
             const latency = Date.now() - start;
@@ -277,18 +284,31 @@ const ConnectionStatus = () => {
             setStatus(`정상 (${latency}ms)`);
             setColor('green');
         } catch (err) {
+            console.error('Connection check failed:', err);
+            setColor('red');
+
             if (err.message === 'TIMEOUT') {
-                setStatus('응답 없음 (Supabase 프로젝트가 일시정지(Paused) 상태일 가능성이 높습니다)');
-                setColor('orange');
+                setStatus('응답 없음 (시간 초과)');
+                setDetails('서버 주소가 잘못되었거나 네트워크가 차단되었습니다.');
+            } else if (err.message === 'Failed to fetch') {
+                setStatus('연결 실패 (Network Error)');
+                setDetails('인터넷 연결을 확인하거나 광고 차단/VPN을 꺼주세요.');
             } else {
-                setStatus('연결 실패');
-                setColor('red');
-                console.error('Connection check failed:', err);
+                setStatus('오류 발생');
+                setDetails(err.message);
             }
         }
     };
 
-    return <span style={{ color, fontWeight: 'bold' }}>{status}</span>;
+    return (
+        <div>
+            <span style={{ color, fontWeight: 'bold' }}>{status}</span>
+            {details && <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#e53e3e' }}>{details}</div>}
+            <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#718096' }}>
+                연결 대상: {import.meta.env.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL.split('://')[1]?.split('/')[0] : '없음'}
+            </div>
+        </div>
+    );
 }
 
 export default Login;
