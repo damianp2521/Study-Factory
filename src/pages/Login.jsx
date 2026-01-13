@@ -46,10 +46,9 @@ const Login = () => {
                 console.log('Login: Detected Role:', userRole);
 
                 // Navigate based on role
-                if (userRole === 'admin') {
-                    navigate('/admindashboard');
-                } else if (userRole === 'staff') {
-                    navigate('/staffdashboard');
+                // Navigate based on role
+                if (userRole === 'admin' || userRole === 'staff') {
+                    navigate('/managerdashboard');
                 } else {
                     navigate('/memberdashboard');
                 }

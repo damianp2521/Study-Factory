@@ -14,8 +14,8 @@ import AdminPage from './pages/AdminPage';
 import MonthlyLeaveStatus from './pages/MonthlyLeaveStatus';
 
 import MemberDashboard from './pages/MemberDashboard';
-import StaffDashboard from './pages/StaffDashboard';
-import AdminDashboard from './pages/AdminDashboard';
+import MemberDashboard from './pages/MemberDashboard';
+import ManagerDashboard from './pages/ManagerDashboard';
 
 import AdminSettings from './pages/AdminSettings';
 import Unauthorized from './pages/Unauthorized';
@@ -43,8 +43,7 @@ const RootRedirect = () => {
   if (!user) return <Navigate to="/login" replace />;
 
   const role = user.role || 'member';
-  if (role === 'admin') return <Navigate to="/admindashboard" replace />;
-  if (role === 'staff') return <Navigate to="/staffdashboard" replace />;
+  if (role === 'admin' || role === 'staff') return <Navigate to="/managerdashboard" replace />;
   return <Navigate to="/memberdashboard" replace />;
 };
 
@@ -99,20 +98,16 @@ function App() {
               </RoleProtectedRoute>
             } />
 
+
             {/* Role-Based Dashboard Routes */}
             <Route path="/memberdashboard" element={
               <RoleProtectedRoute allowedRoles={['member', 'staff', 'admin']}>
                 <MemberDashboard />
               </RoleProtectedRoute>
             } />
-            <Route path="/staffdashboard" element={
+            <Route path="/managerdashboard" element={
               <RoleProtectedRoute allowedRoles={['staff', 'admin']}>
-                <StaffDashboard />
-              </RoleProtectedRoute>
-            } />
-            <Route path="/admindashboard" element={
-              <RoleProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
+                <ManagerDashboard />
               </RoleProtectedRoute>
             } />
 

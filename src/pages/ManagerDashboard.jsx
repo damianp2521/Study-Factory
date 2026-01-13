@@ -1,8 +1,8 @@
 import React, { useNavigate } from 'react-router-dom';
-import { LogOut, Calendar, Users } from 'lucide-react';
+import { LogOut, Calendar, Inbox, Users, BarChart } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const AdminDashboard = () => {
+const ManagerDashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
 
@@ -16,10 +16,39 @@ const AdminDashboard = () => {
         }
     };
 
-    const menuItems = [
-        { title: '월별 휴가 현황', icon: <Calendar size={32} />, path: '/admin/monthly-leaves' },
-        { title: '회원 관리', icon: <Users size={32} />, path: '/manage-members' },
+    // Determine Role
+    const role = user?.role || 'staff'; // Default to staff if undefined, but AuthContext ensures it loads
+
+    // Define all possible menu items
+    const allMenuItems = [
+        {
+            title: '금일 휴무 사원',
+            icon: <Calendar size={32} />,
+            path: '/today-leaves',
+            allowedRoles: ['staff', 'admin']
+        },
+        {
+            title: '건의함',
+            icon: <Inbox size={32} />,
+            path: '/suggestion-box',
+            allowedRoles: ['staff', 'admin']
+        },
+        {
+            title: '회원 관리',
+            icon: <Users size={32} />,
+            path: '/manage-members',
+            allowedRoles: ['staff', 'admin']
+        },
+        {
+            title: '월별 휴가 현황',
+            icon: <BarChart size={32} />,
+            path: '/admin/monthly-leaves',
+            allowedRoles: ['admin'] // Only Admin
+        },
     ];
+
+    // Filter items based on role
+    const visibleMenuItems = allMenuItems.filter(item => item.allowedRoles.includes(role));
 
     return (
         <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)', maxWidth: '600px', margin: '0 auto' }}>
@@ -55,7 +84,7 @@ const AdminDashboard = () => {
 
             {/* Grid Menu */}
             <div className="responsive-grid">
-                {menuItems.map((item) => (
+                {visibleMenuItems.map((item) => (
                     <button
                         key={item.path}
                         onClick={() => navigate(item.path)}
@@ -84,4 +113,4 @@ const AdminDashboard = () => {
     );
 };
 
-export default AdminDashboard;
+export default ManagerDashboard;
