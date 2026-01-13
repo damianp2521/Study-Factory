@@ -27,15 +27,29 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let mounted = true;
 
+        // Cleanup function for potentially stuck keys if needed
+        const safelyClearStuckStorage = () => {
+            // Optional: careful with this, but if multiple customers report hangs, might be needed.
+            // For now, relying on Login page's cleanup.
+        };
+
         const initSession = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                // Force timeout after 3 seconds to prevent infinite loading
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Session check timed out')), 3000)
+                );
+
+                const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+
                 if (session?.user) {
                     const combinedUser = await fetchProfile(session.user);
                     if (mounted) setUser(combinedUser);
                 }
             } catch (error) {
-                console.error('Auth init error:', error);
+                console.error('Auth init error/timeout:', error);
+                // If timeout or error, we assume no user or let them login again
             } finally {
                 if (mounted) setLoading(false);
             }
