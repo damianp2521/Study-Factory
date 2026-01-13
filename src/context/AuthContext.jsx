@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
                 .eq('id', sessionUser.id)
                 .single();
 
-            // Merge profile data directly into the user object for easy access
+            // Merge profile data directly into the user object
             return { ...sessionUser, ...profile };
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -27,13 +27,10 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let mounted = true;
 
-        // 1. Initial Session Check
         const initSession = async () => {
             try {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session?.user) {
-                    const params = new URLSearchParams(window.location.search);
-                    // Handle password reset case if needed, but keep it simple
                     const combinedUser = await fetchProfile(session.user);
                     if (mounted) setUser(combinedUser);
                 }
@@ -46,9 +43,7 @@ export const AuthProvider = ({ children }) => {
 
         initSession();
 
-        // 2. Auth State Listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('Auth State Change:', event);
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 const combinedUser = await fetchProfile(session?.user);
                 if (mounted) setUser(combinedUser);
@@ -65,41 +60,32 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (id, password) => {
         const email = `${id}@studyfactory.com`;
-        // Standard timeout
-        const { data, error } = await Promise.race([
-            supabase.auth.signInWithPassword({
-                email,
-                password,
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('로그인 지연 (10초). 네트워크를 확인해주세요.')), 10000))
-        ]);
-
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
         if (error) throw error;
         return data;
-    } catch (err) {
-        console.error('Auth: Login failed', err);
-        throw err;
-    }
-};
+    };
 
-const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-};
+    const logout = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        setUser(null);
+    };
 
-const value = {
-    user,
-    login,
-    logout,
-    loading,
-    isProfileLoaded
-};
+    const value = {
+        user,
+        login,
+        logout,
+        loading
+    };
 
-return (
-    <AuthContext.Provider value={value}>
-        {children}
-    </AuthContext.Provider>
-);
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = () => {
