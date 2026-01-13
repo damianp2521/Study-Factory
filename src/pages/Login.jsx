@@ -113,6 +113,18 @@ const Login = () => {
         setLoading(true);
 
         try {
+            // CRITICAL: Re-verify user info to get the DEFINITIVE role before creating account
+            // This prevents stale state (e.g. if page was left open)
+            const { data: authData, error: authError } = await supabase
+                .from('authorized_users')
+                .select('role')
+                .eq('name', name.trim())
+                .eq('branch', branch)
+                .single();
+
+            if (authError) throw new Error('사원 정보를 다시 확인할 수 없습니다.');
+
+            const finalRole = authData?.role || 'member';
             const email = nameToEmail(name);
             const password = `${pin}00`;
 
@@ -123,7 +135,7 @@ const Login = () => {
                     data: {
                         name: name.trim(),
                         branch: branch,
-                        role: foundRole // Apply pre-authorized role
+                        role: finalRole // Use the re-verified role
                     }
                 }
             });
