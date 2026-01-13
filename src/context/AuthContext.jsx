@@ -10,11 +10,17 @@ export const AuthProvider = ({ children }) => {
 
     const fetchProfile = async (sessionUser) => {
         if (!sessionUser) return null;
+
+        // 1. Prepare fallback values from metadata
+        const metaRole = sessionUser.user_metadata?.role;
+        const metaName = sessionUser.user_metadata?.name;
+        const metaBranch = sessionUser.user_metadata?.branch;
+
         try {
-            // Add timeout for profile fetch as well
+            // 2. Fetch Profile explicitly calling columns to bypass potential '*' cache issues
             const profilePromise = supabase
                 .from('profiles')
-                .select('*')
+                .select('id, name, branch, role')
                 .eq('id', sessionUser.id)
                 .single();
 
@@ -24,16 +30,43 @@ export const AuthProvider = ({ children }) => {
 
             const { data: profile } = await Promise.race([profilePromise, timeoutPromise]);
 
-            // Merge profile data directly into the user object
-            return { ...sessionUser, ...profile };
+            // 3. Construct Final User
+            // Priority: Profile DB > Metadata > Default (never 'authenticated')
+            // If profile.role is null or 'authenticated', fall back to metadata
+            let finalRole = profile?.role;
+            if (!finalRole || finalRole === 'authenticated') {
+                finalRole = metaRole;
+            }
+            if (!finalRole || finalRole === 'authenticated') {
+                finalRole = 'member';
+            }
+
+            const finalBranch = profile?.branch || metaBranch || '미정';
+            const finalName = profile?.name || metaName || sessionUser.email?.split('@')[0] || '사용자';
+
+            // Force overwrite existing user properties to ensure correct role
+            return {
+                ...sessionUser,
+                ...profile,
+                role: finalRole,
+                branch: finalBranch,
+                name: finalName
+            };
+
         } catch (error) {
-            console.error('Error fetching profile:', error);
-            // Don't block login if profile fails, just return basic user
-            // Don't block login if profile fails, just return basic user with metadata fallback
-            const role = sessionUser.user_metadata?.role;
-            const name = sessionUser.user_metadata?.name;
-            const branch = sessionUser.user_metadata?.branch;
-            return { ...sessionUser, role, name, branch };
+            console.error('Profile fetch failed, using fallback:', error);
+            // Fallback to metadata
+            let finalRole = metaRole;
+            if (!finalRole || finalRole === 'authenticated') {
+                finalRole = 'member';
+            }
+
+            return {
+                ...sessionUser,
+                role: finalRole,
+                name: metaName || sessionUser.email?.split('@')[0],
+                branch: metaBranch || '미정'
+            };
         }
     };
 
