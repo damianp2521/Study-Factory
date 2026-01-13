@@ -78,8 +78,17 @@ export const AuthProvider = ({ children }) => {
             }
         });
 
+        // Safety timeout: If nothing happens for 3 seconds, stop loading
+        const safetyTimeout = setTimeout(() => {
+            if (loading) {
+                console.warn('Auth: Loading timed out, forcing render.');
+                setLoading(false);
+            }
+        }, 3000);
+
         return () => {
             subscription.unsubscribe();
+            clearTimeout(safetyTimeout);
         };
     }, []);
 
