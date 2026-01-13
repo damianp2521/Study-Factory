@@ -42,18 +42,64 @@ const Login = () => {
             addLog('Supabase SDK 요청 전송...');
             const email = `${memberId}@studyfactory.com`;
 
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
+            // Hybrid Login Strategy: SDK with Fallback
+            let loginData, loginError;
 
-            if (error) {
-                addLog(`SDK 에러 발생: ${error.message}`);
-                addLog(`에러 코드: ${error.status || 'Unknown'}`);
-                throw error;
+            try {
+                // 1. Try SDK with short timeout (3s)
+                const sdkResult = await Promise.race([
+                    supabase.auth.signInWithPassword({ email, password }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('SDK_TIMEOUT')), 3000))
+                ]);
+                loginData = sdkResult.data;
+                loginError = sdkResult.error;
+            } catch (err) {
+                if (err.message === 'SDK_TIMEOUT') {
+                    addLog('SDK 응답 지연 (LocalStorage Lock 의심). Raw Fetch로 전환합니다.');
+
+                    // 2. Fallback to Raw Fetch
+                    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+                    const url = import.meta.env.VITE_SUPABASE_URL;
+
+                    const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': anonKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const rawData = await response.json();
+
+                    if (!response.ok) {
+                        loginError = { message: rawData.error_description || rawData.msg || 'Login failed' };
+                    } else {
+                        // Success! Manually set session
+                        addLog('Raw Fetch 로그인 성공. 세션 복구 시도...');
+                        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                            access_token: rawData.access_token,
+                            refresh_token: rawData.refresh_token
+                        });
+
+                        if (sessionError) {
+                            addLog(`세션 복구 실패: ${sessionError.message}`);
+                            throw sessionError;
+                        }
+                        loginData = { user: sessionData.user || rawData.user };
+                    }
+                } else {
+                    throw err;
+                }
             }
 
-            addLog('SDK 응답 성공, 토큰 획득');
+            if (loginError) {
+                addLog(`로그인 실패: ${loginError.message}`);
+                throw loginError;
+            }
+
+            addLog('로그인 성공, 토큰 획득 완료');
+            const data = loginData; // Normalize for existing code
 
             if (data.user) {
                 addLog('프로필 정보(Role) 조회 중...');
