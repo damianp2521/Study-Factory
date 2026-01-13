@@ -29,9 +29,12 @@ export const AuthProvider = ({ children }) => {
 
         // 1. Check active sessions and set basic user immediately
         const initAuth = async () => {
+            console.log('Auth: initAuth started'); // Debug log
             try {
                 // Quick check for session
+                console.log('Auth: Calling supabase.auth.getSession()'); // Debug log
                 const { data: { session }, error } = await supabase.auth.getSession();
+                console.log('Auth: getSession result', { session: session ? 'Found' : 'Null', error }); // Debug log
 
                 if (error) throw error;
 
