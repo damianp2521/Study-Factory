@@ -55,7 +55,8 @@ const Login = () => {
             navigate('/');
         } catch (err) {
             console.error(err);
-            setError('정보가 일치하지 않습니다. (이름 또는 비밀번호 확인)');
+            // Show raw error for debugging
+            setError(`오류 발생: ${err.message}`);
             setLoading(false);
         }
     };
