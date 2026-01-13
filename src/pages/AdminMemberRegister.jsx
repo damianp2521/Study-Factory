@@ -9,11 +9,12 @@ const AdminMemberRegister = ({ onBack }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const branches = ['망미점', '센텀점']; // Add more as needed
+    const branches = ['망미점']; // Add more as needed
 
     useEffect(() => {
         fetchList();
     }, []);
+
 
     const fetchList = async () => {
         try {
@@ -99,7 +100,7 @@ const AdminMemberRegister = ({ onBack }) => {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="예: 박지민2"
+                        placeholder="이름을 입력하여 주세요."
                         style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', fontWeight: 'bold' }}
                     />
                 </div>
