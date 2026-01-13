@@ -36,8 +36,10 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }
             {/* Visible Custom UI */}
             <div style={{
                 width: '100%',
-                padding: '0 12px', // Horizontal padding only, let height + flex align vertically
                 height: '46px',
+                maxHeight: '46px',
+                paddingLeft: '12px',
+                paddingRight: '12px',
                 borderRadius: '12px',
                 border: '1px solid #e2e8f0',
                 background: 'white',
@@ -45,14 +47,17 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 cursor: 'pointer',
-                boxSizing: 'border-box'
+                boxSizing: 'border-box',
+                overflow: 'hidden'
             }}>
                 <span style={{
-                    fontSize: '1rem', // Match select input font size
+                    fontSize: '1rem',
                     color: value ? 'var(--color-text-main)' : '#a0aec0',
                     fontWeight: value ? 'bold' : 'normal',
                     fontFamily: 'var(--font-mono, monospace)',
-                    letterSpacing: '1px'
+                    letterSpacing: '1px',
+                    lineHeight: '1',
+                    display: 'block'
                 }}>
                     {formatDisplayDate(value)}
                 </span>
