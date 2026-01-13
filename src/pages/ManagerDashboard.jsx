@@ -269,13 +269,30 @@ const EmployeeVacationStatus = () => {
     );
 };
 
+import AdminMemberRegister from './AdminMemberRegister';
+
 // Admin Quick Menu (3x3 Grid)
 const AdminQuickMenu = () => {
+    const [currentView, setCurrentView] = useState('grid');
+
+    if (currentView === 'register') {
+        return <AdminMemberRegister onBack={() => setCurrentView('grid')} />;
+    }
+
+    const handleMenuClick = (num) => {
+        if (num === 1) {
+            setCurrentView('register');
+        } else {
+            alert('준비 중인 기능입니다.');
+        }
+    };
+
     return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', height: '100%', alignContent: 'center' }}>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                 <button
                     key={num}
+                    onClick={() => handleMenuClick(num)}
                     style={{
                         aspectRatio: '1',
                         borderRadius: '16px',
@@ -288,10 +305,13 @@ const AdminQuickMenu = () => {
                         boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        gap: '5px'
                     }}
                 >
-                    {num}
+                    <span style={{ fontSize: '1.5rem' }}>{num}</span>
+                    {num === 1 && <span style={{ fontSize: '0.6rem', color: '#718096' }}>회원등록</span>}
                 </button>
             ))}
         </div>
