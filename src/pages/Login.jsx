@@ -267,32 +267,56 @@ const ConnectionStatus = () => {
     const checkConnection = async () => {
         const start = Date.now();
         try {
-            // Check URL format
             const url = import.meta.env.VITE_SUPABASE_URL || '';
+            let projectRef = '';
+
+            // Check URL format
             if (!url.includes('supabase.co')) {
                 setDetails(`URL 경고: 'supabase.co'가 포함되지 않음 (${url.substring(0, 15)}...)`);
+                if (!url) {
+                    setStatus('설정 없음');
+                    setColor('red');
+                    return;
+                }
+            } else {
+                projectRef = url.split('://')[1]?.split('.')[0];
             }
 
-            // Simple ping with shorter timeout for quick feedback
-            const { error } = await Promise.race([
-                supabase.auth.getSession(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 10000))
-            ]);
+            // Raw Health Check (Bypassing SDK)
+            const healthUrl = `${url}/auth/v1/health`;
+            console.log('Testing connection to:', healthUrl);
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            const response = await fetch(healthUrl, {
+                method: 'GET',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
 
             const latency = Date.now() - start;
-            if (error) throw error;
-            setStatus(`정상 (${latency}ms)`);
-            setColor('green');
+
+            if (response.ok) {
+                setStatus(`정상 (${latency}ms)`);
+                setColor('green');
+                setDetails('');
+            } else {
+                setStatus(`상태 이상 (HTTP ${response.status})`);
+                setColor('orange');
+                setDetails('서버에 도달했으나 오류가 반환되었습니다.');
+            }
+
         } catch (err) {
             console.error('Connection check failed:', err);
             setColor('red');
 
-            if (err.message === 'TIMEOUT') {
+            if (err.name === 'AbortError') {
                 setStatus('응답 없음 (시간 초과)');
-                setDetails('서버 주소가 잘못되었거나 네트워크가 차단되었습니다.');
+                setDetails('방화벽, VPN, 또는 사내 보안 네트워크가 서버 접속을 차단하고 있을 수 있습니다.');
             } else if (err.message === 'Failed to fetch') {
                 setStatus('연결 실패 (Network Error)');
-                setDetails('인터넷 연결을 확인하거나 광고 차단/VPN을 꺼주세요.');
+                setDetails('인터넷 연결을 확인하거나 광고 차단/VPN을 잠시 끄고 시도해주세요.');
             } else {
                 setStatus('오류 발생');
                 setDetails(err.message);
@@ -305,7 +329,7 @@ const ConnectionStatus = () => {
             <span style={{ color, fontWeight: 'bold' }}>{status}</span>
             {details && <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#e53e3e' }}>{details}</div>}
             <div style={{ marginTop: '4px', fontSize: '0.7em', color: '#718096' }}>
-                연결 대상: {import.meta.env.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL.split('://')[1]?.split('/')[0] : '없음'}
+                연결 대상: {import.meta.env.VITE_SUPABASE_URL ? import.meta.env.VITE_SUPABASE_URL.split('://')[1]?.split('.')[0] : '없음'}
             </div>
         </div>
     );
