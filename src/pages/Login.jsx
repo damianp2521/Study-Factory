@@ -14,20 +14,49 @@ const Login = () => {
 
     const [loading, setLoading] = useState(false);
 
+    const [logs, setLogs] = useState([]);
+
+    const addLog = (msg) => {
+        const time = new Date().toLocaleTimeString().split(' ')[0];
+        setLogs(prev => [`[${time}] ${msg}`, ...prev]);
+    };
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
+        setLogs([]); // Clear logs
+        addLog('로그인 프로세스 시작');
 
         // Basic validation
         if (memberId.length !== 8 || password.length !== 6) {
             setError('회원번호 8자리와 비밀번호 6자리를 정확히 입력해주세요.');
+            addLog('유효성 검사 실패: 길이 불일치');
             return;
         }
 
         setLoading(true);
         try {
-            const data = await login(memberId, password);
+            addLog(`ID: ${memberId} 로 요청 준비`);
+
+            // Direct Supabase Call Verification (Bypassing Context for Diagnosis)
+            addLog('Supabase SDK 요청 전송...');
+            const email = `${memberId}@studyfactory.com`;
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (error) {
+                addLog(`SDK 에러 발생: ${error.message}`);
+                addLog(`에러 코드: ${error.status || 'Unknown'}`);
+                throw error;
+            }
+
+            addLog('SDK 응답 성공, 토큰 획득');
+
             if (data.user) {
+                addLog('프로필 정보(Role) 조회 중...');
                 // Fetch profile to get role
                 const { data: profile, error: profileError } = await supabase
                     .from('profiles')
@@ -36,16 +65,18 @@ const Login = () => {
                     .single();
 
                 if (profileError) {
+                    addLog(`프로필 조회 실패: ${profileError.message}`);
                     console.error('Error fetching role:', profileError);
+                } else {
+                    addLog(`프로필 조회 성공: ${profile.role}`);
                 }
 
-                // Determine role: Priority 1: Profile, Priority 2: User Metadata, Default: member
+                // Determine role
                 let userRole = profile?.role || data.user?.user_metadata?.role || 'member';
                 userRole = userRole.toLowerCase().trim();
 
-                console.log('Login: Detected Role:', userRole);
+                addLog(`최종 권한: ${userRole} -> 이동`);
 
-                // Navigate based on role
                 // Navigate based on role
                 if (userRole === 'admin' || userRole === 'staff') {
                     navigate('/managerdashboard');
@@ -55,10 +86,12 @@ const Login = () => {
             }
         } catch (err) {
             console.error('Login Error:', err);
+            addLog(`최종 에러: ${err.message}`);
             // Show specific error message from Supabase if available
             setError(err.message || '로그인 정보가 일치하지 않습니다.');
         } finally {
             setLoading(false);
+            addLog('프로세스 종료');
         }
     };
 
@@ -241,6 +274,14 @@ const Login = () => {
                     </button>
                 </div>
             </form>
+
+            {/* Debug Console */}
+            <div style={{ marginTop: '20px', width: '100%', maxWidth: '320px', background: '#2d3748', borderRadius: '8px', padding: '10px', color: '#00ff00', fontFamily: 'monospace', fontSize: '12px' }}>
+                <div style={{ marginBottom: '5px', borderBottom: '1px solid #4a5568', paddingBottom: '5px' }}>🖥️ 정밀 진단 콘솔</div>
+                <div style={{ height: '100px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
+                    {logs.length === 0 ? '대기 중...' : logs.map((log, i) => <div key={i}>{log}</div>)}
+                </div>
+            </div>
         </div>
     );
 };
