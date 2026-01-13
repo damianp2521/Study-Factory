@@ -14,7 +14,6 @@ import AdminPage from './pages/AdminPage';
 import MonthlyLeaveStatus from './pages/MonthlyLeaveStatus';
 
 import MemberDashboard from './pages/MemberDashboard';
-import MemberDashboard from './pages/MemberDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 
 import AdminSettings from './pages/AdminSettings';
