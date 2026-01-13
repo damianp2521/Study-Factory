@@ -34,12 +34,12 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }
             </label>
 
             {/* Visible Custom UI */}
+            {/* Visible Custom UI */}
             <div style={{
                 width: '100%',
                 height: '46px',
                 maxHeight: '46px',
-                paddingLeft: '12px',
-                paddingRight: '12px',
+                padding: '0 12px',
                 borderRadius: '12px',
                 border: '1px solid #e2e8f0',
                 background: 'white',
@@ -48,7 +48,7 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }
                 justifyContent: 'space-between',
                 cursor: 'pointer',
                 boxSizing: 'border-box',
-                overflow: 'hidden'
+                overflow: 'hidden' // Force contain content
             }}>
                 <span style={{
                     fontSize: '1rem',
