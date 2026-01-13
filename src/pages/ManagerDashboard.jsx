@@ -610,11 +610,22 @@ const ManagerDashboard = () => {
                                 height: '100%',
                                 padding: '10px 20px 30px 20px',
                                 boxSizing: 'border-box',
-                                overflowY: 'auto'
+                                overflowY: 'hidden'
                             }}
                         >
-                            <div style={{ height: '100%', background: 'white', borderRadius: '20px', padding: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-                                {slide.component}
+                            <div style={{
+                                height: '100%',
+                                background: 'white',
+                                borderRadius: '20px',
+                                padding: '20px',
+                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                overflowY: 'auto',
+                                display: 'flex',
+                                flexDirection: 'column'
+                            }}>
+                                <div style={{ flex: 1 }}>
+                                    {slide.component}
+                                </div>
                             </div>
                         </div>
                     ))}

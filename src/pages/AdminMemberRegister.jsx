@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 const AdminMemberRegister = ({ onBack }) => {
     const [name, setName] = useState('');
     const [branch, setBranch] = useState('망미점');
+    const [role, setRole] = useState('member'); // Default to member
     const [list, setList] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -15,12 +16,12 @@ const AdminMemberRegister = ({ onBack }) => {
         fetchList();
     }, []);
 
-
     const fetchList = async () => {
         try {
             const { data, error } = await supabase
                 .from('authorized_users')
                 .select('*')
+                .eq('is_registered', false) // Only show pending users
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -52,7 +53,11 @@ const AdminMemberRegister = ({ onBack }) => {
 
             const { error } = await supabase
                 .from('authorized_users')
-                .insert([{ name: name.trim(), branch }]);
+                .insert([{
+                    name: name.trim(),
+                    branch,
+                    role // Insert Selected Role
+                }]);
 
             if (error) throw error;
 
@@ -94,6 +99,30 @@ const AdminMemberRegister = ({ onBack }) => {
 
             {/* Form */}
             <form onSubmit={handleAdd} style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>지점</label>
+                        <select
+                            value={branch}
+                            onChange={(e) => setBranch(e.target.value)}
+                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', background: 'white' }}
+                        >
+                            {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>사원 구분</label>
+                        <select
+                            value={role}
+                            onChange={(e) => setRole(e.target.value)}
+                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', background: 'white' }}
+                        >
+                            <option value="member">회원</option>
+                            <option value="admin">스탭 (관리자)</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div style={{ marginBottom: '15px' }}>
                     <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>이름 (로그인 ID)</label>
                     <input
@@ -104,16 +133,7 @@ const AdminMemberRegister = ({ onBack }) => {
                         style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', fontWeight: 'bold' }}
                     />
                 </div>
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>지점</label>
-                    <select
-                        value={branch}
-                        onChange={(e) => setBranch(e.target.value)}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', background: 'white' }}
-                    >
-                        {branches.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                </div>
+
                 {error && <div style={{ color: '#e53e3e', fontSize: '0.9rem', marginBottom: '10px' }}>{error}</div>}
                 <button
                     type="submit"
@@ -137,20 +157,21 @@ const AdminMemberRegister = ({ onBack }) => {
             </form>
 
             {/* List */}
-            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '15px', color: '#4a5568' }}>등록된 명단 ({list.length})</h3>
+            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '15px', color: '#4a5568' }}>등록 대기 현황 ({list.length})</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {list.length === 0 && <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>대기 중인 인원이 없습니다.</div>}
                 {list.map(user => (
                     <div key={user.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                         <div>
                             <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>{user.name}</div>
-                            <div style={{ fontSize: '0.85rem', color: '#718096' }}>{user.branch}</div>
+                            <div style={{ fontSize: '0.85rem', color: '#718096' }}>
+                                {user.branch} · <span style={{ color: user.role === 'admin' ? '#d53f8c' : '#4299e1', fontWeight: 'bold' }}>
+                                    {user.role === 'admin' ? '스탭' : '회원'}
+                                </span>
+                            </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            {user.is_registered ? (
-                                <span style={{ fontSize: '0.8rem', color: '#38a169', background: '#f0fff4', padding: '4px 8px', borderRadius: '20px', fontWeight: 'bold' }}>가입완료</span>
-                            ) : (
-                                <span style={{ fontSize: '0.8rem', color: '#d69e2e', background: '#fffaf0', padding: '4px 8px', borderRadius: '20px', fontWeight: 'bold' }}>대기중</span>
-                            )}
+                            <span style={{ fontSize: '0.8rem', color: '#d69e2e', background: '#fffaf0', padding: '4px 8px', borderRadius: '20px', fontWeight: 'bold' }}>대기중</span>
                             <button onClick={() => handleDelete(user.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
                                 <Trash2 size={18} color="#e53e3e" />
                             </button>
