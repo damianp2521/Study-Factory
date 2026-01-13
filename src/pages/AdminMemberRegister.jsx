@@ -118,7 +118,8 @@ const AdminMemberRegister = ({ onBack }) => {
                             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', background: 'white' }}
                         >
                             <option value="member">회원</option>
-                            <option value="admin">스탭 (관리자)</option>
+                            <option value="staff">스탭</option>
+                            <option value="admin">관리자</option>
                         </select>
                     </div>
                 </div>
@@ -165,8 +166,8 @@ const AdminMemberRegister = ({ onBack }) => {
                         <div>
                             <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>{user.name}</div>
                             <div style={{ fontSize: '0.85rem', color: '#718096' }}>
-                                {user.branch} · <span style={{ color: user.role === 'admin' ? '#d53f8c' : '#4299e1', fontWeight: 'bold' }}>
-                                    {user.role === 'admin' ? '스탭' : '회원'}
+                                {user.branch} · <span style={{ color: user.role === 'admin' ? '#e53e3e' : (user.role === 'staff' ? '#805ad5' : '#4299e1'), fontWeight: 'bold' }}>
+                                    {user.role === 'admin' ? '관리자' : (user.role === 'staff' ? '스탭' : '회원')}
                                 </span>
                             </div>
                         </div>
