@@ -30,6 +30,9 @@ const Login = () => {
     const [confirmPin, setConfirmPin] = useState('');
     const [branch, setBranch] = useState('망미점');
 
+    // Captured role from authorized_users
+    const [foundRole, setFoundRole] = useState('member');
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -84,6 +87,7 @@ const Login = () => {
             }
 
             // Success: Move to PIN setup
+            setFoundRole(data.role || 'member'); // Store role
             setPin('');
             setConfirmPin('');
             setMode('register_setup');
@@ -119,7 +123,7 @@ const Login = () => {
                     data: {
                         name: name.trim(),
                         branch: branch,
-                        role: 'member' // Default role
+                        role: foundRole // Apply pre-authorized role
                     }
                 }
             });
