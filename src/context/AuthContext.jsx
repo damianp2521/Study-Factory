@@ -104,13 +104,13 @@ export const AuthProvider = ({ children }) => {
         console.log(`Auth: Attempting login for ${email}`);
 
         try {
-            // Add a 5-second timeout to the login request
+            // Add a 15-second timeout to the login request (increased from 5s)
             const { data, error } = await Promise.race([
                 supabase.auth.signInWithPassword({
                     email,
                     password,
                 }),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Login request timed out (5s). Check your network connection.')), 5000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('로그인 응답이 지연되고 있습니다 (15초 초과). 네트워크 상태나 서버 상태를 확인해주세요.')), 15000))
             ]);
 
             if (error) {
