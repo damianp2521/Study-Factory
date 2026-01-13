@@ -101,23 +101,53 @@ const EmployeeVacationStatus = () => {
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>날짜선택</span>
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        style={{
-                            padding: '12px',
-                            height: '46px',
+                    <div style={{ position: 'relative', width: '100%', height: '46px' }}>
+                        {/* Visible UI matching Select Box */}
+                        <div style={{
+                            position: 'absolute',
+                            top: 0, left: 0, right: 0, bottom: 0,
+                            padding: '0 12px',
                             borderRadius: '12px',
                             border: '1px solid #e2e8f0',
-                            fontSize: '1rem',
-                            fontWeight: 'bold',
-                            color: '#2d3748',
                             background: 'white',
-                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            pointerEvents: 'none',
                             boxSizing: 'border-box'
-                        }}
-                    />
+                        }}>
+                            <span style={{
+                                fontSize: '1rem',
+                                color: '#2d3748',
+                                fontWeight: 'bold',
+                                fontFamily: 'var(--font-mono, monospace)',
+                                letterSpacing: '1px'
+                            }}>
+                                {(() => {
+                                    if (!selectedDate) return '날짜 선택';
+                                    const [y, m, d] = selectedDate.split('-');
+                                    return `${y}. ${m}. ${d}.`;
+                                })()}
+                            </span>
+                            <Calendar size={20} color="#718096" />
+                        </div>
+
+                        {/* Native Picker Overlay */}
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            style={{
+                                position: 'absolute',
+                                top: 0, left: 0,
+                                width: '100%', height: '100%',
+                                opacity: 0,
+                                zIndex: 10,
+                                cursor: 'pointer',
+                                display: 'block' // Ensure it takes space
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
 
