@@ -5,7 +5,8 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Only for session check
+    const [isProfileLoaded, setIsProfileLoaded] = useState(false); // New state for profile
 
     useEffect(() => {
         const fetchProfileData = async (userId) => {
@@ -27,38 +28,38 @@ export const AuthProvider = ({ children }) => {
             }
         };
 
-        // 1. Check active sessions and set basic user immediately
         const initAuth = async () => {
-            console.log('Auth: initAuth started'); // Debug log
+            console.log('Auth: initAuth started');
             try {
                 // Quick check for session
-                console.log('Auth: Calling supabase.auth.getSession()'); // Debug log
                 const { data: { session }, error } = await supabase.auth.getSession();
-                console.log('Auth: getSession result', { session: session ? 'Found' : 'Null', error }); // Debug log
 
                 if (error) throw error;
 
                 if (session?.user) {
-                    console.log('Auth: Session found, fetching profile...');
-                    // Fetch profile BEFORE setting user to prevent race condition
-                    const profile = await fetchProfileData(session.user.id);
+                    console.log('Auth: Session found');
+                    // Set Basic User First
+                    setUser(session.user);
 
-                    const finalUser = {
-                        ...session.user,
-                        ...(profile || {}) // Merge profile if exists
-                    };
-
-                    console.log('Auth: Setting complete user with role:', finalUser.role);
-                    setUser(finalUser);
+                    // Fetch Profile Asynchronously
+                    fetchProfileData(session.user.id).then((profile) => {
+                        if (profile) {
+                            console.log('Auth: Profile loaded later');
+                            setUser(prev => ({ ...prev, ...profile }));
+                        }
+                        setIsProfileLoaded(true);
+                    });
                 } else {
                     console.log('Auth: No active session');
                     setUser(null);
+                    setIsProfileLoaded(true); // No user means profile loading is "done" (irrelevant)
                 }
             } catch (err) {
                 console.error('Auth Check Failed:', err);
                 setUser(null);
+                setIsProfileLoaded(true);
             } finally {
-                setLoading(false); // Unblock UI only after profile is loaded and user is set
+                setLoading(false); // Unblock generic UI immediately
             }
         };
 
@@ -66,32 +67,28 @@ export const AuthProvider = ({ children }) => {
 
         // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                if (session?.user) {
-                    const profile = await fetchProfileData(session.user.id);
-                    setUser({ ...session.user, ...(profile || {}) });
-                }
-            } else if (event === 'SIGNED_OUT') {
+            console.log('Auth: Event', event);
+            if (event === 'SIGNED_OUT') {
                 setUser(null);
+                setIsProfileLoaded(true);
+                return;
             }
-            // Note: For INITIAL_SESSION, initAuth handles it, so we don't need to do much here or might cause double renders, 
-            // but setting it again is safe as React batches/diffs.
-            if (event !== 'INITIAL_SESSION') {
-                setLoading(false);
+
+            if (session?.user) {
+                // If it's a new sign-in, we might not have profile yet. 
+                // Don't overwrite existing full user if just token refresh.
+                if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+                    setUser(session.user);
+                    setIsProfileLoaded(false); // Start loading profile
+                    const profile = await fetchProfileData(session.user.id);
+                    setUser(prev => ({ ...prev, ...(profile || {}) }));
+                    setIsProfileLoaded(true);
+                }
             }
         });
 
-        // Safety timeout: If nothing happens for 3 seconds, stop loading
-        const safetyTimeout = setTimeout(() => {
-            if (loading) {
-                console.warn('Auth: Loading timed out, forcing render.');
-                setLoading(false);
-            }
-        }, 3000);
-
         return () => {
             subscription.unsubscribe();
-            clearTimeout(safetyTimeout);
         };
     }, []);
 
@@ -104,24 +101,19 @@ export const AuthProvider = ({ children }) => {
         console.log(`Auth: Attempting login for ${email}`);
 
         try {
-            // Add a 15-second timeout to the login request (increased from 5s)
+            // Standard timeout
             const { data, error } = await Promise.race([
                 supabase.auth.signInWithPassword({
                     email,
                     password,
                 }),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('로그인 응답이 지연되고 있습니다 (15초 초과). 네트워크 상태나 서버 상태를 확인해주세요.')), 15000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('로그인 지연 (10초). 네트워크를 확인해주세요.')), 10000))
             ]);
 
-            if (error) {
-                console.error('Auth: Login failed', error);
-                throw error;
-            }
-
-            console.log('Auth: Login successful', data);
+            if (error) throw error;
             return data;
         } catch (err) {
-            console.error('Auth: Message during login:', err.message);
+            console.error('Auth: Login failed', err);
             throw err;
         }
     };
@@ -135,7 +127,8 @@ export const AuthProvider = ({ children }) => {
         user,
         login,
         logout,
-        loading
+        loading,
+        isProfileLoaded
     };
 
     return (

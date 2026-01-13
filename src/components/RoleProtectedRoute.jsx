@@ -3,12 +3,28 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const RoleProtectedRoute = ({ children, allowedRoles }) => {
-    const { user, loading } = useAuth();
+    const { user, loading, isProfileLoaded } = useAuth();
 
+    // 1. Wait for basic session check
     if (loading) {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem' }}>
                 권한 확인 중...
+            </div>
+        );
+    }
+
+    // 2. Not logged in -> Login
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    // 3. Logged in but profile (role) not loaded yet -> Wait
+    // This prevents the "Unauthorized" flash
+    if (!isProfileLoaded) {
+        return (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem' }}>
+                사용자 정보 불러오는 중...
             </div>
         );
     }
