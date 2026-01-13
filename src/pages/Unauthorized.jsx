@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 
 const Unauthorized = () => {
-    const navigate = useNavigate();
-
     return (
         <div className="flex-center flex-col" style={{ minHeight: '80vh', padding: 'var(--spacing-lg)' }}>
             <AlertTriangle size={64} style={{ color: 'var(--color-error)', marginBottom: 'var(--spacing-md)' }} />
@@ -12,14 +10,18 @@ const Unauthorized = () => {
                 접근 권한이 없습니다
             </h2>
             <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--spacing-lg)', textAlign: 'center' }}>
-                해당 페이지에 접근할 수 있는 권한이 없습니다.<br />
-                관리자에게 문의해주세요.
+                로그인 정보가 만료되었거나 권한이 없습니다.<br />
+                다시 로그인해주세요.
             </p>
             <button
                 className="btn-primary"
-                onClick={() => navigate('/')}
+                onClick={() => {
+                    // Force clear everything to fix stuck states
+                    localStorage.clear();
+                    window.location.href = '/login';
+                }}
             >
-                대시보드로 돌아가기
+                로그인 화면으로 이동
             </button>
         </div>
     );
