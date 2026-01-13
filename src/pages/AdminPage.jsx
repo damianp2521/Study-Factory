@@ -22,7 +22,7 @@ const AdminPage = () => {
             >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button
-                        onClick={() => navigate('/dashboard')}
+                        onClick={() => navigate('/managerdashboard')}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                     >
                         <ArrowLeft size={24} color="var(--color-text-main)" />
