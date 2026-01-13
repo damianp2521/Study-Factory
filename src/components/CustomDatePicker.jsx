@@ -18,6 +18,12 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }
         }
     };
 
+    const formatDisplayDate = (dateStr) => {
+        if (!dateStr) return '날짜를 선택해주세요';
+        const [y, m, d] = dateStr.split('-');
+        return `${y}. ${m}. ${d}.`;
+    };
+
     return (
         <div
             style={{ position: 'relative', width: '100%' }}
@@ -43,9 +49,11 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }
                 <span style={{
                     fontSize: '1.1rem',
                     color: value ? 'var(--color-text-main)' : '#a0aec0',
-                    fontWeight: value ? 'bold' : 'normal'
+                    fontWeight: value ? 'bold' : 'normal',
+                    fontFamily: 'var(--font-mono, monospace)', // Optional: Ensure numeric font consistency if needed
+                    letterSpacing: '1px'
                 }}>
-                    {value ? value : '날짜를 선택해주세요'}
+                    {formatDisplayDate(value)}
                 </span>
                 <Calendar size={20} color="#718096" />
             </div>
