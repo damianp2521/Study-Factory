@@ -190,18 +190,6 @@ const Login = () => {
                     </div>
                 </div>
 
-                {error && (
-                    <div style={{
-                        color: '#e53e3e',
-                        fontSize: '0.85rem',
-                        textAlign: 'center',
-                        marginBottom: '20px',
-                        background: '#fff5f5',
-                        padding: '10px',
-                        borderRadius: '8px'
-                    }}>
-                        {error}
-                    </div>
                 )}
 
                 <button
