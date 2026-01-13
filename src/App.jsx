@@ -22,7 +22,25 @@ import RoleProtectedRoute from './components/RoleProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, authError } = useAuth();
+
+  if (authError) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px' }}>
+        <div style={{ color: '#e53e3e', fontSize: '1.2rem', fontWeight: 'bold' }}>
+          시스템 오류가 발생했습니다.
+        </div>
+        <div style={{ color: '#718096' }}>{authError}</div>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ padding: '10px 20px', background: '#2d3748', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+        >
+          페이지 새로고침
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem' }}>
@@ -35,7 +53,24 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const RootRedirect = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, authError } = useAuth();
+
+  if (authError) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px' }}>
+        <div style={{ color: '#e53e3e', fontSize: '1.2rem', fontWeight: 'bold' }}>
+          초기화 중 오류 발생
+        </div>
+        <div style={{ color: '#718096' }}>{authError}</div>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ padding: '10px 20px', background: '#2d3748', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>로그인 정보 확인 중...</div>;
 

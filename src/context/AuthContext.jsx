@@ -6,20 +6,29 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [authError, setAuthError] = useState(null);
 
     const fetchProfile = async (sessionUser) => {
         if (!sessionUser) return null;
         try {
-            const { data: profile } = await supabase
+            // Add timeout for profile fetch as well
+            const profilePromise = supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', sessionUser.id)
                 .single();
 
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Profile fetch timed out')), 5000)
+            );
+
+            const { data: profile } = await Promise.race([profilePromise, timeoutPromise]);
+
             // Merge profile data directly into the user object
             return { ...sessionUser, ...profile };
         } catch (error) {
             console.error('Error fetching profile:', error);
+            // Don't block login if profile fails, just return basic user
             return sessionUser;
         }
     };
@@ -38,7 +47,7 @@ export const AuthProvider = ({ children }) => {
                 // Force timeout after 3 seconds to prevent infinite loading
                 const sessionPromise = supabase.auth.getSession();
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Session check timed out')), 3000)
+                    setTimeout(() => reject(new Error('Initial session check timed out')), 3000)
                 );
 
                 const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
@@ -48,8 +57,9 @@ export const AuthProvider = ({ children }) => {
                     if (mounted) setUser(combinedUser);
                 }
             } catch (error) {
-                console.error('Auth init error/timeout:', error);
+                console.error('Auth init error:', error);
                 // If timeout or error, we assume no user or let them login again
+                if (mounted) setAuthError(error.message);
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -61,8 +71,10 @@ export const AuthProvider = ({ children }) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
                 const combinedUser = await fetchProfile(session?.user);
                 if (mounted) setUser(combinedUser);
+                if (mounted) setAuthError(null); // Clear error on success
             } else if (event === 'SIGNED_OUT') {
                 if (mounted) setUser(null);
+                if (mounted) setAuthError(null);
             }
         });
 
@@ -92,7 +104,8 @@ export const AuthProvider = ({ children }) => {
         user,
         login,
         logout,
-        loading
+        loading,
+        authError
     };
 
     return (
