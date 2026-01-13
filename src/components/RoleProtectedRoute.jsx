@@ -1,4 +1,4 @@
-```javascript
+
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -23,7 +23,7 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
     const userRole = user.role || 'member'; // Default to member if undefined
 
     if (!allowedRoles.includes(userRole)) {
-        console.warn(`Access Denied: User role '${userRole}' is not in allowed list[${ allowedRoles.join(', ') }]`);
+        console.warn(`Access Denied: User role '${userRole}' is not in allowed list[${allowedRoles.join(', ')}]`);
         return <Navigate to="/unauthorized" replace />;
     }
 
