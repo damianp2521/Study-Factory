@@ -101,12 +101,23 @@ const EmployeeVacationStatus = () => {
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>날짜선택</span>
-                    <div style={{ height: '46px' }}>
-                        <CustomDatePicker
-                            value={selectedDate}
-                            onChange={setSelectedDate}
-                        />
-                    </div>
+                    <input
+                        type="date"
+                        value={selectedDate}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        style={{
+                            padding: '12px',
+                            height: '46px',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '1rem',
+                            fontWeight: 'bold',
+                            color: '#2d3748',
+                            background: 'white',
+                            width: '100%',
+                            boxSizing: 'border-box'
+                        }}
+                    />
                 </div>
             </div>
 

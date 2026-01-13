@@ -17,11 +17,17 @@ export const AuthProvider = ({ children }) => {
                 if (error) throw error;
 
                 if (session?.user) {
-                    console.log('Auth: Session found (Basic)');
-                    setUser(session.user); // Set basic user immediately
+                    console.log('Auth: Session found, fetching profile...');
+                    // Fetch profile BEFORE setting user to prevent race condition
+                    const profile = await fetchProfileData(session.user.id);
 
-                    // 2. Fetch Profile in Background (Awaited now)
-                    await fetchProfile(session.user);
+                    const finalUser = {
+                        ...session.user,
+                        ...(profile || {}) // Merge profile if exists
+                    };
+
+                    console.log('Auth: Setting complete user with role:', finalUser.role);
+                    setUser(finalUser);
                 } else {
                     console.log('Auth: No active session');
                     setUser(null);
@@ -30,27 +36,26 @@ export const AuthProvider = ({ children }) => {
                 console.error('Auth Check Failed:', err);
                 setUser(null);
             } finally {
-                setLoading(false); // Unblock UI only after profile is loaded
+                setLoading(false); // Unblock UI only after profile is loaded and user is set
             }
         };
 
-        const fetchProfile = async (basicUser) => {
+        const fetchProfileData = async (userId) => {
             try {
                 const { data: profile, error } = await supabase
                     .from('profiles')
                     .select('*')
-                    .eq('id', basicUser.id)
+                    .eq('id', userId)
                     .single();
 
                 if (error) {
                     console.warn('Profile fetch error:', error.message);
-                } else if (profile) {
-                    console.log('Auth: Profile loaded');
-                    // Update user state with full profile
-                    setUser(prev => ({ ...prev, ...profile }));
+                    return null;
                 }
+                return profile;
             } catch (err) {
                 console.error('Profile fetch failed:', err);
+                return null;
             }
         };
 
@@ -58,13 +63,19 @@ export const AuthProvider = ({ children }) => {
 
         // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (session?.user) {
-                setUser(session.user);
-                fetchProfile(session.user);
-            } else {
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                if (session?.user) {
+                    const profile = await fetchProfileData(session.user.id);
+                    setUser({ ...session.user, ...(profile || {}) });
+                }
+            } else if (event === 'SIGNED_OUT') {
                 setUser(null);
             }
-            setLoading(false);
+            // Note: For INITIAL_SESSION, initAuth handles it, so we don't need to do much here or might cause double renders, 
+            // but setting it again is safe as React batches/diffs.
+            if (event !== 'INITIAL_SESSION') {
+                setLoading(false);
+            }
         });
 
         return () => {
