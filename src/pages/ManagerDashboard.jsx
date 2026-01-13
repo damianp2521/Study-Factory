@@ -17,7 +17,7 @@ const EmployeeVacationStatus = () => {
     const [vacations, setVacations] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const branches = ['전체', '구미', '대구']; // Example branches
+    const branches = ['전체', '망미점']; // Currently only Mangmi branch exists
 
     useEffect(() => {
         fetchVacations();
@@ -46,21 +46,8 @@ const EmployeeVacationStatus = () => {
                 if (selectedBranch !== '전체' && req.profiles?.branch !== selectedBranch) return false;
 
                 // Type Filter
-                // Database types: 'full', 'half'. We need to distinguish half_am/pm?
-                // Wait, DB usually stores 'half' and periods. 
-                // Let's assume 'periods' column tells us AM vs PM.
-                // AM: [1,2,3,4], PM: [5,6,7] usually. 
-                // Or user simplified it in previous conversation to just 'half'.
-                // I need to check how to distinguish AM/PM from DB data.
-                // Re-reading 'InlineVacationRequest.jsx':
-                // if (type === 'half_am') periods = [1, 2, 3, 4];
-                // if (type === 'half_pm') periods = [5, 6, 7];
-                // So I check periods to distinguish.
-
                 let typeKey = 'full';
                 if (req.type === 'half') {
-                    // Check periods. 
-                    // If periods includes 1, it's AM (roughly). If it starts with 5, it's PM.
                     const p = req.periods || [];
                     if (p.includes(1)) typeKey = 'half_am';
                     else typeKey = 'half_pm';
@@ -90,29 +77,36 @@ const EmployeeVacationStatus = () => {
                 marginBottom: '15px',
                 alignItems: 'center'
             }}>
-                <select
-                    value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
-                    style={{
-                        padding: '10px',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        fontSize: '1rem',
-                        fontWeight: 'bold',
-                        color: '#2d3748',
-                        background: 'white',
-                        minWidth: '80px'
-                    }}
-                >
-                    {branches.map(b => <option key={b} value={b}>{b}</option>)}
-                </select>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>지점선택</span>
+                    <select
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
+                        style={{
+                            padding: '12px',
+                            height: '46px', // Fixed height to match date picker if possible, or just standard
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '1rem',
+                            fontWeight: 'bold',
+                            color: '#2d3748',
+                            background: 'white',
+                            minWidth: '100px',
+                            boxSizing: 'border-box'
+                        }}
+                    >
+                        {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                </div>
 
-                <div style={{ flex: 1 }}>
-                    <CustomDatePicker
-                        value={selectedDate}
-                        onChange={setSelectedDate}
-                        label="날짜 선택" // Optional
-                    />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>날짜선택</span>
+                    <div style={{ height: '46px' }}>
+                        <CustomDatePicker
+                            value={selectedDate}
+                            onChange={setSelectedDate}
+                        />
+                    </div>
                 </div>
             </div>
 
