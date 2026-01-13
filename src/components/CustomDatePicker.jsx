@@ -29,22 +29,23 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }
             style={{ position: 'relative', width: '100%' }}
             onClick={handleContainerClick}
         >
-            <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
-                <Calendar size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+            <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>
                 {label}
             </label>
 
             {/* Visible Custom UI */}
             <div style={{
                 width: '100%',
-                padding: '15px',
+                padding: '12px',
+                height: '46px',
                 borderRadius: '12px',
-                border: '1px solid #ddd',
+                border: '1px solid #e2e8f0',
                 background: 'white',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                boxSizing: 'border-box'
             }}>
                 <span style={{
                     fontSize: '1.1rem',
