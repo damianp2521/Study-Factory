@@ -284,6 +284,8 @@ const ConnectionStatus = () => {
 
             // Raw Health Check (Bypassing SDK)
             const healthUrl = `${url}/auth/v1/health`;
+            const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
             console.log('Testing connection to:', healthUrl);
 
             const controller = new AbortController();
@@ -291,6 +293,10 @@ const ConnectionStatus = () => {
 
             const response = await fetch(healthUrl, {
                 method: 'GET',
+                headers: {
+                    'apikey': anonKey,
+                    'Authorization': `Bearer ${anonKey}`
+                },
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -300,11 +306,15 @@ const ConnectionStatus = () => {
             if (response.ok) {
                 setStatus(`정상 (${latency}ms)`);
                 setColor('green');
-                setDetails('');
+                setDetails('서버 연결 및 API 키 확인 완료');
             } else {
                 setStatus(`상태 이상 (HTTP ${response.status})`);
-                setColor('orange');
-                setDetails('서버에 도달했으나 오류가 반환되었습니다.');
+                setColor('red'); // Changed to red as 401 with key is a critical error
+                if (response.status === 401) {
+                    setDetails('API 키(Anon Key)가 유효하지 않습니다. Vercel 환경변수를 확인해주세요.');
+                } else {
+                    setDetails(`서버 응답 오류 (Code: ${response.status})`);
+                }
             }
 
         } catch (err) {
