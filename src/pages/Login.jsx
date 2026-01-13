@@ -84,6 +84,8 @@ const Login = () => {
             }
 
             // Success: Move to PIN setup
+            setPin('');
+            setConfirmPin('');
             setMode('register_setup');
         } catch (err) {
             setError(err.message);
@@ -241,6 +243,7 @@ const Login = () => {
                     type="password"
                     inputMode="numeric"
                     maxLength={4}
+                    autoComplete="new-password"
                     placeholder="사용하실 비밀번호 (4자리)"
                     value={pin}
                     onChange={(e) => setPin(e.target.value)}
@@ -252,6 +255,7 @@ const Login = () => {
                     type="password"
                     inputMode="numeric"
                     maxLength={4}
+                    autoComplete="new-password"
                     placeholder="비밀번호 확인"
                     value={confirmPin}
                     onChange={(e) => setConfirmPin(e.target.value)}
