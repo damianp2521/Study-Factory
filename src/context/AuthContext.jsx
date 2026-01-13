@@ -29,7 +29,11 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Error fetching profile:', error);
             // Don't block login if profile fails, just return basic user
-            return sessionUser;
+            // Don't block login if profile fails, just return basic user with metadata fallback
+            const role = sessionUser.user_metadata?.role;
+            const name = sessionUser.user_metadata?.name;
+            const branch = sessionUser.user_metadata?.branch;
+            return { ...sessionUser, role, name, branch };
         }
     };
 
