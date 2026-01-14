@@ -82,6 +82,15 @@ const RootRedirect = () => {
               ⚠️ 환경변수가 적용되지 않았습니다. Vercel에서 Redeploy가 필요합니다.
             </p>
           )}
+          {!isPlaceholder && (
+            <div style={{ marginTop: '10px', textAlign: 'left' }}>
+              <p style={{ fontWeight: 'bold', marginBottom: '4px' }}>가능성 있는 원인:</p>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                <li>Supabase 프로젝트가 <strong>Paused(일시정지)</strong> 상태일 수 있습니다. (Supabase 대시보드 확인 필요)</li>
+                <li>일시적인 네트워크 지연 (재부팅 중)</li>
+              </ul>
+            </div>
+          )}
         </div>
 
         <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: '#2d3748', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>

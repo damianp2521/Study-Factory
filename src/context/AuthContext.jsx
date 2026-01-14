@@ -59,9 +59,9 @@ export const AuthProvider = ({ children }) => {
         // 2. Initial Session Check
         const init = async () => {
             try {
-                // Create a timeout promise that rejects after 5 seconds
+                // Create a timeout promise that rejects after 15 seconds (increased for cold starts)
                 const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Connection timeout')), 5000)
+                    setTimeout(() => reject(new Error('Connection timeout')), 15000)
                 );
 
                 // Race the session check against the timeout
