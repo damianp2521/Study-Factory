@@ -69,14 +69,24 @@ export const AuthProvider = ({ children }) => {
 
         const initSession = async () => {
             try {
-                // 1. Get Session without custom timeout (prevents forced logout on slow connection)
-                const { data: { session }, error } = await supabase.auth.getSession();
+                // 1. Get Session with safety timeout (3 seconds)
+                // If it hangs, we unblock the UI so the user can at least see the Login screen or retry
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise((resolve) =>
+                    setTimeout(() => resolve({ data: { session: null }, error: { message: 'Session check timed out' } }), 3000)
+                );
 
-                if (error) throw error;
+                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+
+                if (error && error.message === 'Session check timed out') {
+                    console.warn('Auth session check timed out - defaulting to no session');
+                    // Proceed as if no session (will redirect to Login likely)
+                } else if (error) {
+                    throw error;
+                }
 
                 if (session?.user) {
-                    // 2. Optimistic Update (Immediate Feedback)
-                    // Set user state immediately using metadata to unblock the UI
+                    // 2. Optimistic Update
                     const metaRole = session.user.user_metadata?.role || 'member';
                     const metaName = session.user.user_metadata?.name || session.user.email?.split('@')[0];
                     const metaBranch = session.user.user_metadata?.branch || '미정';
@@ -90,10 +100,10 @@ export const AuthProvider = ({ children }) => {
 
                     if (mounted) {
                         setUser(optimisticUser);
-                        setLoading(false); // Unblock UI immediately
+                        setLoading(false); // Unblock UI
                     }
 
-                    // 3. Background Verification (Source of Truth)
+                    // 3. Background Verification
                     const verifiedUser = await fetchProfile(session.user);
                     if (mounted && verifiedUser) {
                         setUser(verifiedUser);
@@ -103,9 +113,8 @@ export const AuthProvider = ({ children }) => {
                 }
             } catch (error) {
                 console.error('Auth init error:', error);
-                // Even on error, stop loading so user knows something happened (or can retry)
                 if (mounted) {
-                    setAuthError(error.message);
+                    // On error, clear loading so user isn't stuck
                     setLoading(false);
                 }
             }
