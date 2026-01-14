@@ -30,7 +30,8 @@ const StaffTaskBoard = () => {
                 .from('suggestions')
                 .select(`
                     *,
-                    author:user_id ( name )
+                    author:user_id ( name ),
+                    completer:completed_by ( name )
                 `);
 
             if (suggestionError) throw suggestionError;
@@ -51,7 +52,7 @@ const StaffTaskBoard = () => {
                 created_at: s.created_at,
                 type: 'suggestion',
                 authorName: s.author?.name || '익명',
-                completerName: null // Suggestions logic might differ, for now simplified
+                completerName: s.completer?.name // Now fetching completer name from newly added relation
             }));
 
             setTasks([...formattedTodos, ...formattedSuggestions]);
@@ -109,9 +110,15 @@ const StaffTaskBoard = () => {
 
             } else if (task.type === 'suggestion') {
                 const newStatus = task.status === 'completed' ? 'pending' : 'resolved'; // 'resolved' matches suggestion table
+                const completedBy = newStatus === 'resolved' ? user.id : null;
+                // Note: suggestions table might not track completed_at, but we track completed_by now.
+
                 const { error } = await supabase
                     .from('suggestions')
-                    .update({ status: newStatus })
+                    .update({
+                        status: newStatus,
+                        completed_by: completedBy
+                    })
                     .eq('id', task.id);
                 if (error) throw error;
             }
@@ -153,7 +160,7 @@ const StaffTaskBoard = () => {
             fetchData();
         } catch (error) {
             console.error('Error deleting task:', error);
-            alert('삭제 실패');
+            alert(`삭제 실패: ${error.message || error.details || JSON.stringify(error)}`);
         }
     };
 
@@ -184,7 +191,7 @@ const StaffTaskBoard = () => {
     // Render Helper
     const getTaskStyle = (task) => {
         if (task.status === 'completed') {
-            return { borderColor: '#e2e8f0', bg: '#f8fafc', text: '#94a3b8' };
+            return { borderColor: '#e2e8f0', bg: '#f8fafc', text: '#718096' }; // Darker gray for completed
         }
         if (task.type === 'staff' && task.is_urgent) {
             return { borderColor: '#feb2b2', bg: '#fff5f5', text: '#c53030' }; // Red
@@ -308,7 +315,7 @@ const StaffTaskBoard = () => {
                                 <div style={{ flex: 1 }}>
                                     <div style={{
                                         fontSize: '1rem',
-                                        color: isCompleted ? '#a0aec0' : '#2d3748',
+                                        color: isCompleted ? '#718096' : '#2d3748', // Darker gray for completed text
                                         textDecoration: isCompleted ? 'line-through' : 'none',
                                         wordBreak: 'break-all',
                                         lineHeight: '1.5',
@@ -324,11 +331,11 @@ const StaffTaskBoard = () => {
                                         alignItems: 'center',
                                         gap: '8px',
                                         fontSize: '0.75rem',
-                                        color: isCompleted ? '#cbd5e0' : style.text,
-                                        opacity: 0.8
+                                        color: isCompleted ? '#718096' : style.text, // Darker gray for completed footer
+                                        opacity: isCompleted ? 0.8 : 0.8
                                     }}>
                                         {task.type === 'suggestion' ? (
-                                            <span>(요청 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`})</span>
+                                            <span>요청 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`}</span>
                                         ) : (
                                             <span>작성 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`}</span>
                                         )}
