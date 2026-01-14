@@ -552,8 +552,10 @@ const ManagerDashboard = () => {
                     <div
                         onClick={handlePrev}
                         style={{
-                            textAlign: 'right',
-                            opacity: prevTitle ? 0.5 : 0, // Increased base opacity slightly for better visibility of fade
+                            display: 'flex',
+                            justifyContent: 'flex-end', // Force alignment to right
+                            alignItems: 'center',
+                            opacity: prevTitle ? 0.6 : 0, // Slightly more opacity
                             fontSize: '0.9rem',
                             fontWeight: 'bold',
                             transform: 'scale(0.9)',
@@ -563,8 +565,9 @@ const ManagerDashboard = () => {
                             transition: 'all 0.3s',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
-                            maskImage: 'linear-gradient(to right, transparent, black 20%)',
-                            WebkitMaskImage: 'linear-gradient(to right, transparent, black 20%)',
+                            width: '100%', // Ensure full width for flex
+                            maskImage: 'linear-gradient(to right, transparent, black 30%)', // Softer fade (0-30%)
+                            WebkitMaskImage: 'linear-gradient(to right, transparent, black 30%)',
                             lineHeight: '1.2'
                         }}
                     >
@@ -581,7 +584,7 @@ const ManagerDashboard = () => {
                         fontWeight: 'bold',
                         color: 'var(--color-primary)',
                         whiteSpace: 'nowrap',
-                        zIndex: 10 // Ensure it stays on top
+                        zIndex: 10
                     }}>
                         <button
                             onClick={handlePrev}
@@ -604,8 +607,10 @@ const ManagerDashboard = () => {
                     <div
                         onClick={handleNext}
                         style={{
-                            textAlign: 'left',
-                            opacity: nextTitle ? 0.5 : 0,
+                            display: 'flex',
+                            justifyContent: 'flex-start', // Force alignment to left
+                            alignItems: 'center',
+                            opacity: nextTitle ? 0.6 : 0,
                             fontSize: '0.9rem',
                             fontWeight: 'bold',
                             transform: 'scale(0.9)',
@@ -615,8 +620,9 @@ const ManagerDashboard = () => {
                             transition: 'all 0.3s',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
-                            maskImage: 'linear-gradient(to right, black 80%, transparent)',
-                            WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent)',
+                            width: '100%',
+                            maskImage: 'linear-gradient(to right, black 70%, transparent)', // Softer fade (70-100%)
+                            WebkitMaskImage: 'linear-gradient(to right, black 70%, transparent)',
                             lineHeight: '1.2'
                         }}
                     >
