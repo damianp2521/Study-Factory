@@ -65,6 +65,7 @@ const AdminMemberStatus = ({ onBack }) => {
 
     const saveEdit = async (id) => {
         try {
+            // 1. Update authorized_users
             const { error } = await supabase
                 .from('authorized_users')
                 .update({ branch: editForm.branch, role: editForm.role })
@@ -72,8 +73,23 @@ const AdminMemberStatus = ({ onBack }) => {
 
             if (error) throw error;
 
+            // 2. Sync to public.profiles (Active User Data)
+            // Find user to get the name for matching
+            const user = users.find(u => u.id === id);
+            if (user) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({ branch: editForm.branch, role: editForm.role })
+                    .eq('name', user.name);
+
+                if (profileError) {
+                    console.warn("Profile sync failed:", profileError);
+                }
+            }
+
             setEditingId(null);
             fetchUsers();
+            alert('수정되었습니다.');
         } catch (error) {
             console.error('Update error:', error);
             alert('수정에 실패했습니다.');
