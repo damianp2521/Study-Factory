@@ -137,7 +137,7 @@ const AdminEmployeeVacationHistory = ({ onBack }) => {
                             <ChevronLeft size={26} />
                         </button>
                         <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>
-                            휴가 현황 조회
+                            사원별 휴가 현황
                         </h2>
                     </div>
 

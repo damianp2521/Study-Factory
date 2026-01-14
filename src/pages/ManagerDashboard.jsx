@@ -337,7 +337,7 @@ const AdminQuickMenu = () => {
                         <div style={{ width: '32px', height: '32px', background: '#ebf4ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4299e1', marginBottom: '5px' }}>
                             <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>+</span>
                         </div>
-                        <span style={{ textAlign: 'center' }}>사원등록</span>
+                        <span style={{ textAlign: 'center' }}>사원 등록</span>
                     </button>
                     {/* 2. Status */}
                     <button
@@ -363,7 +363,7 @@ const AdminQuickMenu = () => {
                         <div style={{ width: '32px', height: '32px', background: '#edf2f7', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#718096', marginBottom: '5px' }}>
                             <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>≡</span>
                         </div>
-                        <span style={{ textAlign: 'center' }}>사원현황</span>
+                        <span style={{ textAlign: 'center' }}>사원 현황</span>
                     </button>
                     {/* 3. Vacation History (NEW) */}
                     <button
@@ -389,7 +389,7 @@ const AdminQuickMenu = () => {
                         <div style={{ width: '32px', height: '32px', background: '#fff5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c53030', marginBottom: '5px' }}>
                             <Calendar size={20} />
                         </div>
-                        <span style={{ textAlign: 'center', lineHeight: '1.2' }}>휴가조회</span>
+                        <span style={{ textAlign: 'center', lineHeight: '1.2' }}>사원별<br />휴가 현황</span>
                     </button>
                 </div>
             </div>
