@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import CustomDatePicker from '../components/CustomDatePicker';
 import AdminMemberStatus from './AdminMemberStatus';
 import AdminMemberRegister from './AdminMemberRegister';
+import StaffTaskBoard from './StaffTaskBoard';
 
 // Inline Component for Employee Vacation Status
 const EmployeeVacationStatus = () => {
@@ -425,8 +426,7 @@ const ManagerDashboard = () => {
 
     const slides = [
         { title: '사원 휴무 현황', component: <EmployeeVacationStatus /> },
-        { title: '건의함', component: <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#a0aec0' }}>건의함 기능 준비중</div> }, // Placeholder
-        { title: '회원 관리', component: <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#a0aec0' }}>회원 관리 기능 준비중</div> }, // Placeholder
+        { title: '스탭 업무 현황', component: <StaffTaskBoard /> },
     ];
 
     // Admin Only Slides
