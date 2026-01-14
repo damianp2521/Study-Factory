@@ -524,8 +524,7 @@ const ManagerDashboard = () => {
                 alignItems: 'center',
                 padding: '10px 20px',
                 paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
-                backgroundColor: '#ffffff',
-                borderBottom: '1px solid #f0f0f0'
+                backgroundColor: 'transparent'
             }}>
                 <button
                     onClick={handleLogout}
