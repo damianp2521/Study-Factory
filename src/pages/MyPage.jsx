@@ -19,45 +19,6 @@ const MyPage = () => {
 
     const dDay = calculateDDay(user?.end_date);
 
-    const MenuItem = ({ icon, title, value, onClick }) => (
-        <button
-            onClick={onClick}
-            className="glass-card"
-            style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: 'var(--spacing-md)',
-                marginBottom: 'var(--spacing-sm)',
-                textAlign: 'left'
-            }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{
-                    padding: '8px',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'rgba(26, 35, 126, 0.1)',
-                    color: 'var(--color-primary)',
-                    marginRight: 'var(--spacing-md)'
-                }}>
-                    {icon}
-                </div>
-                <span style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--color-text-main)' }}>
-                    {title}
-                </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                {value && (
-                    <span style={{ marginRight: 'var(--spacing-xs)', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                        {value}
-                    </span>
-                )}
-                <ChevronRight size={20} color="var(--color-text-secondary)" />
-            </div>
-        </button>
-    );
-
     return (
         <PageTemplate title="마이페이지">
             {/* Profile Header */}
@@ -140,5 +101,45 @@ const MyPage = () => {
         </PageTemplate>
     );
 };
+
+// Extracted Component to prevent re-creation on every render
+const MenuItem = ({ icon, title, value, onClick }) => (
+    <button
+        onClick={onClick}
+        className="glass-card"
+        style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: 'var(--spacing-md)',
+            marginBottom: 'var(--spacing-sm)',
+            textAlign: 'left'
+        }}
+    >
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{
+                padding: '8px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(26, 35, 126, 0.1)',
+                color: 'var(--color-primary)',
+                marginRight: 'var(--spacing-md)'
+            }}>
+                {icon}
+            </div>
+            <span style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--color-text-main)' }}>
+                {title}
+            </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            {value && (
+                <span style={{ marginRight: 'var(--spacing-xs)', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+                    {value}
+                </span>
+            )}
+            <ChevronRight size={20} color="var(--color-text-secondary)" />
+        </div>
+    </button>
+);
 
 export default MyPage;

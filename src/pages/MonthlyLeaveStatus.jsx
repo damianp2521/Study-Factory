@@ -7,6 +7,7 @@ const MonthlyLeaveStatus = () => {
     const navigate = useNavigate();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [leaves, setLeaves] = useState([]);
+    // const [loading, setLoading] = useState(true);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBranch, setSelectedBranch] = useState('전체 지점');

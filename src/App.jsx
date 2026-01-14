@@ -24,72 +24,54 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 const ProtectedRoute = ({ children }) => {
   const { user, loading, authError } = useAuth();
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '15px' }}>
+        <div style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <div style={{ color: '#718096' }}>로딩중...</div>
+        <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
   if (authError) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px' }}>
-        <div style={{ color: '#e53e3e', fontSize: '1.2rem', fontWeight: 'bold' }}>
-          시스템 오류가 발생했습니다.
-        </div>
-        <div style={{ color: '#718096' }}>{authError}</div>
-        <button
-          onClick={() => window.location.reload()}
-          style={{ padding: '10px 20px', background: '#2d3748', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-        >
-          페이지 새로고침
+        <h3 style={{ color: '#e53e3e' }}>인증 오류</h3>
+        <p style={{ color: '#718096' }}>{authError}</p>
+        <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: '#2d3748', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          새로고침
         </button>
       </div>
     );
   }
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.2rem' }}>
-        서버 연결 중...
-      </div>
-    );
+  if (!user) {
+    return <Navigate to="/login" replace />;
   }
-  if (!user) return <Navigate to="/login" replace />;
+
   return children;
 };
 
 const RootRedirect = () => {
-  const { user, loading, authError } = useAuth();
-
-  if (authError) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px' }}>
-        <div style={{ color: '#e53e3e', fontSize: '1.2rem', fontWeight: 'bold' }}>
-          초기화 중 오류 발생
-        </div>
-        <div style={{ color: '#718096' }}>{authError}</div>
-        <button
-          onClick={() => window.location.reload()}
-          style={{ padding: '10px 20px', background: '#2d3748', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-        >
-          다시 시도
-        </button>
-      </div>
-    );
-  }
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px' }}>
-        <div style={{ fontSize: '1.2rem', color: '#4a5568' }}>로그인 정보 확인 중...</div>
-        <button
-          onClick={() => window.location.href = '/login'}
-          style={{ padding: '8px 16px', background: '#cbd5e0', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#4a5568' }}
-        >
-          취소하고 로그인하기
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'white' }}>
       </div>
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
+  // Role based redirect
   const role = user.role || 'member';
-  if (role === 'admin' || role === 'staff') return <Navigate to="/managerdashboard" replace />;
+  if (role === 'admin' || role === 'staff') {
+    return <Navigate to="/managerdashboard" replace />;
+  }
   return <Navigate to="/memberdashboard" replace />;
 };
 

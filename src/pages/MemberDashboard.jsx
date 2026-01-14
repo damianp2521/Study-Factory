@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import PageTemplate from '../components/PageTemplate';
 import { LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import WorkPlanReport from '../components/WorkPlanReport';
@@ -12,7 +12,6 @@ const MemberDashboard = () => {
 
     // Carousel State
     const [activeIndex, setActiveIndex] = useState(0);
-    const containerRef = useRef(null);
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
 

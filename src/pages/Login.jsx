@@ -19,7 +19,7 @@ const nameToEmail = (name) => {
 
 const Login = () => {
     const navigate = useNavigate();
-    const { initSession } = useAuth();
+    const { login } = useAuth(); // Destructure login from context
 
     // Modes: 'login' | 'register_check' | 'register_setup'
     const [mode, setMode] = useState('login');
@@ -30,8 +30,8 @@ const Login = () => {
     const [confirmPin, setConfirmPin] = useState('');
     const [branch, setBranch] = useState('망미점');
 
-    // Captured role from authorized_users
-    const [foundRole, setFoundRole] = useState('member');
+    // Captured role removed as it was unused
+    // const [foundRole, setFoundRole] = useState('member');
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -44,22 +44,16 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const email = nameToEmail(name);
-            const password = `${pin}00`; // Pad 4 digits to 6 chars
+            // Using the new secure login method from AuthContext
+            // This waits for the user state to be fully set before resolving
+            await login(name, pin);
 
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-
-            if (signInError) throw signInError;
-
-            // Session init handled by AuthContext, just navigate
+            // Navigation handled by the component that detects user state change
+            // or we can navigate here safely now
             navigate('/');
         } catch (err) {
             console.error(err);
-            // Show raw error for debugging
-            setError(`오류 발생: ${err.message}`);
+            setError(`로그인 실패: ${err.message}`);
             setLoading(false);
         }
     };
@@ -87,7 +81,7 @@ const Login = () => {
             }
 
             // Success: Move to PIN setup
-            setFoundRole(data.role || 'member'); // Store role
+            // setFoundRole(data.role || 'member'); // Unused
             setPin('');
             setConfirmPin('');
             setMode('register_setup');
@@ -128,7 +122,7 @@ const Login = () => {
             const email = nameToEmail(name);
             const password = `${pin}00`;
 
-            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            const { error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {

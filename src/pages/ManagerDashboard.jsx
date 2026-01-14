@@ -1,9 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import CustomDatePicker from '../components/CustomDatePicker'; // Assuming this exists as used in other files
+import CustomDatePicker from '../components/CustomDatePicker';
+import AdminMemberStatus from './AdminMemberStatus';
+import AdminMemberRegister from './AdminMemberRegister';
 
 // Inline Component for Employee Vacation Status
 const EmployeeVacationStatus = () => {
@@ -30,8 +32,8 @@ const EmployeeVacationStatus = () => {
             let query = supabase
                 .from('vacation_requests')
                 .select(`
-                    *,
-                    profiles:user_id (name, branch)
+    *,
+    profiles: user_id(name, branch)
                 `)
                 .eq('date', selectedDate)
                 .order('created_at', { ascending: false }); // Sort by newest first
@@ -269,11 +271,7 @@ const EmployeeVacationStatus = () => {
     );
 };
 
-import AdminMemberStatus from './AdminMemberStatus';
-
-import AdminMemberRegister from './AdminMemberRegister';
-
-// Admin Quick Menu (3x3 Grid)
+// Imports moved to top
 // Admin Quick Menu (Flex Layout)
 const AdminQuickMenu = () => {
     const [currentView, setCurrentView] = useState('grid'); // 'grid', 'management_menu', 'register', 'status'
@@ -608,7 +606,7 @@ const ManagerDashboard = () => {
                 <div
                     style={{
                         display: 'flex',
-                        width: `${slides.length * 100}%`,
+                        width: `${slides.length * 100}% `,
                         height: '100%',
                         transform: `translateX(-${activeIndex * (100 / slides.length)}%)`,
                         transition: 'transform 0.3s ease-out'
@@ -618,7 +616,7 @@ const ManagerDashboard = () => {
                         <div
                             key={index}
                             style={{
-                                width: `${100 / slides.length}%`,
+                                width: `${100 / slides.length}% `,
                                 height: '100%',
                                 padding: '10px 20px 30px 20px',
                                 boxSizing: 'border-box',

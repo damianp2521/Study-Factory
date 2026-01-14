@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 const StaffPage = () => {
     const navigate = useNavigate();
-    const { user } = useAuth(); // Just to double check name if needed
+    // Just to double check name if needed
 
     const menuItems = [
         { title: '금일 휴무 사원', icon: <Calendar size={32} />, path: '/today-leaves' },

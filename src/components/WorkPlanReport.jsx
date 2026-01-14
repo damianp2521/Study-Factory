@@ -22,8 +22,8 @@ const WorkPlanReport = () => {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
 
-    const weekStartStr = weekStart.toISOString().split('T')[0];
-    const weekEndStr = weekEnd.toISOString().split('T')[0];
+    const weekStartStr = getMonday(currentDate).toISOString().split('T')[0];
+    // const weekEndStr = new Date(getMonday(currentDate).getTime() + 6 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     useEffect(() => {
         if (user) {

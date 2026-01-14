@@ -8,54 +8,47 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState(null);
 
-    // Helper to fetch full profile and merge with session user
-    const fetchProfile = async (sessionUser) => {
+    // 1. Unified Profile Fetcher
+    // Always returns a unified user object or throws error
+    const fetchFullProfile = async (sessionUser) => {
         if (!sessionUser) return null;
 
-        const metaRole = sessionUser.user_metadata?.role;
-        const metaName = sessionUser.user_metadata?.name;
-        const metaBranch = sessionUser.user_metadata?.branch;
-
         try {
-            // Fetch Profile from DB
+            // Fetch strict profile data from DB
             const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('id, name, branch, role')
                 .eq('id', sessionUser.id)
                 .single();
 
-            // Ignore "Row not found" errors (PGRST116) as we have fallbacks
             if (error && error.code !== 'PGRST116') {
                 console.warn('Profile fetch warning:', error.message);
             }
 
-            // Determine final values with priority: Profile DB > Metadata > Default
-            let finalRole = profile?.role;
-            if (!finalRole || finalRole === 'authenticated') finalRole = metaRole;
-            if (!finalRole || finalRole === 'authenticated') finalRole = 'member';
+            // Merge Logic: DB > Metadata > Fallback
+            // Ideally DB should be the source of truth for Role/Branch
+            const meta = sessionUser.user_metadata || {};
 
-            const finalBranch = profile?.branch || metaBranch || '미정';
-            const finalName = profile?.name || metaName || sessionUser.email?.split('@')[0] || '사용자';
+            const finalRole = profile?.role || meta.role || 'member';
+            const finalBranch = profile?.branch || meta.branch || '미정';
+            const finalName = profile?.name || meta.name || sessionUser.email?.split('@')[0];
 
             return {
                 ...sessionUser,
-                ...profile,
-                role: finalRole,
+                id: sessionUser.id,
+                email: sessionUser.email,
+                role: finalRole === 'authenticated' ? 'member' : finalRole,
                 branch: finalBranch,
                 name: finalName
             };
-
-        } catch (error) {
-            console.error('Profile fetch unexpected error:', error);
-            // Fallback to metadata on critical error
-            let finalRole = metaRole;
-            if (!finalRole || finalRole === 'authenticated') finalRole = 'member';
-
+        } catch (err) {
+            console.error("Profile construction error:", err);
+            // Fallback to metadata if DB fails catastrophicallly
             return {
                 ...sessionUser,
-                role: finalRole,
-                name: metaName || sessionUser.email?.split('@')[0],
-                branch: metaBranch || '미정'
+                role: sessionUser.user_metadata?.role || 'member',
+                branch: sessionUser.user_metadata?.branch || '미정',
+                name: sessionUser.user_metadata?.name || '사용자'
             };
         }
     };
@@ -63,80 +56,48 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let mounted = true;
 
-        const initSession = async () => {
+        // 2. Initial Session Check
+        const init = async () => {
             try {
-                // 1. Get Session directly
                 const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) throw error;
 
-                if (error) {
-                    console.error('Auth initialization error:', error);
-                    // We don't throw here, just proceed as logged out
-                }
-
-                if (mounted && session?.user) {
-                    // 2. Optimistic Update (Show UI immediately)
-                    const metaRole = session.user.user_metadata?.role || 'member';
-                    const optimisticUser = {
-                        ...session.user,
-                        role: metaRole === 'authenticated' ? 'member' : metaRole,
-                        name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
-                        branch: session.user.user_metadata?.branch || '미정'
-                    };
-                    setUser(optimisticUser);
-
-                    // 3. Background Verification
-                    // Use .then() to avoid blocking the finally block if we wanted to be super fast,
-                    // but awaiting here is safer to prevent role flickering. 
-                    // Given the user wants speed, we'll keep the optimistic set above, 
-                    // but we MUST await before setting loading=false if we want to confirm the role 
-                    // to prevent unauthorized redirects. 
-                    // HOWEVER, user asked for speed. Optimistic is key.
-
-                    const verifiedUser = await fetchProfile(session.user);
-                    if (mounted && verifiedUser) {
-                        setUser(verifiedUser);
-                    }
+                if (session?.user) {
+                    const fullUser = await fetchFullProfile(session.user);
+                    if (mounted) setUser(fullUser);
                 }
             } catch (err) {
-                console.error('Unexpected auth init error:', err);
+                console.error("Auth Init Error:", err);
+                if (mounted) setAuthError(err.message);
             } finally {
-                // 4. ALWAYS UNBLOCK UI
-                if (mounted) {
-                    setLoading(false);
-                }
+                if (mounted) setLoading(false);
             }
         };
 
-        initSession();
+        init();
 
-        // 5. Subscribe to Auth Changes
+        // 3. Application-wide Auth Listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
-
-            console.log('Auth State Change:', event);
+            console.log(`Auth Event: ${event}`);
 
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                // Ensure we don't set loading=false until we have the profile
+                // But if we are already loaded, we just update the user.
                 if (session?.user) {
-                    // Optimistic update
-                    const metaRole = session.user.user_metadata?.role || 'member';
-                    const optimisticUser = {
-                        ...session.user,
-                        role: metaRole === 'authenticated' ? 'member' : metaRole,
-                        name: session.user.user_metadata?.name,
-                        branch: session.user.user_metadata?.branch
-                    };
-                    setUser(optimisticUser);
-
-                    // Fetch authoritative profile
-                    const combinedUser = await fetchProfile(session.user);
+                    const fullUser = await fetchFullProfile(session.user);
                     if (mounted) {
-                        setUser(combinedUser);
+                        setUser(fullUser);
                         setAuthError(null);
+                        setLoading(false); // Ensure loading is cleared
                     }
                 }
             } else if (event === 'SIGNED_OUT') {
-                setUser(null);
-                setAuthError(null);
+                if (mounted) {
+                    setUser(null);
+                    setLoading(false);
+                    setAuthError(null);
+                }
             }
         });
 
@@ -146,42 +107,45 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
+    // 4. Login Action
+    // Returns a promise that resolves ONLY when the user state is set
+    // This allows Login.jsx to await this before traversing routes
     const login = async (id, password) => {
-        const email = `${id}@studyfactory.com`;
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-        if (error) throw error;
+        setLoading(true); // Optimistic loading state
+        try {
+            const email = `${id}@studyfactory.com`;
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        // CRITICAL FIX: Manually set user state immediately to prevent redirect race conditions
-        // The listener is too slow for the immediate navigation in Login.jsx
-        if (data.session?.user) {
-            const metaRole = data.session.user.user_metadata?.role || 'member';
-            const optimisticUser = {
-                ...data.session.user,
-                role: metaRole === 'authenticated' ? 'member' : metaRole,
-                name: data.session.user.user_metadata?.name,
-                branch: data.session.user.user_metadata?.branch
-            };
-            setUser(optimisticUser);
+            if (error) throw error;
+            if (data.session?.user) {
+                const fullUser = await fetchFullProfile(data.session.user);
+                setUser(fullUser);
+                return fullUser;
+            }
+        } catch (err) {
+            setLoading(false); // Reset loading on error
+            throw err;
         }
-
-        return data;
+        // Success case: loading stays true briefly until the listener confirms or we navigate
+        // actually we can set loading false here to be safe
+        setLoading(false);
     };
 
     const logout = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-        setUser(null);
+        setLoading(true);
+        await supabase.auth.signOut();
+        // Listener handles state update
     };
 
     const value = {
         user,
-        login,
-        logout,
         loading,
-        authError
+        authError,
+        login,
+        logout
     };
 
     return (

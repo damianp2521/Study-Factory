@@ -7,8 +7,8 @@ import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 const Inquiry = () => {
     const { user } = useAuth();
     const [inquiries, setInquiries] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    // const [loading, setLoading] = useState(true);
+    // const [error, setError] = useState(null);
 
     useEffect(() => {
         if (user) {

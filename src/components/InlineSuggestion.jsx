@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Send } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { MessageSquare, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { useAuth } from '../context/AuthContext';
 
 const InlineSuggestion = () => {
     // Buttons do not need functional logic yet as per request
