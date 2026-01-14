@@ -14,22 +14,6 @@ export const AuthProvider = ({ children }) => {
         if (!sessionUser) return null;
 
         try {
-            // Fetch strict profile data from DB
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('id, name, branch, role')
-                .eq('id', sessionUser.id)
-                .single();
-
-            if (error && error.code !== 'PGRST116') {
-                console.warn('Profile fetch warning:', error.message);
-            }
-
-            // Merge Logic: DB > Metadata > Fallback
-            // Ideally DB should be the source of truth for Role/Branch
-            const meta = sessionUser.user_metadata || {};
-
-            const finalRole = profile?.role || meta.role || 'member';
             const finalBranch = profile?.branch || meta.branch || '미정';
             const finalName = profile?.name || meta.name || sessionUser.email?.split('@')[0];
 
