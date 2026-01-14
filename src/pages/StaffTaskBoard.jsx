@@ -216,8 +216,6 @@ const StaffTaskBoard = () => {
 
     return (
         <div style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '15px' }}>스탭 업무 현황</h2>
-
             {/* Add Todo Input */}
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
