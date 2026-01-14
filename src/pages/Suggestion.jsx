@@ -109,8 +109,13 @@ const Suggestion = () => {
 
             {viewMode === 'create' ? (
                 <>
-                    {/* Preset Buttons */}
-                    <div className="flex-col" style={{ gap: '15px', marginBottom: '30px' }}>
+                    {/* Preset Buttons - 3x3 Grid */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '10px',
+                        marginBottom: '30px'
+                    }}>
                         {presets.map((text, index) => (
                             <button
                                 key={index}
@@ -118,31 +123,22 @@ const Suggestion = () => {
                                 disabled={loading}
                                 style={{
                                     width: '100%',
-                                    padding: '1.2rem',
-                                    borderRadius: '12px',
+                                    aspectRatio: '1', // Make them square like admin menu
+                                    padding: '10px',
+                                    borderRadius: '16px',
                                     border: 'none',
                                     background: 'white',
                                     color: 'var(--color-text-main)',
-                                    fontSize: '1rem',
-                                    fontWeight: '600',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold',
                                     cursor: 'pointer',
-                                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)', // 3D effect
-                                    transition: 'transform 0.1s, box-shadow 0.1s',
-                                    textAlign: 'left',
-                                    position: 'relative',
-                                    overflow: 'hidden'
-                                }}
-                                onMouseDown={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(2px)';
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                                }}
-                                onMouseUp={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                    e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textAlign: 'center',
+                                    wordBreak: 'keep-all',
+                                    lineHeight: '1.2'
                                 }}
                             >
                                 {text}
