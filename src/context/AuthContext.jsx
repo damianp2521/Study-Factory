@@ -17,22 +17,17 @@ export const AuthProvider = ({ children }) => {
         const metaBranch = sessionUser.user_metadata?.branch;
 
         try {
-            // 2. Fetch Profile explicitly calling columns to bypass potential '*' cache issues
-            const profilePromise = supabase
+            // 2. Fetch Profile without strict timeout constraints
+            // We rely on standard network timeout or user patience rather than forceful logout
+            const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('id, name, branch, role')
                 .eq('id', sessionUser.id)
                 .single();
 
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Profile fetch timed out')), 5000)
-            );
-
-            const { data: profile } = await Promise.race([profilePromise, timeoutPromise]);
+            if (error) throw error;
 
             // 3. Construct Final User
-            // Priority: Profile DB > Metadata > Default (never 'authenticated')
-            // If profile.role is null or 'authenticated', fall back to metadata
             let finalRole = profile?.role;
             if (!finalRole || finalRole === 'authenticated') {
                 finalRole = metaRole;
@@ -44,7 +39,6 @@ export const AuthProvider = ({ children }) => {
             const finalBranch = profile?.branch || metaBranch || '미정';
             const finalName = profile?.name || metaName || sessionUser.email?.split('@')[0] || '사용자';
 
-            // Force overwrite existing user properties to ensure correct role
             return {
                 ...sessionUser,
                 ...profile,
@@ -73,32 +67,47 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let mounted = true;
 
-        // Cleanup function for potentially stuck keys if needed
-        const safelyClearStuckStorage = () => {
-            // Optional: careful with this, but if multiple customers report hangs, might be needed.
-            // For now, relying on Login page's cleanup.
-        };
-
         const initSession = async () => {
             try {
-                // Force timeout after 3 seconds to prevent infinite loading
-                const sessionPromise = supabase.auth.getSession();
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Initial session check timed out')), 3000)
-                );
+                // 1. Get Session without custom timeout (prevents forced logout on slow connection)
+                const { data: { session }, error } = await supabase.auth.getSession();
 
-                const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+                if (error) throw error;
 
                 if (session?.user) {
-                    const combinedUser = await fetchProfile(session.user);
-                    if (mounted) setUser(combinedUser);
+                    // 2. Optimistic Update (Immediate Feedback)
+                    // Set user state immediately using metadata to unblock the UI
+                    const metaRole = session.user.user_metadata?.role || 'member';
+                    const metaName = session.user.user_metadata?.name || session.user.email?.split('@')[0];
+                    const metaBranch = session.user.user_metadata?.branch || '미정';
+
+                    const optimisticUser = {
+                        ...session.user,
+                        role: metaRole === 'authenticated' ? 'member' : metaRole,
+                        name: metaName,
+                        branch: metaBranch
+                    };
+
+                    if (mounted) {
+                        setUser(optimisticUser);
+                        setLoading(false); // Unblock UI immediately
+                    }
+
+                    // 3. Background Verification (Source of Truth)
+                    const verifiedUser = await fetchProfile(session.user);
+                    if (mounted && verifiedUser) {
+                        setUser(verifiedUser);
+                    }
+                } else {
+                    if (mounted) setLoading(false);
                 }
             } catch (error) {
                 console.error('Auth init error:', error);
-                // If timeout or error, we assume no user or let them login again
-                if (mounted) setAuthError(error.message);
-            } finally {
-                if (mounted) setLoading(false);
+                // Even on error, stop loading so user knows something happened (or can retry)
+                if (mounted) {
+                    setAuthError(error.message);
+                    setLoading(false);
+                }
             }
         };
 
@@ -106,12 +115,30 @@ export const AuthProvider = ({ children }) => {
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                const combinedUser = await fetchProfile(session?.user);
-                if (mounted) setUser(combinedUser);
-                if (mounted) setAuthError(null); // Clear error on success
+                if (mounted && session?.user) {
+                    // For auth state changes, we can also be optimistic if needed, 
+                    // but usually simpler to just fetch. 
+                    // To keep it smooth, we can set user based on session first.
+                    const metaRole = session.user.user_metadata?.role || 'member';
+                    const optimisticUser = {
+                        ...session.user,
+                        role: metaRole === 'authenticated' ? 'member' : metaRole,
+                        name: session.user.user_metadata?.name,
+                        branch: session.user.user_metadata?.branch
+                    };
+                    setUser(optimisticUser);
+
+                    const combinedUser = await fetchProfile(session.user);
+                    if (mounted) {
+                        setUser(combinedUser);
+                        setAuthError(null);
+                    }
+                }
             } else if (event === 'SIGNED_OUT') {
-                if (mounted) setUser(null);
-                if (mounted) setAuthError(null);
+                if (mounted) {
+                    setUser(null);
+                    setAuthError(null);
+                }
             }
         });
 
