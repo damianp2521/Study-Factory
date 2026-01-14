@@ -22,7 +22,7 @@ const AdminMemberStatus = ({ onBack }) => {
             const { data, error } = await supabase
                 .from('authorized_users')
                 .select('*')
-                .eq('is_registered', true)
+                // .eq('is_registered', true) // Removed filter to show all users for management
                 .order('name', { ascending: true });
 
             if (error) throw error;
