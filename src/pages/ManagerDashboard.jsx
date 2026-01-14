@@ -269,20 +269,7 @@ const EmployeeVacationStatus = () => {
     );
 };
 
-// Stub for Employee Status
-const EmployeeStatus = ({ onBack }) => (
-    <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-            <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: '10px' }}>
-                <ChevronLeft size={24} color="#2d3748" />
-            </button>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>사원 현황</h2>
-        </div>
-        <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '50px' }}>
-            준비 중입니다.
-        </div>
-    </div>
-);
+import AdminMemberStatus from './AdminMemberStatus';
 
 import AdminMemberRegister from './AdminMemberRegister';
 
@@ -295,7 +282,7 @@ const AdminQuickMenu = () => {
         return <AdminMemberRegister onBack={() => setCurrentView('management_menu')} />;
     }
     if (currentView === 'status') {
-        return <EmployeeStatus onBack={() => setCurrentView('management_menu')} />;
+        return <AdminMemberStatus onBack={() => setCurrentView('management_menu')} />;
     }
 
     // Sub-menu for Employee Management
