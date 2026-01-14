@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageTemplate from '../components/PageTemplate';
-import { LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LogOut, ChevronLeft, ChevronRight, CircleHelp } from 'lucide-react';
+import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 import WorkPlanReport from '../components/WorkPlanReport';
 import InlineVacationRequest from '../components/InlineVacationRequest';
@@ -73,31 +74,55 @@ const MemberDashboard = () => {
             overflow: 'hidden',
             backgroundColor: '#f8fafc'
         }}>
-            {/* Top Navigation Bar */}
+            {/* 1. Global Header Bar (Logout - Logo - Help) */}
             <div style={{
-                padding: 'var(--spacing-md)',
-                paddingTop: 'calc(env(safe-area-inset-top) + 20px)',
-                position: 'relative',
-                marginBottom: '10px'
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px 20px',
+                paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
+                backgroundColor: '#ffffff',
+                borderBottom: '1px solid #f0f0f0'
             }}>
-                {/* Logout Button Absolute Left */}
                 <button
                     onClick={handleLogout}
                     style={{
-                        position: 'absolute',
-                        left: '20px',
-                        top: 'calc(env(safe-area-inset-top) + 20px)',
-                        paddingTop: 0,
                         background: 'none',
                         border: 'none',
-                        color: 'var(--color-text-secondary)',
+                        color: '#718096',
                         cursor: 'pointer',
-                        zIndex: 20
+                        padding: '5px',
+                        display: 'flex', alignItems: 'center'
                     }}
                 >
                     <LogOut size={24} />
                 </button>
 
+                <div style={{ height: '30px', display: 'flex', alignItems: 'center' }}>
+                    <img src={logo} alt="자격증공장" style={{ height: '100%', objectFit: 'contain' }} />
+                </div>
+
+                <button
+                    onClick={() => { }} // Placeholder
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#718096',
+                        cursor: 'pointer',
+                        padding: '5px',
+                        display: 'flex', alignItems: 'center'
+                    }}
+                >
+                    <CircleHelp size={24} />
+                </button>
+            </div>
+
+            {/* 2. Navigation Title Bar (Moved Down) */}
+            <div style={{
+                padding: '15px 20px',
+                paddingBottom: '5px',
+                position: 'relative',
+            }}>
                 {/* Grid for perfect centering */}
                 <div style={{
                     display: 'grid',
