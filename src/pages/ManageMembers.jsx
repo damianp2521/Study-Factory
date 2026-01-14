@@ -7,7 +7,7 @@ const ManageMembers = () => {
     const [loading, setLoading] = useState(true);
     const [selectedBranch, setSelectedBranch] = useState('전체');
 
-    const branches = ['전체', '망미점', '센텀점'];
+    const branches = ['전체', '망미점'];
 
     useEffect(() => {
         fetchMembers();
