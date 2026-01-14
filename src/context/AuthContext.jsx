@@ -77,7 +77,12 @@ export const AuthProvider = ({ children }) => {
                 }
             } catch (err) {
                 console.error("Auth Init Error:", err);
-                if (mounted) setAuthError(err.message || 'Initialization failed');
+                // Fail Open: If timeout or error, assume logged out and let them try to login manually.
+                // This prevents the user from being stuck on an error screen due to a stale session or slow network.
+                if (mounted) {
+                    setAuthError(null); // Do not block UI with error
+                    setUser(null);      // Set as guest
+                }
             } finally {
                 if (mounted) setLoading(false);
             }
