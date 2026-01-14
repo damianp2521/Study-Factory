@@ -153,7 +153,20 @@ export const AuthProvider = ({ children }) => {
             password,
         });
         if (error) throw error;
-        // The onAuthStateChange listener will handle the user state update
+
+        // CRITICAL FIX: Manually set user state immediately to prevent redirect race conditions
+        // The listener is too slow for the immediate navigation in Login.jsx
+        if (data.session?.user) {
+            const metaRole = data.session.user.user_metadata?.role || 'member';
+            const optimisticUser = {
+                ...data.session.user,
+                role: metaRole === 'authenticated' ? 'member' : metaRole,
+                name: data.session.user.user_metadata?.name,
+                branch: data.session.user.user_metadata?.branch
+            };
+            setUser(optimisticUser);
+        }
+
         return data;
     };
 
