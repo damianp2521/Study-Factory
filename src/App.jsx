@@ -66,11 +66,24 @@ const RootRedirect = () => {
   }
 
   if (authError) {
+    const currentUrl = import.meta.env.VITE_SUPABASE_URL || 'Not Set';
+    const isPlaceholder = currentUrl.includes('placeholder');
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px', padding: '20px', textAlign: 'center' }}>
         <h3 style={{ color: '#e53e3e' }}>연결 오류</h3>
         <p style={{ color: '#718096' }}>서버와 연결할 수 없습니다.</p>
-        <p style={{ fontSize: '12px', color: '#a0aec0' }}>({authError})</p>
+
+        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '8px', fontSize: '12px', color: '#4a5568', maxWidth: '100%', overflow: 'auto' }}>
+          <p><strong>Error:</strong> {authError}</p>
+          <p style={{ marginTop: '5px' }}><strong>Configured URL:</strong> {currentUrl}</p>
+          {isPlaceholder && (
+            <p style={{ color: '#e53e3e', fontWeight: 'bold', marginTop: '5px' }}>
+              ⚠️ 환경변수가 적용되지 않았습니다. Vercel에서 Redeploy가 필요합니다.
+            </p>
+          )}
+        </div>
+
         <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: '#2d3748', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
           새로고침
         </button>
