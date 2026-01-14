@@ -91,10 +91,24 @@ const AdminMemberRegister = ({ onBack }) => {
         <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: '10px' }}>
-                    <ArrowLeft size={24} color="#2d3748" />
+                <button
+                    onClick={onBack}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        marginLeft: '-8px', // Compensate for padding to align visually
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#2d3748'
+                    }}
+                >
+                    <ArrowLeft size={24} />
                 </button>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>사원 사전 등록</h2>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>사원 사전 등록</h2>
             </div>
 
             {/* Form */}
