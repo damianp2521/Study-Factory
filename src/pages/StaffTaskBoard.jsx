@@ -85,7 +85,7 @@ const StaffTaskBoard = () => {
             fetchData();
         } catch (error) {
             console.error('Error adding todo:', error);
-            alert('투두 추가 실패');
+            alert(`투두 추가 실패: ${error.message || error.details || JSON.stringify(error)}`);
         }
     };
 
