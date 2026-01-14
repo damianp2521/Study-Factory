@@ -7,8 +7,9 @@ const AdminMemberStatus = ({ onBack }) => {
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({ branch: '', role: '' });
+    const [selectedBranch, setSelectedBranch] = useState('전체');
 
-    const branches = ['망미점']; // Add more if needed in future
+    const branches = ['전체', '망미점'];
 
     useEffect(() => {
         fetchUsers();
@@ -17,12 +18,9 @@ const AdminMemberStatus = ({ onBack }) => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            // Fetch ALL users (or just registered ones? "가입되어있는" implies registered)
-            // Let's filter by is_registered = true as requested "가입되어있는 모든 사원"
             const { data, error } = await supabase
                 .from('authorized_users')
                 .select('*')
-                // .eq('is_registered', true) // Removed filter to show all users for management
                 .order('name', { ascending: true });
 
             if (error) throw error;
@@ -103,41 +101,69 @@ const AdminMemberStatus = ({ onBack }) => {
         }
     };
 
+    const filteredUsers = selectedBranch === '전체'
+        ? users
+        : users.filter(user => user.branch === selectedBranch);
+
     return (
         <div style={{ height: '100%', overflowY: 'auto' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                <button
-                    onClick={onBack}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <button
+                        onClick={onBack}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '8px',
+                            marginLeft: '-8px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#2d3748'
+                        }}
+                    >
+                        <ChevronLeft size={26} />
+                    </button>
+                    <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>사원 현황</h2>
+                </div>
+
+                {/* Branch Filter */}
+                <select
+                    value={selectedBranch}
+                    onChange={(e) => setSelectedBranch(e.target.value)}
                     style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '8px',
-                        marginLeft: '-8px', // Compensate for padding to align visually
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#2d3748'
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '0.9rem',
+                        color: '#4a5568',
+                        backgroundColor: 'white',
+                        outline: 'none',
+                        cursor: 'pointer'
                     }}
                 >
-                    <ChevronLeft size={26} />
-                </button>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>사원 현황</h2>
+                    {branches.map(branch => (
+                        <option key={branch} value={branch}>
+                            {branch === '전체' ? '전체 지점' : branch}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             {/* List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {loading && <div style={{ textAlign: 'center', color: '#a0aec0' }}>로딩 중...</div>}
 
-                {!loading && users.length === 0 && (
+                {!loading && filteredUsers.length === 0 && (
                     <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '50px' }}>
-                        등록된 사원이 없습니다.
+                        {selectedBranch === '전체' ? '등록된 사원이 없습니다.' : '해당 지점에 사원이 없습니다.'}
                     </div>
                 )}
 
-                {users.map(user => (
+                {filteredUsers.map(user => (
                     <div key={user.id} style={{
                         background: 'white',
                         borderRadius: '16px',
