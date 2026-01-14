@@ -79,7 +79,8 @@ const AdminMemberStatus = ({ onBack }) => {
             alert('수정되었습니다.');
         } catch (error) {
             console.error('Update error:', error);
-            alert('수정에 실패했습니다.');
+            // Alert detailed error message to help debugging
+            alert(`수정에 실패했습니다.\n사유: ${error.message || error.details || JSON.stringify(error)}`);
         }
     };
 
