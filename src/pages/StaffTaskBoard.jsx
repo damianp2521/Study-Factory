@@ -202,6 +202,18 @@ const StaffTaskBoard = () => {
         return { borderColor: '#bee3f8', bg: '#ebf8ff', text: '#2c5282' }; // Blue
     };
 
+    // Check Delete Permission Helper
+    const canUserDelete = (task) => {
+        const isAdmin = user.role === 'admin' || user.role === 'manager';
+        if (isAdmin) return true;
+
+        // Staff can only delete their own pending tasks
+        if (task.type === 'staff' && task.status === 'pending' && task.created_by === user.id) {
+            return true;
+        }
+        return false;
+    };
+
     return (
         <div style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '15px' }}>스탭 업무 현황</h2>
@@ -277,6 +289,7 @@ const StaffTaskBoard = () => {
                     sortedTasks.map(task => {
                         const style = getTaskStyle(task);
                         const isCompleted = task.status === 'completed';
+                        const showDelete = canUserDelete(task);
 
                         return (
                             <div
@@ -342,23 +355,25 @@ const StaffTaskBoard = () => {
                                     </div>
                                 </div>
 
-                                {/* Delete Button */}
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
-                                    style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: isCompleted ? '#cbd5e0' : '#e53e3e',
-                                        cursor: 'pointer',
-                                        padding: '4px',
-                                        marginLeft: '8px',
-                                        opacity: 0.5
-                                    }}
-                                    onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                {/* Delete Button - Conditionally Rendered */}
+                                {showDelete && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            color: isCompleted ? '#cbd5e0' : '#e53e3e',
+                                            cursor: 'pointer',
+                                            padding: '4px',
+                                            marginLeft: '8px',
+                                            opacity: 0.5
+                                        }}
+                                        onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                                        onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
                         );
                     })
