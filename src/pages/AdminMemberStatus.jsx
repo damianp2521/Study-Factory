@@ -122,7 +122,7 @@ const AdminMemberStatus = ({ onBack }) => {
                         color: '#2d3748'
                     }}
                 >
-                    <ArrowLeft size={24} />
+                    <ChevronLeft size={26} />
                 </button>
                 <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>사원 현황</h2>
             </div>
