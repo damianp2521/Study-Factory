@@ -99,11 +99,7 @@ const Suggestion = () => {
     };
 
     const handleBack = () => {
-        if (selectedCategory) {
-            setSelectedCategory(null);
-        } else {
-            navigate('/dashboard');
-        }
+        navigate('/dashboard');
     };
 
     return (
@@ -121,22 +117,20 @@ const Suggestion = () => {
                         {selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : '건의사항'}
                     </h2>
                 </div>
-                {!selectedCategory && (
-                    <button
-                        onClick={() => setViewMode(viewMode === 'create' ? 'history' : 'create')}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            fontSize: '0.9rem',
-                            fontWeight: 'bold',
-                            color: 'var(--color-text-secondary)',
-                            textDecoration: 'underline',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        {viewMode === 'create' ? '내 건의 내역' : '건의하기 홈'}
-                    </button>
-                )}
+                <button
+                    onClick={() => setViewMode(viewMode === 'create' ? 'history' : 'create')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        color: 'var(--color-text-secondary)',
+                        textDecoration: 'underline',
+                        cursor: 'pointer'
+                    }}
+                >
+                    {viewMode === 'create' ? '내 건의 내역' : '건의하기 홈'}
+                </button>
             </div>
 
             {viewMode === 'history' ? (
@@ -186,96 +180,65 @@ const Suggestion = () => {
                         ))
                     )}
                 </div>
-            ) : !selectedCategory ? (
-                /* Main Category Selection (3x3 Grid like Admin Page) */
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)', // 2x2 grid looks better for 4 items, but user asked for 3x3 style. Let's stick to 2x2 for these 4 big buttons as per screenshot
-                    gap: '15px'
-                }}>
-                    {categories.map((cat) => (
-                        <button
-                            key={cat.id}
-                            onClick={() => {
-                                if (cat.id === 'equipment') {
-                                    setSelectedCategory('equipment');
-                                } else {
-                                    alert('준비 중인 기능입니다.');
-                                }
-                            }}
-                            style={{
-                                aspectRatio: '2/1', // Wider buttons for categories
-                                padding: '20px',
-                                borderRadius: '16px',
-                                border: '1px solid #e2e8f0',
-                                background: 'white',
-                                color: 'var(--color-text-main)',
-                                fontSize: '1.1rem',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
-                        >
-                            {cat.label}
-                        </button>
-                    ))}
-                </div>
             ) : (
-                /* Equipment Detail View */
+                /* Create View - Presets & Input */
                 <>
-                    {/* Preset Buttons - 2x2 Grid for Presets */}
-                    {/* Preset Buttons - Vertical List */}
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '12px',
-                        marginBottom: '30px'
-                    }}>
-                        {equipmentPresets.map((text, index) => (
-                            <button
-                                key={index}
-                                onClick={() => handleSubmit(text, '비품')}
-                                disabled={loading}
-                                style={{
-                                    width: '100%',
-                                    padding: '16px 20px',
-                                    borderRadius: '12px',
-                                    border: '1px solid #e2e8f0', // Light border for list item definition
-                                    background: 'white',
-                                    color: 'var(--color-text-main)',
-                                    fontSize: '1rem',
-                                    fontWeight: '500',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between', // Space between text and arrow
-                                    textAlign: 'left',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                <span>{text}</span>
-                                <Send size={16} color="var(--color-primary)" style={{ opacity: 0.7 }} />
-                            </button>
-                        ))}
-                    </div>
+                    {/* Only show presets if category is equipment or generic? User focused on Equipment. 
+                        If I remove the grid, I should just render the presets if category is equipment.
+                        Or just render them? The user's request was "Let's do equipment only".
+                        If a user clicks "Study" from dashboard, we enter here with 'study'.
+                        Should we show equipment presets for 'Study'? No.
+                    */}
+                    {(!selectedCategory || selectedCategory === 'equipment') && (
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                            marginBottom: '30px'
+                        }}>
+                            {equipmentPresets.map((text, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleSubmit(text, '비품')} // Fixed to '비품'
+                                    disabled={loading}
+                                    style={{
+                                        width: '100%',
+                                        padding: '16px 20px',
+                                        borderRadius: '12px',
+                                        border: '1px solid #e2e8f0',
+                                        background: 'white',
+                                        color: 'var(--color-text-main)',
+                                        fontSize: '1rem',
+                                        fontWeight: '500',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        textAlign: 'left',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <span>{text}</span>
+                                    <Send size={16} color="var(--color-primary)" style={{ opacity: 0.7 }} />
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Custom Input */}
                     <div style={{ marginTop: 'auto' }}>
                         <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>
-                            기타 비품관련 건의
+                            {selectedCategory ? `${categories.find(c => c.id === selectedCategory)?.label || '기타'} 내용` : '기타 건의사항'}
                         </label>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             <textarea
                                 value={customInput}
                                 onChange={(e) => setCustomInput(e.target.value)}
-                                placeholder="필요한 비품이나 건의사항을 적어주세요..."
+                                placeholder="건의하실 내용을 입력해주세요..."
                                 style={{
                                     width: '100%',
-                                    height: '100px',
+                                    height: '120px',
                                     padding: '15px',
                                     borderRadius: '12px',
                                     border: '1px solid #ddd',
@@ -287,7 +250,7 @@ const Suggestion = () => {
                                 }}
                             />
                             <button
-                                onClick={() => handleSubmit(customInput, '비품')}
+                                onClick={() => handleSubmit(customInput, selectedCategory === 'equipment' ? '비품' : (categories.find(c => c.id === selectedCategory)?.label || '기타'))}
                                 disabled={loading || !customInput.trim()}
                                 style={{
                                     width: '100%',
