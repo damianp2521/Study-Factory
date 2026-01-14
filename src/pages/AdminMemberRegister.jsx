@@ -88,7 +88,7 @@ const AdminMemberRegister = ({ onBack }) => {
     };
 
     return (
-        <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+        <div style={{ height: '100%', overflowY: 'auto' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
                 <button
