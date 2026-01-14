@@ -65,27 +65,14 @@ const AdminMemberStatus = ({ onBack }) => {
 
     const saveEdit = async (id) => {
         try {
-            // 1. Update authorized_users
-            const { error } = await supabase
-                .from('authorized_users')
-                .update({ branch: editForm.branch, role: editForm.role })
-                .eq('id', id);
+            // Apply updates securely using the RPC function we just created
+            const { error } = await supabase.rpc('update_employee_info', {
+                target_id: id,
+                new_branch: editForm.branch,
+                new_role: editForm.role
+            });
 
             if (error) throw error;
-
-            // 2. Sync to public.profiles (Active User Data)
-            // Find user to get the name for matching
-            const user = users.find(u => u.id === id);
-            if (user) {
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .update({ branch: editForm.branch, role: editForm.role })
-                    .eq('name', user.name);
-
-                if (profileError) {
-                    console.warn("Profile sync failed:", profileError);
-                }
-            }
 
             setEditingId(null);
             fetchUsers();
