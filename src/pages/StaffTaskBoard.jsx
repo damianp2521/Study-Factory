@@ -127,22 +127,21 @@ const StaffTaskBoard = () => {
         if (!confirm('정말 삭제하시겠습니까?')) return;
 
         // Permission Check
-        const isAdmin = user.role === 'admin' || user.role === 'manager'; // Assuming manager is admin-like
-        // Note: User prompt said "Admin also can delete ...", usually implies role check.
-        // Assuming current user object has role. 
-
-        // Rule 1: Own incomplete staff todo -> OK
-        // Rule 2: Completed todo / Member suggestion -> Admin only
+        // Permission Check
+        const isAdmin = user.role === 'admin' || user.role === 'manager';
 
         let canDelete = false;
-        if (task.type === 'staff') {
+
+        // Admin overrides all
+        if (isAdmin) {
+            canDelete = true;
+        } else if (task.type === 'staff') {
+            // Staff can only delete their own pending tasks
             if (task.status === 'pending' && task.created_by === user.id) canDelete = true;
-            else if (isAdmin) canDelete = true;
-        } else {
-            if (isAdmin) canDelete = true;
         }
 
         if (!canDelete) {
+            console.log('Delete permission denied:', { role: user.role, type: task.type, status: task.status, creator: task.created_by, userId: user.id });
             alert('삭제 권한이 없습니다.');
             return;
         }
@@ -328,9 +327,11 @@ const StaffTaskBoard = () => {
                                         color: isCompleted ? '#cbd5e0' : style.text,
                                         opacity: 0.8
                                     }}>
-                                        {task.type === 'suggestion' && <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}><MessageCircle size={10} /> 회원건의</span>}
-                                        <span>요청: {task.authorName}</span>
-                                        {task.completerName && <span>| 완료: {task.completerName}</span>}
+                                        {task.type === 'suggestion' ? (
+                                            <span>(요청 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`})</span>
+                                        ) : (
+                                            <span>작성 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`}</span>
+                                        )}
                                     </div>
                                 </div>
 
