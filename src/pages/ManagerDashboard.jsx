@@ -464,8 +464,6 @@ const ManagerDashboard = () => {
     if (isAdmin) {
         // Prepend Admin Page (0th page)
         slides.unshift({ title: '관리자 페이지', component: <AdminQuickMenu /> });
-        // Append Monthly Stats as before
-        slides.push({ title: '월별 휴가 현황', component: <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#a0aec0' }}>월별 통계 준비중</div> });
     }
 
     const handleLogout = async () => {
