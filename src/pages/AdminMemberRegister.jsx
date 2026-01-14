@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const AdminMemberRegister = ({ onBack }) => {
+    console.log('AdminMemberRegister mounting');
     const [name, setName] = useState('');
     const [branch, setBranch] = useState('망미점');
     const [role, setRole] = useState('member'); // Default to member
