@@ -227,10 +227,11 @@ const Suggestion = () => {
                 /* Equipment Detail View */
                 <>
                     {/* Preset Buttons - 2x2 Grid for Presets */}
+                    {/* Preset Buttons - Vertical List */}
                     <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: '15px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
                         marginBottom: '30px'
                     }}>
                         {equipmentPresets.map((text, index) => (
@@ -240,25 +241,24 @@ const Suggestion = () => {
                                 disabled={loading}
                                 style={{
                                     width: '100%',
-                                    aspectRatio: '1',
-                                    padding: '10px',
-                                    borderRadius: '16px',
-                                    border: 'none',
+                                    padding: '16px 20px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #e2e8f0', // Light border for list item definition
                                     background: 'white',
                                     color: 'var(--color-text-main)',
-                                    fontSize: '0.95rem',
-                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    fontWeight: '500',
                                     cursor: 'pointer',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    justifyContent: 'center',
-                                    textAlign: 'center',
-                                    wordBreak: 'keep-all',
-                                    lineHeight: '1.3'
+                                    justifyContent: 'space-between', // Space between text and arrow
+                                    textAlign: 'left',
+                                    transition: 'all 0.2s'
                                 }}
                             >
-                                {text}
+                                <span>{text}</span>
+                                <Send size={16} color="var(--color-primary)" style={{ opacity: 0.7 }} />
                             </button>
                         ))}
                     </div>
