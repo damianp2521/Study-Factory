@@ -79,12 +79,7 @@ const AdminMemberStatus = ({ onBack }) => {
             setEditingId(null);
             fetchUsers();
 
-            // Check if profile was actually updated
-            if (data && data.profile_updated === 0) {
-                alert(`수정 완료 (등록DB)\n\n⚠️ 주의: 실제 가입된 계정(Profile)은 업데이트되지 않았습니다.\n이유: 아직 가입하지 않았거나, 이름 띄어쓰기가 다를 수 있습니다.`);
-            } else {
-                alert(`완벽하게 수정되었습니다!\n(등록DB + 가입계정 모두 반영 완료)`);
-            }
+            alert('수정되었습니다.');
         } catch (error) {
             console.error('Update error:', error);
             // Alert detailed error message to help debugging
