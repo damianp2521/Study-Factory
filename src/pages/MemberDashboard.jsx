@@ -97,8 +97,16 @@ const MemberDashboard = () => {
                     <LogOut size={24} />
                 </button>
 
-                <div style={{ height: '30px', display: 'flex', alignItems: 'center' }}>
-                    <img src={logo} alt="자격증공장" style={{ height: '100%', objectFit: 'contain' }} />
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                }}>
+                    <img src={logo} alt="자격증공장" style={{ height: '24px', objectFit: 'contain' }} />
                 </div>
 
                 <button
