@@ -52,7 +52,12 @@ const Login = () => {
             const fullEmail = nameToEmail(name);
             const id = fullEmail.split('@')[0]; // Extract 'u_xxxx' part
 
-            await login(id, pin);
+            // FIX 2: Password Mismatch
+            // Registration sets password as pin + '00'
+            // We must append '00' here to match it.
+            const finalPassword = pin + '00';
+
+            await login(id, finalPassword);
 
             // Navigation handled by the component that detects user state change
             // or we can navigate here safely now
