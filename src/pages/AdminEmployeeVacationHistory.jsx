@@ -107,9 +107,13 @@ const AdminEmployeeVacationHistory = ({ onBack }) => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     };
 
-    const filteredUsers = selectedBranch === '전체'
-        ? users
-        : users.filter(user => user.branch === selectedBranch);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredUsers = users.filter(user => {
+        const branchMatch = selectedBranch === '전체' || user.branch === selectedBranch;
+        const nameMatch = user.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return branchMatch && nameMatch;
+    });
 
     // --- RENDER ---
 
@@ -118,8 +122,8 @@ const AdminEmployeeVacationHistory = ({ onBack }) => {
         return (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                         <button
                             onClick={onBack}
                             style={{
@@ -137,31 +141,52 @@ const AdminEmployeeVacationHistory = ({ onBack }) => {
                         >
                             <ChevronLeft size={26} />
                         </button>
-                        <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>
+                        <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, whiteSpace: 'nowrap' }}>
                             사원별 휴가 현황
                         </h2>
                     </div>
 
-                    <select
-                        value={selectedBranch}
-                        onChange={(e) => setSelectedBranch(e.target.value)}
-                        style={{
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0',
-                            fontSize: '0.9rem',
-                            color: '#4a5568',
-                            backgroundColor: 'white',
-                            outline: 'none',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        {branches.map(branch => (
-                            <option key={branch} value={branch}>
-                                {branch === '전체' ? '전체 지점' : branch}
-                            </option>
-                        ))}
-                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'flex-end', minWidth: 0 }}>
+                        <select
+                            value={selectedBranch}
+                            onChange={(e) => setSelectedBranch(e.target.value)}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                fontSize: '0.9rem',
+                                color: '#4a5568',
+                                backgroundColor: 'white',
+                                outline: 'none',
+                                cursor: 'pointer',
+                                flexShrink: 0
+                            }}
+                        >
+                            {branches.map(branch => (
+                                <option key={branch} value={branch}>
+                                    {branch === '전체' ? '전체 지점' : branch}
+                                </option>
+                            ))}
+                        </select>
+
+                        <div style={{ position: 'relative', maxWidth: '140px', flex: 1 }}>
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="이름 검색"
+                                style={{
+                                    width: '100%',
+                                    padding: '8px 12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: '0.9rem',
+                                    outline: 'none',
+                                    boxSizing: 'border-box'
+                                }}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
