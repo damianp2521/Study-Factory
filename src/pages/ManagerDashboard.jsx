@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import CustomDatePicker from '../components/CustomDatePicker';
 import AdminMemberStatus from './AdminMemberStatus';
 import AdminMemberRegister from './AdminMemberRegister';
+import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
 import StaffTaskBoard from './StaffTaskBoard';
 
 // Inline Component for Employee Vacation Status
@@ -272,16 +273,18 @@ const EmployeeVacationStatus = () => {
     );
 };
 
-// Imports moved to top
 // Admin Quick Menu (Flex Layout)
 const AdminQuickMenu = () => {
-    const [currentView, setCurrentView] = useState('grid'); // 'grid', 'management_menu', 'register', 'status'
+    const [currentView, setCurrentView] = useState('grid'); // 'grid', 'management_menu', 'register', 'status', 'vacation_history'
 
     if (currentView === 'register') {
         return <AdminMemberRegister onBack={() => setCurrentView('management_menu')} />;
     }
     if (currentView === 'status') {
         return <AdminMemberStatus onBack={() => setCurrentView('management_menu')} />;
+    }
+    if (currentView === 'vacation_history') {
+        return <AdminEmployeeVacationHistory onBack={() => setCurrentView('management_menu')} />;
     }
 
     // Sub-menu for Employee Management
@@ -310,6 +313,7 @@ const AdminQuickMenu = () => {
                 </div>
                 {/* Flow Layout for Sub-menu Buttons - Starts Top Left */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start' }}>
+                    {/* 1. Register */}
                     <button
                         onClick={() => setCurrentView('register')}
                         style={{
@@ -335,6 +339,7 @@ const AdminQuickMenu = () => {
                         </div>
                         <span style={{ textAlign: 'center' }}>사원등록</span>
                     </button>
+                    {/* 2. Status */}
                     <button
                         onClick={() => setCurrentView('status')}
                         style={{
@@ -359,6 +364,32 @@ const AdminQuickMenu = () => {
                             <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>≡</span>
                         </div>
                         <span style={{ textAlign: 'center' }}>사원현황</span>
+                    </button>
+                    {/* 3. Vacation History (NEW) */}
+                    <button
+                        onClick={() => setCurrentView('vacation_history')}
+                        style={{
+                            width: 'calc(33.33% - 10px)',
+                            aspectRatio: '1',
+                            borderRadius: '16px',
+                            border: 'none',
+                            background: '#f7fafc',
+                            color: '#2d3748',
+                            fontSize: '0.8rem', // Slightly smaller font for longer text
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <div style={{ width: '32px', height: '32px', background: '#fff5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c53030', marginBottom: '5px' }}>
+                            <Calendar size={20} />
+                        </div>
+                        <span style={{ textAlign: 'center', lineHeight: '1.2' }}>휴가조회</span>
                     </button>
                 </div>
             </div>
