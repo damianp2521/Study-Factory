@@ -200,7 +200,7 @@ const Login = () => {
                 onClick={() => { setMode('register_check'); setError(''); setName(''); setBranch('망미점'); }}
                 style={{ ...secondaryButtonStyle, marginTop: '15px' }}
             >
-                사원등록 (처음이신가요?)
+                사원등록
             </button>
         </form>
     );
