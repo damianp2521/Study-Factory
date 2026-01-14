@@ -8,87 +8,101 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState(null);
 
-    // 1. Unified Profile Fetcher
-    // Always returns a unified user object or throws error
-    const fetchFullProfile = async (sessionUser) => {
+    // 1. Construct User from Session (Immediate)
+    const constructUserFromSession = (sessionUser) => {
         if (!sessionUser) return null;
+        const meta = sessionUser.user_metadata || {};
+        return {
+            ...sessionUser,
+            role: meta.role || 'member',
+            branch: meta.branch || '미정',
+            name: meta.name || sessionUser.email?.split('@')[0],
+            isSynced: false
+        };
+    };
+
+    // 2. Background Profile Sync
+    const syncProfileInBackground = async (sessionUser) => {
+        if (!sessionUser) return;
 
         try {
-            const finalBranch = profile?.branch || meta.branch || '미정';
-            const finalName = profile?.name || meta.name || sessionUser.email?.split('@')[0];
+            console.log("Starting background profile sync...");
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('id, name, branch, role')
+                .eq('id', sessionUser.id)
+                .single();
 
-            return {
-                ...sessionUser,
-                id: sessionUser.id,
-                email: sessionUser.email,
-                role: finalRole === 'authenticated' ? 'member' : finalRole,
-                branch: finalBranch,
-                name: finalName
-            };
+            if (error && error.code !== 'PGRST116') {
+                console.warn('Background sync warning:', error.message);
+                return;
+            }
+
+            if (profile) {
+                setUser(prev => {
+                    if (!prev) return null;
+                    const nextUser = {
+                        ...prev,
+                        ...sessionUser,
+                        role: profile.role || prev.role,
+                        branch: profile.branch || prev.branch,
+                        name: profile.name || prev.name,
+                        isSynced: true
+                    };
+                    if (JSON.stringify(prev) === JSON.stringify(nextUser)) return prev;
+                    return nextUser;
+                });
+                console.log("Profile synced from DB");
+            }
         } catch (err) {
-            console.error("Profile construction error:", err);
-            // Fallback to metadata if DB fails catastrophicallly
-            return {
-                ...sessionUser,
-                role: sessionUser.user_metadata?.role || 'member',
-                branch: sessionUser.user_metadata?.branch || '미정',
-                name: sessionUser.user_metadata?.name || '사용자'
-            };
+            console.error("Background sync failed:", err);
         }
     };
 
     useEffect(() => {
         let mounted = true;
 
-        // 2. Initial Session Check
         const init = async () => {
             try {
-                // Create a timeout promise that rejects after 15 seconds (increased for cold starts)
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Connection timeout')), 15000)
-                );
-
-                // Race the session check against the timeout
-                const sessionPromise = supabase.auth.getSession();
-
-                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
-
+                // Quick Session Check
+                const { data: { session }, error } = await supabase.auth.getSession();
                 if (error) throw error;
 
                 if (session?.user) {
-                    const fullUser = await fetchFullProfile(session.user);
-                    if (mounted) setUser(fullUser);
+                    const immediateUser = constructUserFromSession(session.user);
+                    if (mounted) {
+                        setUser(immediateUser);
+                        setLoading(false);
+                    }
+                    syncProfileInBackground(session.user);
+                } else {
+                    if (mounted) setLoading(false);
                 }
             } catch (err) {
                 console.error("Auth Init Error:", err);
-                // Fail Open: If timeout or error, assume logged out and let them try to login manually.
-                // This prevents the user from being stuck on an error screen due to a stale session or slow network.
                 if (mounted) {
-                    setAuthError(null); // Do not block UI with error
-                    setUser(null);      // Set as guest
+                    setAuthError(null);
+                    setUser(null);
+                    setLoading(false);
                 }
-            } finally {
-                if (mounted) setLoading(false);
             }
         };
 
         init();
 
-        // 3. Application-wide Auth Listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!mounted) return;
             console.log(`Auth Event: ${event}`);
 
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                // Ensure we don't set loading=false until we have the profile
-                // But if we are already loaded, we just update the user.
                 if (session?.user) {
-                    const fullUser = await fetchFullProfile(session.user);
+                    const immediateUser = constructUserFromSession(session.user);
                     if (mounted) {
-                        setUser(fullUser);
+                        setUser(immediateUser);
+                        setLoading(false);
                         setAuthError(null);
-                        setLoading(false); // Ensure loading is cleared
                     }
+                    syncProfileInBackground(session.user);
                 }
             } else if (event === 'SIGNED_OUT') {
                 if (mounted) {
@@ -105,11 +119,8 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
-    // 4. Login Action
-    // Returns a promise that resolves ONLY when the user state is set
-    // This allows Login.jsx to await this before traversing routes
     const login = async (id, password) => {
-        setLoading(true); // Optimistic loading state
+        setLoading(true);
         try {
             const email = `${id}@studyfactory.com`;
             const { data, error } = await supabase.auth.signInWithPassword({
@@ -118,24 +129,24 @@ export const AuthProvider = ({ children }) => {
             });
 
             if (error) throw error;
+
             if (data.session?.user) {
-                const fullUser = await fetchFullProfile(data.session.user);
-                setUser(fullUser);
-                return fullUser;
+                const immediateUser = constructUserFromSession(data.session.user);
+                setUser(immediateUser);
+                setAuthError(null);
+                syncProfileInBackground(data.session.user);
+                return immediateUser;
             }
         } catch (err) {
-            setLoading(false); // Reset loading on error
+            setLoading(false);
             throw err;
         }
-        // Success case: loading stays true briefly until the listener confirms or we navigate
-        // actually we can set loading false here to be safe
         setLoading(false);
     };
 
     const logout = async () => {
         setLoading(true);
         await supabase.auth.signOut();
-        // Listener handles state update
     };
 
     const value = {
