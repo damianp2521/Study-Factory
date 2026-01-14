@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Edit2, Save, X, Check } from 'lucide-react';
+import { ChevronLeft, Trash2, Edit2, Save, X, Check } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
 const AdminMemberStatus = ({ onBack }) => {

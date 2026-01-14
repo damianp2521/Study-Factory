@@ -290,10 +290,24 @@ const AdminQuickMenu = () => {
         return (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                    <button onClick={() => setCurrentView('grid')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: '10px' }}>
-                        <ChevronLeft size={24} color="#2d3748" />
+                    <button
+                        onClick={() => setCurrentView('grid')}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '8px',
+                            marginLeft: '-8px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#2d3748'
+                        }}
+                    >
+                        <ChevronLeft size={26} />
                     </button>
-                    <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>사원 관리</h2>
+                    <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>사원 관리</h2>
                 </div>
                 {/* Flow Layout for Sub-menu Buttons - Starts Top Left */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start' }}>
