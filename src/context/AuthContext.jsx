@@ -8,33 +8,31 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState(null);
 
+    // Helper to fetch full profile and merge with session user
     const fetchProfile = async (sessionUser) => {
         if (!sessionUser) return null;
 
-        // 1. Prepare fallback values from metadata
         const metaRole = sessionUser.user_metadata?.role;
         const metaName = sessionUser.user_metadata?.name;
         const metaBranch = sessionUser.user_metadata?.branch;
 
         try {
-            // 2. Fetch Profile without strict timeout constraints
-            // We rely on standard network timeout or user patience rather than forceful logout
+            // Fetch Profile from DB
             const { data: profile, error } = await supabase
                 .from('profiles')
                 .select('id, name, branch, role')
                 .eq('id', sessionUser.id)
                 .single();
 
-            if (error) throw error;
+            // Ignore "Row not found" errors (PGRST116) as we have fallbacks
+            if (error && error.code !== 'PGRST116') {
+                console.warn('Profile fetch warning:', error.message);
+            }
 
-            // 3. Construct Final User
+            // Determine final values with priority: Profile DB > Metadata > Default
             let finalRole = profile?.role;
-            if (!finalRole || finalRole === 'authenticated') {
-                finalRole = metaRole;
-            }
-            if (!finalRole || finalRole === 'authenticated') {
-                finalRole = 'member';
-            }
+            if (!finalRole || finalRole === 'authenticated') finalRole = metaRole;
+            if (!finalRole || finalRole === 'authenticated') finalRole = 'member';
 
             const finalBranch = profile?.branch || metaBranch || '미정';
             const finalName = profile?.name || metaName || sessionUser.email?.split('@')[0] || '사용자';
@@ -48,12 +46,10 @@ export const AuthProvider = ({ children }) => {
             };
 
         } catch (error) {
-            console.error('Profile fetch failed, using fallback:', error);
-            // Fallback to metadata
+            console.error('Profile fetch unexpected error:', error);
+            // Fallback to metadata on critical error
             let finalRole = metaRole;
-            if (!finalRole || finalRole === 'authenticated') {
-                finalRole = 'member';
-            }
+            if (!finalRole || finalRole === 'authenticated') finalRole = 'member';
 
             return {
                 ...sessionUser,
@@ -69,52 +65,43 @@ export const AuthProvider = ({ children }) => {
 
         const initSession = async () => {
             try {
-                // 1. Get Session with safety timeout (3 seconds)
-                // If it hangs, we unblock the UI so the user can at least see the Login screen or retry
-                const sessionPromise = supabase.auth.getSession();
-                const timeoutPromise = new Promise((resolve) =>
-                    setTimeout(() => resolve({ data: { session: null }, error: { message: 'Session check timed out' } }), 3000)
-                );
+                // 1. Get Session directly
+                const { data: { session }, error } = await supabase.auth.getSession();
 
-                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
-
-                if (error && error.message === 'Session check timed out') {
-                    console.warn('Auth session check timed out - defaulting to no session');
-                    // Proceed as if no session (will redirect to Login likely)
-                } else if (error) {
-                    throw error;
+                if (error) {
+                    console.error('Auth initialization error:', error);
+                    // We don't throw here, just proceed as logged out
                 }
 
-                if (session?.user) {
-                    // 2. Optimistic Update
+                if (mounted && session?.user) {
+                    // 2. Optimistic Update (Show UI immediately)
                     const metaRole = session.user.user_metadata?.role || 'member';
-                    const metaName = session.user.user_metadata?.name || session.user.email?.split('@')[0];
-                    const metaBranch = session.user.user_metadata?.branch || '미정';
-
                     const optimisticUser = {
                         ...session.user,
                         role: metaRole === 'authenticated' ? 'member' : metaRole,
-                        name: metaName,
-                        branch: metaBranch
+                        name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
+                        branch: session.user.user_metadata?.branch || '미정'
                     };
-
-                    if (mounted) {
-                        setUser(optimisticUser);
-                        setLoading(false); // Unblock UI
-                    }
+                    setUser(optimisticUser);
 
                     // 3. Background Verification
+                    // Use .then() to avoid blocking the finally block if we wanted to be super fast,
+                    // but awaiting here is safer to prevent role flickering. 
+                    // Given the user wants speed, we'll keep the optimistic set above, 
+                    // but we MUST await before setting loading=false if we want to confirm the role 
+                    // to prevent unauthorized redirects. 
+                    // HOWEVER, user asked for speed. Optimistic is key.
+
                     const verifiedUser = await fetchProfile(session.user);
                     if (mounted && verifiedUser) {
                         setUser(verifiedUser);
                     }
-                } else {
-                    if (mounted) setLoading(false);
                 }
-            } catch (error) {
-                console.error('Auth init error:', error);
+            } catch (err) {
+                console.error('Unexpected auth init error:', err);
+            } finally {
+                // 4. ALWAYS UNBLOCK UI
                 if (mounted) {
-                    // On error, clear loading so user isn't stuck
                     setLoading(false);
                 }
             }
@@ -122,12 +109,15 @@ export const AuthProvider = ({ children }) => {
 
         initSession();
 
+        // 5. Subscribe to Auth Changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (!mounted) return;
+
+            console.log('Auth State Change:', event);
+
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-                if (mounted && session?.user) {
-                    // For auth state changes, we can also be optimistic if needed, 
-                    // but usually simpler to just fetch. 
-                    // To keep it smooth, we can set user based on session first.
+                if (session?.user) {
+                    // Optimistic update
                     const metaRole = session.user.user_metadata?.role || 'member';
                     const optimisticUser = {
                         ...session.user,
@@ -137,6 +127,7 @@ export const AuthProvider = ({ children }) => {
                     };
                     setUser(optimisticUser);
 
+                    // Fetch authoritative profile
                     const combinedUser = await fetchProfile(session.user);
                     if (mounted) {
                         setUser(combinedUser);
@@ -144,10 +135,8 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
             } else if (event === 'SIGNED_OUT') {
-                if (mounted) {
-                    setUser(null);
-                    setAuthError(null);
-                }
+                setUser(null);
+                setAuthError(null);
             }
         });
 
@@ -164,6 +153,7 @@ export const AuthProvider = ({ children }) => {
             password,
         });
         if (error) throw error;
+        // The onAuthStateChange listener will handle the user state update
         return data;
     };
 
