@@ -45,8 +45,14 @@ const Login = () => {
 
         try {
             // Using the new secure login method from AuthContext
-            // This waits for the user state to be fully set before resolving
-            await login(name, pin);
+            // FIX: We must use the SAME encoding logic as registration
+            // Registration: name -> hex -> email
+            // Login: name -> hex -> ID -> login() -> email
+
+            const fullEmail = nameToEmail(name);
+            const id = fullEmail.split('@')[0]; // Extract 'u_xxxx' part
+
+            await login(id, pin);
 
             // Navigation handled by the component that detects user state change
             // or we can navigate here safely now
