@@ -1,13 +1,10 @@
 -- Allow Admins to View All Vacation Requests
 -- This policy should be added to the supabase SQL editor
 
--- 1. Check existing policies (optional, for reference)
--- select * from pg_policies where table_name = 'vacation_requests';
+-- 1. Drop the policy if it already exists to avoid conflict
+DROP POLICY IF EXISTS "Admins can view all vacation requests" ON public.vacation_requests;
 
--- 2. Drop existing restrictive policy if strictly necessary, 
---    BUT usually we just ADD a new permissive policy for Admins.
---    (Assuming existing policy is "Users can see own")
-
+-- 2. Create the policy
 CREATE POLICY "Admins can view all vacation requests"
 ON public.vacation_requests
 FOR SELECT

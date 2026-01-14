@@ -21,8 +21,9 @@ const AdminEmployeeVacationHistory = ({ onBack }) => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
+            // Fetch relevant users (Staff/Member) from profiles table which matches auth.uid()
             const { data, error } = await supabase
-                .from('authorized_users')
+                .from('profiles')
                 .select('*')
                 .order('name', { ascending: true });
 
