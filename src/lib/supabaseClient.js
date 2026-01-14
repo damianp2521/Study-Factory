@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Access environment variables securely
 // We will need to create a .env file later with these values
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder';
 
 console.log('Supabase Config:', {
     url: supabaseUrl,
@@ -12,8 +12,10 @@ console.log('Supabase Config:', {
     keyStart: supabaseAnonKey?.substring(0, 10)
 });
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
     console.error('CRITICAL ERROR: Supabase URL or Anon Key is missing! Check your .env file.');
+    // Alert is too intrusive during dev if we just want to test layout, but essential for prod debugging.
+    // We will keep the alert but the app won't crash now.
     alert('시스템 설정 오류: 서버 연결 정보를 찾을 수 없습니다. 관리자에게 문의하세요.');
 }
 
