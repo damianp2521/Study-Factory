@@ -111,13 +111,17 @@ const MemberDashboard = () => {
                         onClick={handlePrev}
                         style={{
                             textAlign: 'right',
-                            opacity: prevTitle ? 0.3 : 0,
+                            opacity: prevTitle ? 0.5 : 0,
                             fontSize: '0.9rem',
                             fontWeight: 'bold',
                             transform: 'scale(0.9)',
                             cursor: 'pointer',
                             paddingRight: '10px',
-                            transition: 'all 0.3s'
+                            transition: 'all 0.3s',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            maskImage: 'linear-gradient(to right, transparent, black 20%)',
+                            WebkitMaskImage: 'linear-gradient(to right, transparent, black 20%)'
                         }}
                     >
                         {prevTitle || '　'}
@@ -132,7 +136,8 @@ const MemberDashboard = () => {
                         fontSize: '1.3rem',
                         fontWeight: 'bold',
                         color: 'var(--color-primary)',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        zIndex: 10
                     }}>
                         <button
                             onClick={handlePrev}
@@ -156,13 +161,17 @@ const MemberDashboard = () => {
                         onClick={handleNext}
                         style={{
                             textAlign: 'left',
-                            opacity: nextTitle ? 0.3 : 0,
+                            opacity: nextTitle ? 0.5 : 0,
                             fontSize: '0.9rem',
                             fontWeight: 'bold',
                             transform: 'scale(0.9)',
                             cursor: 'pointer',
                             paddingLeft: '10px',
-                            transition: 'all 0.3s'
+                            transition: 'all 0.3s',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            maskImage: 'linear-gradient(to right, black 80%, transparent)',
+                            WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent)'
                         }}
                     >
                         {nextTitle || '　'}

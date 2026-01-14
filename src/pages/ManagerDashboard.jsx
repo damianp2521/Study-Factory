@@ -553,16 +553,18 @@ const ManagerDashboard = () => {
                         onClick={handlePrev}
                         style={{
                             textAlign: 'right',
-                            opacity: prevTitle ? 0.3 : 0,
+                            opacity: prevTitle ? 0.5 : 0, // Increased base opacity slightly for better visibility of fade
                             fontSize: '0.9rem',
                             fontWeight: 'bold',
                             transform: 'scale(0.9)',
                             cursor: 'pointer',
                             paddingRight: '10px',
-                            paddingLeft: '50px', // Avoid Logout button overlap
+                            paddingLeft: '50px',
                             transition: 'all 0.3s',
-                            whiteSpace: 'pre-wrap', // Allow wrapping
-                            wordBreak: 'keep-all', // Keep words together if possible
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            maskImage: 'linear-gradient(to right, transparent, black 20%)',
+                            WebkitMaskImage: 'linear-gradient(to right, transparent, black 20%)',
                             lineHeight: '1.2'
                         }}
                     >
@@ -578,7 +580,8 @@ const ManagerDashboard = () => {
                         fontSize: '1.3rem',
                         fontWeight: 'bold',
                         color: 'var(--color-primary)',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        zIndex: 10 // Ensure it stays on top
                     }}>
                         <button
                             onClick={handlePrev}
@@ -602,7 +605,7 @@ const ManagerDashboard = () => {
                         onClick={handleNext}
                         style={{
                             textAlign: 'left',
-                            opacity: nextTitle ? 0.3 : 0,
+                            opacity: nextTitle ? 0.5 : 0,
                             fontSize: '0.9rem',
                             fontWeight: 'bold',
                             transform: 'scale(0.9)',
@@ -610,8 +613,10 @@ const ManagerDashboard = () => {
                             paddingLeft: '10px',
                             paddingRight: '10px',
                             transition: 'all 0.3s',
-                            whiteSpace: 'pre-wrap',
-                            wordBreak: 'keep-all',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            maskImage: 'linear-gradient(to right, black 80%, transparent)',
+                            WebkitMaskImage: 'linear-gradient(to right, black 80%, transparent)',
                             lineHeight: '1.2'
                         }}
                     >
