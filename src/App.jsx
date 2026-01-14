@@ -72,7 +72,19 @@ const RootRedirect = () => {
     );
   }
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>로그인 정보 확인 중...</div>;
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px' }}>
+        <div style={{ fontSize: '1.2rem', color: '#4a5568' }}>로그인 정보 확인 중...</div>
+        <button
+          onClick={() => window.location.href = '/login'}
+          style={{ padding: '8px 16px', background: '#cbd5e0', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#4a5568' }}
+        >
+          취소하고 로그인하기
+        </button>
+      </div>
+    );
+  }
 
   if (!user) return <Navigate to="/login" replace />;
 
