@@ -20,7 +20,7 @@ const MyPage = () => {
     const dDay = calculateDDay(user?.end_date);
 
     return (
-        <PageTemplate title="마이페이지">
+        <PageTemplate title="마이페이지" backPath="/memberdashboard">
             {/* Profile Header */}
             <div style={{
                 display: 'flex',

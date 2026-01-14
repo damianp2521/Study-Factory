@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Send, CheckCircle, Clock } from 'lucide-react';
+import { Send, CheckCircle, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import PageTemplate from '../components/PageTemplate';
 
 const Suggestion = () => {
     const navigate = useNavigate();
@@ -99,24 +100,15 @@ const Suggestion = () => {
     };
 
     const handleBack = () => {
-        navigate('/dashboard');
+        navigate('/memberdashboard');
     };
 
     return (
-        <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Header */}
-            <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: 'var(--spacing-xl)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
-                        onClick={handleBack}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                    >
-                        <ArrowLeft size={24} color="var(--color-text-main)" />
-                    </button>
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                        {selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : '건의사항'}
-                    </h2>
-                </div>
+        <PageTemplate
+            title={selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : '건의사항'}
+            backPath="/memberdashboard"
+        >
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--spacing-md)' }}>
                 <button
                     onClick={() => setViewMode(viewMode === 'create' ? 'history' : 'create')}
                     style={{
@@ -277,7 +269,7 @@ const Suggestion = () => {
                     </div>
                 </>
             )}
-        </div>
+        </PageTemplate>
     );
 };
 

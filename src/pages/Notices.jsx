@@ -104,7 +104,7 @@ const Notices = () => {
 
     if (loading) {
         return (
-            <PageTemplate title="공지사항">
+            <PageTemplate title="공지사항" backPath="/memberdashboard">
                 <div className="flex-center" style={{ height: '50vh' }}>
                     <p>로딩중...</p>
                 </div>
@@ -114,7 +114,7 @@ const Notices = () => {
 
     if (error) {
         return (
-            <PageTemplate title="공지사항">
+            <PageTemplate title="공지사항" backPath="/memberdashboard">
                 <div className="flex-center" style={{ height: '50vh' }}>
                     <p>{error}</p>
                 </div>
@@ -123,7 +123,7 @@ const Notices = () => {
     }
 
     return (
-        <PageTemplate title="공지사항">
+        <PageTemplate title="공지사항" backPath="/memberdashboard">
             <div style={{ paddingBottom: 'var(--spacing-xl)' }}>
                 {notices.length > 0 ? (
                     notices.map(notice => (

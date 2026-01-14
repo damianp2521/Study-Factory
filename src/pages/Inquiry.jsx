@@ -126,7 +126,7 @@ const Inquiry = () => {
     );
 
     return (
-        <PageTemplate title="문의하기">
+        <PageTemplate title="문의하기" backPath="/memberdashboard">
             <div style={{ paddingBottom: '80px' }}>
                 {inquiries.length > 0 ? (
                     inquiries.map(item => (
