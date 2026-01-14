@@ -54,13 +54,26 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const RootRedirect = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, authError } = useAuth();
 
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column', gap: '15px' }}>
         <div style={{ width: '40px', height: '40px', border: '4px solid #f3f3f3', borderTop: '4px solid #3498db', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '20px' }}>
+        <h3 style={{ color: '#e53e3e' }}>연결 오류</h3>
+        <p style={{ color: '#718096' }}>서버와 연결할 수 없습니다.</p>
+        <p style={{ fontSize: '12px', color: '#a0aec0' }}>({authError})</p>
+        <button onClick={() => window.location.reload()} style={{ padding: '8px 16px', background: '#2d3748', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+          새로고침
+        </button>
       </div>
     );
   }

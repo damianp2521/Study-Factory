@@ -59,7 +59,16 @@ export const AuthProvider = ({ children }) => {
         // 2. Initial Session Check
         const init = async () => {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
+                // Create a timeout promise that rejects after 5 seconds
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Connection timeout')), 5000)
+                );
+
+                // Race the session check against the timeout
+                const sessionPromise = supabase.auth.getSession();
+
+                const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
+
                 if (error) throw error;
 
                 if (session?.user) {
@@ -68,7 +77,7 @@ export const AuthProvider = ({ children }) => {
                 }
             } catch (err) {
                 console.error("Auth Init Error:", err);
-                if (mounted) setAuthError(err.message);
+                if (mounted) setAuthError(err.message || 'Initialization failed');
             } finally {
                 if (mounted) setLoading(false);
             }
