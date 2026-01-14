@@ -287,6 +287,7 @@ const EmployeeStatus = ({ onBack }) => (
 import AdminMemberRegister from './AdminMemberRegister';
 
 // Admin Quick Menu (3x3 Grid)
+// Admin Quick Menu (Flex Layout)
 const AdminQuickMenu = () => {
     const [currentView, setCurrentView] = useState('grid'); // 'grid', 'management_menu', 'register', 'status'
 
@@ -307,48 +308,57 @@ const AdminQuickMenu = () => {
                     </button>
                     <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>사원 관리</h2>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1, justifyContent: 'center' }}>
+                {/* Flow Layout for Sub-menu Buttons - Starts Top Left */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start' }}>
                     <button
                         onClick={() => setCurrentView('register')}
                         style={{
-                            padding: '30px',
+                            width: 'calc(33.33% - 10px)', // Consistent with main grid size
+                            aspectRatio: '1',
                             borderRadius: '16px',
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '1.2rem',
+                            fontSize: '0.9rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            gap: '10px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            justifyContent: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                         }}
                     >
-                        <span>📝</span>
-                        <span>사원 사전 등록</span>
+                        <div style={{ width: '32px', height: '32px', background: '#ebf4ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4299e1', marginBottom: '5px' }}>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>+</span>
+                        </div>
+                        <span style={{ textAlign: 'center' }}>사원등록</span>
                     </button>
                     <button
                         onClick={() => setCurrentView('status')}
                         style={{
-                            padding: '30px',
+                            width: 'calc(33.33% - 10px)',
+                            aspectRatio: '1',
                             borderRadius: '16px',
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '1.2rem',
+                            fontSize: '0.9rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            gap: '10px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            justifyContent: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                         }}
                     >
-                        <span>👥</span>
-                        <span>사원 현황</span>
+                        <div style={{ width: '32px', height: '32px', background: '#edf2f7', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#718096', marginBottom: '5px' }}>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>≡</span>
+                        </div>
+                        <span style={{ textAlign: 'center' }}>사원현황</span>
                     </button>
                 </div>
             </div>
@@ -364,12 +374,13 @@ const AdminQuickMenu = () => {
     };
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', height: '100%', alignContent: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start', height: '100%' }}>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                 <button
                     key={num}
                     onClick={() => handleMenuClick(num)}
                     style={{
+                        width: 'calc(33.33% - 10px)', // 3 per row
                         aspectRatio: '1',
                         borderRadius: '16px',
                         border: 'none',
@@ -387,7 +398,7 @@ const AdminQuickMenu = () => {
                     }}
                 >
                     {num === 1 ? (
-                        <span style={{ fontSize: '1rem', color: '#2d3748', fontWeight: 'bold' }}>사원 관리</span>
+                        <span style={{ fontSize: '0.9rem', color: '#2d3748', fontWeight: 'bold', textAlign: 'center', wordBreak: 'keep-all' }}>사원 관리</span>
                     ) : (
                         <span style={{ fontSize: '1.5rem' }}>{num}</span>
                     )}
