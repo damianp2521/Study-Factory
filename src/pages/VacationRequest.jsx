@@ -96,7 +96,7 @@ const VacationRequest = () => {
             alert('날짜를 선택해주세요.');
             return;
         }
-        if (type === 'half' && selectedPeriods.length === 0) {
+        if ((type === 'half' || type === 'half_am' || type === 'half_pm') && selectedPeriods.length === 0) {
             alert('사용할 교시를 선택해주세요.');
             return;
         }
@@ -113,6 +113,8 @@ const VacationRequest = () => {
 
         let confirmMsg = '';
         if (type === 'full') confirmMsg = `${date}에 월차를 신청하시겠습니까?`;
+        else if (type === 'half_am') confirmMsg = `${date}에 오전반차를 신청하시겠습니까?`;
+        else if (type === 'half_pm') confirmMsg = `${date}에 오후반차를 신청하시겠습니까?`;
         else if (type === 'half') confirmMsg = `${date}에 ${selectedPeriods.join(', ')}교시 반차를 신청하시겠습니까?`;
         else confirmMsg = `${date}에 특별휴가(${specialReason}, ${selectedPeriods.length === 7 ? '전체' : selectedPeriods.join(', ') + '교시'})를 신청하시겠습니까?`;
 
@@ -120,12 +122,18 @@ const VacationRequest = () => {
 
         setLoading(true);
         try {
+            // Transform UI types to DB types
+            let dbType = type;
+            if (type === 'half_am' || type === 'half_pm') {
+                dbType = 'half';
+            }
+
             const payload = {
                 user_id: user.id,
-                type,
+                type: dbType,
                 date,
-                periods: (type === 'half' || type === 'special') ? selectedPeriods : null,
-                reason: type === 'special' ? specialReason : null
+                periods: (dbType === 'half' || dbType === 'special') ? selectedPeriods : null,
+                reason: dbType === 'special' ? specialReason : null
             };
 
             const { error } = await supabase
@@ -139,7 +147,7 @@ const VacationRequest = () => {
             setDate('');
             setSelectedPeriods([]);
             setSpecialReason('');
-            setType('full'); // Reset type to default or keep it? User might want to add another. Resetting is safer.
+            setType('full');
         } catch (err) {
             console.error('Error submitting vacation request:', err);
             alert('신청에 실패했습니다. (DB 업데이트가 필요할 수 있습니다)');
@@ -152,7 +160,6 @@ const VacationRequest = () => {
         <div className="page-content">
             {/* Header */}
             <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: 'var(--spacing-xl)' }}>
-                {/* ... existing header code ... */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button
                         onClick={() => navigate('/memberdashboard')}
@@ -182,44 +189,147 @@ const VacationRequest = () => {
 
             {viewMode === 'create' ? (
                 <>
-                    {/* Type Toggle */}
-                    <div style={{
-                        display: 'flex',
-                        background: '#edf2f7',
-                        padding: '5px',
-                        borderRadius: '12px',
-                        marginBottom: '30px'
-                    }}>
-                        {['full', 'half', 'special'].map((t) => (
-                            <button
-                                key={t}
-                                onClick={() => { setType(t); setSelectedPeriods([]); setSpecialReason(''); }}
-                                style={{
-                                    flex: 1,
-                                    padding: '12px',
-                                    borderRadius: '10px',
-                                    border: 'none',
-                                    background: type === t ? 'white' : 'transparent',
-                                    color: type === t ? 'var(--color-primary)' : '#718096',
-                                    fontWeight: 'bold',
-                                    boxShadow: type === t ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-                                    transition: 'all 0.2s',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {t === 'full' ? '월차' : t === 'half' ? '반차' : '특별휴가'}
-                            </button>
-                        ))}
-                    </div>
-
                     {/* Content */}
                     <div className="flex-col" style={{ gap: '25px' }}>
 
-                        {/* Date Picker Component */}
-                        <CustomDatePicker
-                            value={date}
-                            onChange={setDate}
-                        />
+                        {/* 1. Branch/Date Selection Style (From ManagerDashboard) */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>날짜선택</span>
+                            <div style={{ position: 'relative', width: '100%', height: '46px' }}>
+                                {/* Visible UI matching Select Box */}
+                                <div style={{
+                                    position: 'absolute',
+                                    top: 0, left: 0, right: 0, bottom: 0,
+                                    padding: '0 12px',
+                                    borderRadius: '12px',
+                                    border: '1px solid #e2e8f0',
+                                    background: 'white',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    pointerEvents: 'none',
+                                    boxSizing: 'border-box'
+                                }}>
+                                    <span style={{
+                                        fontSize: '1rem',
+                                        color: '#2d3748',
+                                        fontWeight: 'bold',
+                                        fontFamily: 'var(--font-mono, monospace)',
+                                        letterSpacing: '1px'
+                                    }}>
+                                        {(() => {
+                                            if (!date) return '날짜 선택';
+                                            const [y, m, d] = date.split('-');
+                                            return `${y}. ${m}. ${d}.`;
+                                        })()}
+                                    </span>
+                                    <Calendar size={20} color="#718096" />
+                                </div>
+
+                                {/* Native Picker Overlay */}
+                                <input
+                                    type="date"
+                                    value={date}
+                                    onChange={(e) => setDate(e.target.value)}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0, left: 0,
+                                        width: '100%', height: '100%',
+                                        opacity: 0,
+                                        zIndex: 10,
+                                        cursor: 'pointer',
+                                        display: 'block'
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* 2. Type Buttons (Style Update) */}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            {/* Full (Month) */}
+                            <button
+                                onClick={() => { setType('full'); setSelectedPeriods([]); setSpecialReason(''); }}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px 10px',
+                                    borderRadius: '12px',
+                                    border: type === 'full' ? '2px solid #e53e3e' : '1px solid #e2e8f0',
+                                    background: type === 'full' ? '#fff5f5' : 'white',
+                                    color: type === 'full' ? '#c53030' : '#a0aec0',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                월차
+                            </button>
+
+                            {/* Half AM */}
+                            <button
+                                onClick={() => {
+                                    setType('half_am');
+                                    setSelectedPeriods([1, 2, 3, 4]);
+                                    setSpecialReason('');
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px 10px',
+                                    borderRadius: '12px',
+                                    border: type === 'half_am' ? '2px solid #e53e3e' : '1px solid #e2e8f0',
+                                    background: type === 'half_am' ? '#fff5f5' : 'white',
+                                    color: type === 'half_am' ? '#c53030' : '#a0aec0',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                오전반차
+                            </button>
+
+                            {/* Half PM */}
+                            <button
+                                onClick={() => {
+                                    setType('half_pm');
+                                    setSelectedPeriods([5, 6, 7]);
+                                    setSpecialReason('');
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: '12px 10px',
+                                    borderRadius: '12px',
+                                    border: type === 'half_pm' ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                                    background: type === 'half_pm' ? '#ebf8ff' : 'white',
+                                    color: type === 'half_pm' ? '#2c5282' : '#a0aec0',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                오후반차
+                            </button>
+                        </div>
+
+                        {/* Special Leave (Style Match) */}
+                        <button
+                            onClick={() => { setType('special'); setSelectedPeriods([]); setSpecialReason(''); }}
+                            style={{
+                                width: '100%',
+                                padding: '12px 10px',
+                                borderRadius: '12px',
+                                border: type === 'special' ? '2px solid #805ad5' : '1px solid #e2e8f0',
+                                background: type === 'special' ? '#faf5ff' : 'white',
+                                color: type === 'special' ? '#553c9a' : '#a0aec0',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            특별휴가 / 기타
+                        </button>
 
                         {/* Period Selection (For Half AND Special) */}
                         {(type === 'half' || type === 'special') && (
