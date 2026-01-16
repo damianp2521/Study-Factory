@@ -3,12 +3,12 @@
     "name": "자격증공장 회원 관리 앱",
     "icons": [
         {
-            "src": "logo.png",
+            "src": "pwa-icon.png",
             "type": "image/png",
             "sizes": "192x192"
         },
         {
-            "src": "logo.png",
+            "src": "pwa-icon.png",
             "type": "image/png",
             "sizes": "512x512"
         }
