@@ -82,7 +82,7 @@ const StaffTaskBoard = () => {
                 ...t,
                 type: 'staff',
                 authorName: t.author?.name || '알수없음',
-                branch: t.author?.branch || '알수없음',
+                branch: t.branch || t.author?.branch || '알수없음', // Use stored branch, fallback to author's current branch
                 completerName: t.completer?.name
             }));
 
@@ -94,7 +94,7 @@ const StaffTaskBoard = () => {
                 created_at: s.created_at,
                 type: 'suggestion',
                 authorName: s.author?.name || '익명',
-                branch: s.author?.branch || '알수없음',
+                branch: s.author?.branch || '알수없음', // Suggestions still track user's *current* branch
                 completerName: s.completer?.name // Now fetching completer name from newly added relation
             }));
 
@@ -114,12 +114,14 @@ const StaffTaskBoard = () => {
     const handleAddTodo = async () => {
         if (!newTodo.trim()) return;
         try {
+            const targetBranch = selectedBranch === '전체' ? user.branch : selectedBranch;
             const { error } = await supabase
                 .from('staff_todos')
                 .insert([{
                     content: newTodo,
                     is_urgent: isUrgent,
-                    created_by: user.id
+                    created_by: user.id,
+                    branch: targetBranch // Save the target branch
                 }]);
 
             if (error) throw error;
