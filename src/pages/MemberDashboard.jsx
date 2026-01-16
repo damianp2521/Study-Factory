@@ -68,11 +68,12 @@ const MemberDashboard = () => {
 
     return (
         <div style={{
-            height: '100vh',
+            height: '100dvh', // Use dvh for mobile address bar adjustment
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            backgroundColor: '#f8fafc'
+            backgroundColor: '#f8fafc',
+            position: 'relative' // Needed for absolute positioning of dots if preferred, but flex is fine
         }}>
             {/* 1. Global Header Bar (Logout - Logo - Help) */}
             <div style={{
@@ -81,7 +82,8 @@ const MemberDashboard = () => {
                 alignItems: 'center',
                 padding: '10px 20px',
                 paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
-                backgroundColor: 'transparent'
+                backgroundColor: 'transparent',
+                flexShrink: 0 // Prevent shrinking
             }}>
                 <button
                     onClick={handleLogout}
@@ -129,6 +131,7 @@ const MemberDashboard = () => {
                 padding: '15px 20px',
                 paddingBottom: '5px',
                 position: 'relative',
+                flexShrink: 0 // Prevent shrinking
             }}>
                 {/* Grid for perfect centering */}
                 <div style={{
@@ -244,12 +247,25 @@ const MemberDashboard = () => {
                             style={{
                                 width: `${100 / slides.length}%`,
                                 height: '100%',
-                                padding: '10px 20px 80px 20px', // Extra padding for mobile scroll
+                                padding: '10px 20px',
                                 boxSizing: 'border-box',
-                                overflowY: 'auto'
+                                overflow: 'hidden', // Hide global overflow, rely on inner scroll
+                                display: 'flex',
+                                flexDirection: 'column'
                             }}
                         >
-                            <div style={{ height: '100%' }}>
+                            {/* Make this specific white box scrollable */}
+                            <div style={{
+                                flex: 1,
+                                overflowY: 'auto',
+                                paddingBottom: '60px', /* Space for Bottom Dots */
+                                // Hide scrollbar for cleaner look
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none'
+                            }}>
+                                <style>{`
+                                    div::-webkit-scrollbar { display: none; }
+                                `}</style>
                                 {slide.component}
                             </div>
                         </div>
@@ -257,8 +273,20 @@ const MemberDashboard = () => {
                 </div>
             </div>
 
-            {/* Pagination Indicators */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '20px 0', paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)' }}>
+            {/* Pagination Indicators - Fixed above the bottom edge */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '15px 0',
+                paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)', // Safe area aware
+                background: 'linear-gradient(to top, rgba(248,250,252, 1) 0%, rgba(248,250,252, 0.8) 70%, transparent 100%)', // Fade background to ensure visibility
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 20
+            }}>
                 {slides.map((_, index) => (
                     <div
                         key={index}
@@ -267,7 +295,8 @@ const MemberDashboard = () => {
                             height: '8px',
                             borderRadius: '50%',
                             backgroundColor: index === activeIndex ? 'var(--color-primary)' : '#cbd5e0',
-                            transition: 'background-color 0.3s'
+                            transition: 'background-color 0.3s',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)' // Shadow for better visibility
                         }}
                     />
                 ))}

@@ -603,10 +603,11 @@ const ManagerDashboard = () => {
 
     return (
         <div style={{
-            height: '100vh',
+            height: '100dvh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
+            position: 'relative'
         }}>
             {/* 1. Global Header Bar (Logout - Logo - Help) */}
             <div style={{
@@ -615,7 +616,8 @@ const ManagerDashboard = () => {
                 alignItems: 'center',
                 padding: '10px 20px',
                 paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
-                backgroundColor: 'transparent'
+                backgroundColor: 'transparent',
+                flexShrink: 0
             }}>
                 <button
                     onClick={handleLogout}
@@ -663,6 +665,7 @@ const ManagerDashboard = () => {
                 padding: '15px 20px',
                 paddingBottom: '5px',
                 position: 'relative',
+                flexShrink: 0
             }}>
                 {/* Grid for perfect centering */}
                 <div style={{
@@ -781,21 +784,30 @@ const ManagerDashboard = () => {
                             style={{
                                 width: `${100 / slides.length}% `,
                                 height: '100%',
-                                padding: '10px 20px 80px 20px', // Extra padding for mobile scroll
+                                padding: '10px 20px',
                                 boxSizing: 'border-box',
-                                overflowY: 'hidden'
+                                overflow: 'hidden',
+                                display: 'flex',
+                                flexDirection: 'column'
                             }}
                         >
+                            {/* White Box with Internal Scroll */}
                             <div style={{
-                                height: '100%',
+                                flex: 1,
                                 background: 'white',
                                 borderRadius: '20px',
                                 padding: '20px',
                                 boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                                 overflowY: 'auto',
                                 display: 'flex',
-                                flexDirection: 'column'
+                                flexDirection: 'column',
+                                paddingBottom: '60px', /* Space for Bottom Dots */
+                                scrollbarWidth: 'none',
+                                msOverflowStyle: 'none'
                             }}>
+                                <style>{`
+                                    div::-webkit-scrollbar { display: none; }
+                                `}</style>
                                 <div style={{ flex: 1 }}>
                                     {slide.component}
                                 </div>
@@ -805,8 +817,21 @@ const ManagerDashboard = () => {
                 </div>
             </div>
 
-            {/* Pagination Indicators */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '20px 0', paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)' }}>
+            {/* Pagination Indicators - Floating at Bottom with Background */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '8px',
+                padding: '15px 0',
+                paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)',
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 20,
+                background: 'linear-gradient(to top, rgba(245,246,250, 0.9) 0%, rgba(245,246,250, 0) 100%)', // Subtle fade
+                pointerEvents: 'none' // Click through just in case
+            }}>
                 {slides.map((_, index) => (
                     <div
                         key={index}
@@ -815,7 +840,8 @@ const ManagerDashboard = () => {
                             height: '8px',
                             borderRadius: '50%',
                             backgroundColor: index === activeIndex ? 'var(--color-primary)' : '#cbd5e0',
-                            transition: 'background-color 0.3s'
+                            transition: 'background-color 0.3s',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                         }}
                     />
                 ))}

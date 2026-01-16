@@ -51,6 +51,18 @@
   padding: 0;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  /* Lock the body */
+  overscroll-behavior: none;
+  /* Prevent bounce */
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--color-background);
