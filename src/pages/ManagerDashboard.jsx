@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, CircleHelp } from 'lucide-react';
+import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, CircleHelp, ClipboardList } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import CustomDatePicker from '../components/CustomDatePicker';
 import AdminMemberStatus from './AdminMemberStatus';
 import AdminMemberRegister from './AdminMemberRegister';
 import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
+import AdminWorkReport from './AdminWorkReport';
 import StaffTaskBoard from './StaffTaskBoard';
 import { BRANCH_OPTIONS } from '../constants/branches';
 
@@ -347,6 +348,9 @@ const AdminQuickMenu = () => {
     if (currentView === 'vacation_history') {
         return <AdminEmployeeVacationHistory onBack={() => setCurrentView('management_menu')} />;
     }
+    if (currentView === 'work_report') {
+        return <AdminWorkReport onBack={() => setCurrentView('management_menu')} />;
+    }
 
     // Sub-menu for Employee Management
     if (currentView === 'management_menu') {
@@ -400,7 +404,34 @@ const AdminQuickMenu = () => {
                         </div>
                         <span style={{ textAlign: 'center' }}>사원 등록</span>
                     </button>
-                    {/* 2. Status */}
+                    {/* 2. Work Report (NEW) */}
+                    <button
+                        onClick={() => setCurrentView('work_report')}
+                        style={{
+                            width: 'calc(33.33% - 10px)',
+                            aspectRatio: '1',
+                            borderRadius: '16px',
+                            border: 'none',
+                            background: '#f7fafc',
+                            color: '#2d3748',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <div style={{ width: '32px', height: '32px', background: '#ebf8ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2b6cb0', marginBottom: '5px' }}>
+                            <ClipboardList size={20} />
+                        </div>
+                        <span style={{ textAlign: 'center', lineHeight: '1.2' }}>작업 계획<br />및 결과</span>
+                    </button>
+
+                    {/* 3. Status (Shifted) */}
                     <button
                         onClick={() => setCurrentView('status')}
                         style={{
@@ -426,7 +457,8 @@ const AdminQuickMenu = () => {
                         </div>
                         <span style={{ textAlign: 'center' }}>사원 현황</span>
                     </button>
-                    {/* 3. Vacation History (NEW) */}
+
+                    {/* 4. Vacation History (Shifted) */}
                     <button
                         onClick={() => setCurrentView('vacation_history')}
                         style={{
@@ -436,7 +468,7 @@ const AdminQuickMenu = () => {
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '0.8rem', // Slightly smaller font for longer text
+                            fontSize: '0.8rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
