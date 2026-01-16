@@ -10,6 +10,8 @@ const StaffTaskBoard = () => {
     const [newTodo, setNewTodo] = useState('');
     const [isUrgent, setIsUrgent] = useState(false);
 
+    const [selectedBranch, setSelectedBranch] = useState('전체'); // '전체' | '망미점'
+
     // Fetch Data
     const fetchData = async () => {
         setLoading(true);
@@ -19,7 +21,7 @@ const StaffTaskBoard = () => {
                 .from('staff_todos')
                 .select(`
                     *,
-                    author:created_by ( name ),
+                    author:created_by ( name, branch ),
                     completer:completed_by ( name )
                 `);
 
@@ -30,7 +32,7 @@ const StaffTaskBoard = () => {
                 .from('suggestions')
                 .select(`
                     *,
-                    author:user_id ( name ),
+                    author:user_id ( name, branch ),
                     completer:completed_by ( name )
                 `);
 
@@ -41,6 +43,7 @@ const StaffTaskBoard = () => {
                 ...t,
                 type: 'staff',
                 authorName: t.author?.name || '알수없음',
+                branch: t.author?.branch || '알수없음',
                 completerName: t.completer?.name
             }));
 
@@ -52,6 +55,7 @@ const StaffTaskBoard = () => {
                 created_at: s.created_at,
                 type: 'suggestion',
                 authorName: s.author?.name || '익명',
+                branch: s.author?.branch || '알수없음',
                 completerName: s.completer?.name // Now fetching completer name from newly added relation
             }));
 
@@ -164,28 +168,33 @@ const StaffTaskBoard = () => {
         }
     };
 
-    // Sorting
-    const sortedTasks = [...tasks].sort((a, b) => {
-        // 1. Pending First
-        if (a.status !== b.status) {
-            return a.status === 'pending' ? -1 : 1;
-        }
+    // Sorting & Filtering
+    const sortedTasks = [...tasks]
+        .filter(task => {
+            if (selectedBranch === '전체') return true;
+            return task.branch === selectedBranch;
+        })
+        .sort((a, b) => {
+            // 1. Pending First
+            if (a.status !== b.status) {
+                return a.status === 'pending' ? -1 : 1;
+            }
 
-        // 2. Inside Pending: Urgent(Red) > Suggestion(Green) > Normal(Blue)
-        if (a.status === 'pending') {
-            const getPriority = (t) => {
-                if (t.type === 'staff' && t.is_urgent) return 3;
-                if (t.type === 'suggestion') return 2;
-                return 1;
-            };
-            const pA = getPriority(a);
-            const pB = getPriority(b);
-            if (pA !== pB) return pB - pA; // Higher priority first
-        }
+            // 2. Inside Pending: Urgent(Red) > Suggestion(Green) > Normal(Blue)
+            if (a.status === 'pending') {
+                const getPriority = (t) => {
+                    if (t.type === 'staff' && t.is_urgent) return 3;
+                    if (t.type === 'suggestion') return 2;
+                    return 1;
+                };
+                const pA = getPriority(a);
+                const pB = getPriority(b);
+                if (pA !== pB) return pB - pA; // Higher priority first
+            }
 
-        // 3. Oldest First (created_at ASC)
-        return new Date(a.created_at) - new Date(b.created_at);
-    });
+            // 3. Oldest First (created_at ASC)
+            return new Date(a.created_at) - new Date(b.created_at);
+        });
 
 
     // Render Helper
@@ -216,6 +225,29 @@ const StaffTaskBoard = () => {
 
     return (
         <div style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* Branch Filter */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
+                {['전체', '망미점'].map(branch => (
+                    <button
+                        key={branch}
+                        onClick={() => setSelectedBranch(branch)}
+                        style={{
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            border: selectedBranch === branch ? 'none' : '1px solid #e2e8f0',
+                            background: selectedBranch === branch ? 'var(--color-primary)' : 'white',
+                            color: selectedBranch === branch ? 'white' : '#718096',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        {branch}
+                    </button>
+                ))}
+            </div>
+
             {/* Add Todo Input */}
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
@@ -282,7 +314,9 @@ const StaffTaskBoard = () => {
                 {loading ? (
                     <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>로딩중...</div>
                 ) : sortedTasks.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>등록된 업무가 없습니다.</div>
+                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>
+                        {selectedBranch === '전체' ? '등록된 업무가 없습니다.' : `${selectedBranch}의 업무가 없습니다.`}
+                    </div>
                 ) : (
                     sortedTasks.map(task => {
                         const style = getTaskStyle(task);
