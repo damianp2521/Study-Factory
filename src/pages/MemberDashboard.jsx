@@ -119,11 +119,11 @@ const MemberDashboard = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     backgroundColor: '#267E82',
-                    padding: '8px 16px',
+                    padding: '5px 12px',
                     borderRadius: '20px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
                 }}>
-                    <img src={logo} alt="자격증공장" style={{ height: '24px', objectFit: 'contain' }} />
+                    <img src={logo} alt="자격증공장" style={{ height: '30px', objectFit: 'contain' }} />
                 </div>
 
                 <button
