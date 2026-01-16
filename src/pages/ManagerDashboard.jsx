@@ -5,7 +5,7 @@ import logo from '../assets/logo.png';
 
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import CustomDatePicker from '../components/CustomDatePicker';
+import EmbeddedCalendar from '../components/EmbeddedCalendar';
 import AdminMemberStatus from './AdminMemberStatus';
 import AdminMemberRegister from './AdminMemberRegister';
 import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
@@ -62,6 +62,7 @@ const EmployeeVacationStatus = () => {
     }, [user?.branch]);
 
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [showCalendar, setShowCalendar] = useState(false);
     const [filters, setFilters] = useState({
         full: true,    // 월차 - Red
         half_am: true, // 오전반차 - Red
@@ -171,12 +172,12 @@ const EmployeeVacationStatus = () => {
                 </div>
 
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {/* Date Picker - Full Width, No Label */}
-                    <div style={{ position: 'relative', width: '100%', height: '46px' }}>
-                        {/* Visible UI matching Select Box */}
-                        <div style={{
-                            position: 'absolute',
-                            top: 0, left: 0, right: 0, bottom: 0,
+                    {/* Date Picker (Toggleable) */}
+                    <button
+                        onClick={() => setShowCalendar(!showCalendar)}
+                        style={{
+                            width: '100%',
+                            height: '46px',
                             padding: '0 12px',
                             borderRadius: '12px',
                             border: '1px solid #e2e8f0',
@@ -184,41 +185,44 @@ const EmployeeVacationStatus = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            pointerEvents: 'none',
-                            boxSizing: 'border-box'
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <span style={{
+                            fontSize: '1rem',
+                            color: '#2d3748',
+                            fontWeight: 'bold',
+                            fontFamily: 'var(--font-mono, monospace)',
+                            letterSpacing: '1px'
                         }}>
-                            <span style={{
-                                fontSize: '1rem',
-                                color: '#2d3748',
-                                fontWeight: 'bold',
-                                fontFamily: 'var(--font-mono, monospace)',
-                                letterSpacing: '1px'
-                            }}>
-                                {(() => {
-                                    if (!selectedDate) return '날짜 선택';
-                                    const [y, m, d] = selectedDate.split('-');
-                                    return `${y}. ${m}. ${d}.`;
-                                })()}
-                            </span>
-                            <Calendar size={20} color="#718096" />
-                        </div>
+                            {(() => {
+                                if (!selectedDate) return '날짜 선택';
+                                const [y, m, d] = selectedDate.split('-');
+                                return `${y}. ${m}. ${d}.`;
+                            })()}
+                        </span>
+                        <Calendar size={20} color="#718096" />
+                    </button>
 
-                        {/* Native Picker Overlay */}
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            style={{
-                                position: 'absolute',
-                                top: 0, left: 0,
-                                width: '100%', height: '100%',
-                                opacity: 0,
-                                zIndex: 10,
-                                cursor: 'pointer',
-                                display: 'block' // Ensure it takes space
-                            }}
-                        />
-                    </div>
+                    {showCalendar && (
+                        <div style={{
+                            marginTop: '5px',
+                            background: 'white',
+                            padding: '15px',
+                            borderRadius: '16px',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                            border: '1px solid #e2e8f0',
+                            zIndex: 10
+                        }}>
+                            <EmbeddedCalendar
+                                selectedDate={selectedDate}
+                                onSelectDate={(val) => {
+                                    setSelectedDate(val);
+                                    setShowCalendar(false);
+                                }}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import CustomDatePicker from '../components/CustomDatePicker';
+import EmbeddedCalendar from '../components/EmbeddedCalendar';
 
 const TodayLeaves = () => {
     const navigate = useNavigate();
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // Default today
+    const [showCalendar, setShowCalendar] = useState(false);
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -106,12 +107,52 @@ const TodayLeaves = () => {
                 </div>
             </div>
 
-            {/* Date Picker Component */}
+            {/* Date Picker Component (Toggleable) */}
             <div style={{ marginBottom: '20px' }}>
-                <CustomDatePicker
-                    value={date}
-                    onChange={setDate}
-                />
+                <button
+                    onClick={() => setShowCalendar(!showCalendar)}
+                    style={{
+                        width: '100%',
+                        padding: '12px',
+                        background: 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        marginBottom: showCalendar ? '10px' : '0'
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Calendar size={20} color="#718096" />
+                        <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                            {date.split('-')[0]}. {date.split('-')[1]}. {date.split('-')[2]}.
+                        </span>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: '#718096' }}>
+                        {showCalendar ? '닫기' : '변경'}
+                    </span>
+                </button>
+
+                {showCalendar && (
+                    <div className="fade-in" style={{
+                        background: 'white',
+                        padding: '15px',
+                        borderRadius: '16px',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        border: '1px solid #e2e8f0'
+                    }}>
+                        <EmbeddedCalendar
+                            selectedDate={date}
+                            onSelectDate={(val) => {
+                                setDate(val);
+                                setShowCalendar(false); // Auto close on select
+                            }}
+                            events={[/* Potential future enhancement: show leaves dots here */]}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* List */}

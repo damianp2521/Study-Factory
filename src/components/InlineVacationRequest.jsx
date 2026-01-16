@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import CustomDatePicker from './CustomDatePicker';
+import EmbeddedCalendar from './EmbeddedCalendar';
 
 const InlineVacationRequest = () => {
     const { user } = useAuth();
@@ -121,71 +121,9 @@ const InlineVacationRequest = () => {
         }
     };
 
-    // Filter Current Month for Calendar
-    const getDaysInMonth = (date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        return new Date(year, month + 1, 0).getDate();
-    };
 
-    const getFirstDayOfMonth = (date) => {
-        return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-    };
 
-    const renderCalendar = () => {
-        const year = selectedMonth.getFullYear();
-        const month = selectedMonth.getMonth();
-        const daysInMonth = getDaysInMonth(selectedMonth);
-        const firstDay = getFirstDayOfMonth(selectedMonth);
 
-        const days = [];
-        // Empty cells
-        for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty - ${i} `} style={{ height: '35px' }}></div>);
-        }
-
-        // Days
-        for (let d = 1; d <= daysInMonth; d++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            const req = myRequests.find(r => r.date === dateStr);
-            let bgColor = 'transparent';
-            let textColor = '#2d3748';
-            let borderStyle = 'none';
-
-            if (req) {
-                if (req.type === 'full') { // 월차
-                    bgColor = '#fff5f5'; // Red-50
-                    textColor = '#c53030'; // Red-700
-                    borderStyle = '1px solid #feb2b2';
-                } else if (req.type === 'half') { // 반차
-                    bgColor = '#ebf8ff'; // Blue-50
-                    textColor = '#2c5282'; // Blue-800
-                    borderStyle = '1px solid #bee3f8';
-                }
-            }
-
-            days.push(
-                <div key={d} style={{
-                    height: '35px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: bgColor,
-                    color: textColor,
-                    border: borderStyle,
-                    borderRadius: '6px', // Rounded Square
-                    fontWeight: req ? 'bold' : 'normal',
-                    fontSize: '0.9rem',
-                    margin: '2px',
-                    cursor: 'default'
-                }}>
-                    {d}
-                </div>
-            );
-        }
-
-        return days;
-    };
 
     // Date constraints
     const maxDate = new Date();
@@ -202,23 +140,8 @@ const InlineVacationRequest = () => {
             height: '100%',
             overflowY: 'auto'
         }}>
-            {/* Month Navigation */}
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: '#f7fafc', padding: '8px 15px', borderRadius: '20px' }}>
-                    <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
-                        <ChevronLeft size={20} color="#4a5568" />
-                    </button>
-                    <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                        {selectedMonth.getFullYear()}.{selectedMonth.getMonth() + 1}
-                    </span>
-                    <button onClick={handleNextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
-                        <ChevronRight size={20} color="#4a5568" />
-                    </button>
-                </div>
-            </div>
-
             {/* Button Group */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                 <button
                     onClick={() => setType('full')}
                     style={{
@@ -229,7 +152,8 @@ const InlineVacationRequest = () => {
                         background: type === 'full' ? '#fff5f5' : 'white',
                         color: type === 'full' ? '#c53030' : '#4a5568',
                         fontWeight: 'bold',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
                     }}
                 >
                     월차
@@ -244,7 +168,8 @@ const InlineVacationRequest = () => {
                         background: type === 'half_am' ? '#ebf8ff' : 'white',
                         color: type === 'half_am' ? '#2c5282' : '#4a5568',
                         fontWeight: 'bold',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
                     }}
                 >
                     오전반차
@@ -259,18 +184,19 @@ const InlineVacationRequest = () => {
                         background: type === 'half_pm' ? '#ebf8ff' : 'white',
                         color: type === 'half_pm' ? '#2c5282' : '#4a5568',
                         fontWeight: 'bold',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
                     }}
                 >
                     오후반차
                 </button>
             </div>
 
-            {/* Date Picker */}
-            <div style={{ marginBottom: '15px' }}>
-                <CustomDatePicker
-                    value={date}
-                    onChange={(val) => {
+            {/* Embedded Calendar */}
+            <div style={{ marginBottom: '25px' }}>
+                <EmbeddedCalendar
+                    selectedDate={date}
+                    onSelectDate={(val) => {
                         if (val < todayStr) {
                             alert('지난 날짜는 신청할 수 없습니다.');
                             return;
@@ -281,8 +207,9 @@ const InlineVacationRequest = () => {
                         }
                         setDate(val);
                     }}
-                    min={todayStr}
-                    max={maxDateStr}
+                    events={myRequests}
+                    minDate={todayStr}
+                    maxDate={maxDateStr}
                 />
             </div>
 
@@ -304,22 +231,25 @@ const InlineVacationRequest = () => {
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '8px',
-                    marginBottom: '25px'
+                    marginBottom: '25px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                 }}
             >
                 {loading ? '신청 중...' : '신청하기'}
             </button>
 
             {/* Request List (Filtered by Month) */}
-            <div style={{ marginBottom: '25px' }}>
+            <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
                     <CalendarIcon size={18} color="#2d3748" />
                     <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
-                        {selectedMonth.getMonth() + 1}월 휴무 신청 내역
+                        신청 내역 ({filteredRequests.length}건)
                     </h4>
                 </div>
                 {sortedRequests.length === 0 ? (
-                    <div style={{ color: '#a0aec0', fontSize: '0.9rem', paddingLeft: '24px' }}>해당 월의 내역이 없습니다.</div>
+                    <div style={{ padding: '20px', textAlign: 'center', background: '#f7fafc', borderRadius: '8px', color: '#a0aec0' }}>
+                        내역이 없습니다.
+                    </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {sortedRequests.map(req => {
@@ -353,7 +283,7 @@ const InlineVacationRequest = () => {
                                 }}>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                         <span style={{ fontWeight: 'bold', color: isPast ? '#a0aec0' : '#2d3748' }}>
-                                            {req.date}({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
+                                            {req.date.split('-')[1]}.{req.date.split('-')[2]} ({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
                                         </span>
                                         <span style={{
                                             fontSize: '0.9rem',
@@ -385,26 +315,6 @@ const InlineVacationRequest = () => {
                         })}
                     </div>
                 )}
-            </div>
-
-            {/* Monthly Calendar */}
-            <div>
-
-
-                {/* Calendar Grid */}
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(7, 1fr)',
-                    textAlign: 'center',
-                    fontSize: '0.8rem',
-                    color: '#718096',
-                    marginBottom: '5px'
-                }}>
-                    <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', rowGap: '5px' }}>
-                    {renderCalendar()}
-                </div>
             </div>
         </div>
     );

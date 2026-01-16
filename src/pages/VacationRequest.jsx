@@ -4,7 +4,7 @@ import { ArrowLeft, Calendar, Clock, CheckCircle, AlertCircle, Trash2 } from 'lu
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
-import CustomDatePicker from '../components/CustomDatePicker';
+import EmbeddedCalendar from '../components/EmbeddedCalendar';
 
 const VacationRequest = () => {
     const navigate = useNavigate();
@@ -192,56 +192,36 @@ const VacationRequest = () => {
                     {/* Content */}
                     <div className="flex-col" style={{ gap: '25px' }}>
 
-                        {/* 1. Branch/Date Selection Style (From ManagerDashboard) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>날짜선택</span>
-                            <div style={{ position: 'relative', width: '100%', height: '46px' }}>
-                                {/* Visible UI matching Select Box */}
-                                <div style={{
-                                    position: 'absolute',
-                                    top: 0, left: 0, right: 0, bottom: 0,
-                                    padding: '0 12px',
-                                    borderRadius: '12px',
-                                    border: '1px solid #e2e8f0',
-                                    background: 'white',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    pointerEvents: 'none',
-                                    boxSizing: 'border-box'
-                                }}>
-                                    <span style={{
-                                        fontSize: '1rem',
-                                        color: '#2d3748',
-                                        fontWeight: 'bold',
-                                        fontFamily: 'var(--font-mono, monospace)',
-                                        letterSpacing: '1px'
-                                    }}>
-                                        {(() => {
-                                            if (!date) return '날짜 선택';
-                                            const [y, m, d] = date.split('-');
-                                            return `${y}. ${m}. ${d}.`;
-                                        })()}
-                                    </span>
-                                    <Calendar size={20} color="#718096" />
-                                </div>
+                        {/* 1. Date Selection with Embedded Calendar */}
+                        <div style={{ marginBottom: '10px' }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096', display: 'block', marginBottom: '8px' }}>날짜선택</span>
+                            <EmbeddedCalendar
+                                selectedDate={date}
+                                onSelectDate={(val) => {
+                                    // Basic validation
+                                    const todayStr = new Date().toISOString().split('T')[0];
+                                    const maxDate = new Date();
+                                    maxDate.setDate(maxDate.getDate() + 14);
+                                    const maxDateStr = maxDate.toISOString().split('T')[0];
 
-                                {/* Native Picker Overlay */}
-                                <input
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    style={{
-                                        position: 'absolute',
-                                        top: 0, left: 0,
-                                        width: '100%', height: '100%',
-                                        opacity: 0,
-                                        zIndex: 10,
-                                        cursor: 'pointer',
-                                        display: 'block'
-                                    }}
-                                />
-                            </div>
+                                    if (val < todayStr) {
+                                        alert('지난 날짜는 신청할 수 없습니다.');
+                                        return;
+                                    }
+                                    if (val > maxDateStr) {
+                                        alert('최대 2주 뒤까지만 신청 가능합니다.');
+                                        return;
+                                    }
+                                    setDate(val);
+                                }}
+                                events={myRequests}
+                                minDate={new Date().toISOString().split('T')[0]}
+                                maxDate={(() => {
+                                    const d = new Date();
+                                    d.setDate(d.getDate() + 14);
+                                    return d.toISOString().split('T')[0];
+                                })()}
+                            />
                         </div>
 
                         {/* 2. Type Buttons (Style Update) */}
