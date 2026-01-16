@@ -135,7 +135,7 @@ const WorkPlanReport = () => {
                         <ChevronLeft size={20} color="#4a5568" />
                     </button>
                     <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                        {weekStart.getMonth() + 1}.{weekStart.getDate()} ~ {weekEnd.getMonth() + 1}.{weekEnd.getDate()}
+                        {weekStart.getMonth() + 1}.{weekStart.getDate()}(월) ~ {weekEnd.getMonth() + 1}.{weekEnd.getDate()}(일)
                     </span>
                     <button onClick={handleNextWeek} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
                         <ChevronRight size={20} color="#4a5568" />
