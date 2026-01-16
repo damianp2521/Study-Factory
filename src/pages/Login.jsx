@@ -213,7 +213,7 @@ const Login = () => {
 
     const renderCheck = () => (
         <form onSubmit={handleCheckRegistration} style={{ width: '100%' }}>
-            <h2 style={headerStyle}>사원 확인</h2>
+            <h2 style={headerStyle}>사원등록</h2>
             <div style={{ marginBottom: '15px' }}>
                 <label style={labelStyle}>이름</label>
                 <input
