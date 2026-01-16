@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { BRANCH_LIST } from '../constants/branches';
+import logo from '../assets/logo_new.png';
 
 // Helper: Convert Name to Deterministic Hex Email
 const nameToEmail = (name) => {
@@ -417,7 +418,7 @@ const Login = () => {
             {mode === 'login' && (
                 <div style={{ marginBottom: '40px', textAlign: 'center' }}>
                     <img
-                        src="/logo.png"
+                        src={logo}
                         alt="Logo"
                         onError={(e) => {
                             e.target.onerror = null;

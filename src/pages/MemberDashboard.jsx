@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageTemplate from '../components/PageTemplate';
 import { LogOut, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo_new.png';
 import { useAuth } from '../context/AuthContext';
 import WorkPlanReport from '../components/WorkPlanReport';
 import InlineVacationRequest from '../components/InlineVacationRequest';
@@ -95,7 +95,7 @@ const MemberDashboard = () => {
                 alignItems: 'center',
                 padding: '10px 20px',
                 paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
-                backgroundColor: 'transparent',
+                backgroundColor: 'var(--color-primary)',
                 flexShrink: 0 // Prevent shrinking
             }}>
                 <button
@@ -103,7 +103,7 @@ const MemberDashboard = () => {
                     style={{
                         background: 'none',
                         border: 'none',
-                        color: '#718096',
+                        color: 'white',
                         cursor: 'pointer',
                         padding: '5px',
                         display: 'flex', alignItems: 'center'
@@ -115,11 +115,7 @@ const MemberDashboard = () => {
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    justifyContent: 'center'
                 }}>
                     <img src={logo} alt="자격증공장" style={{ height: '24px', objectFit: 'contain' }} />
                 </div>
@@ -129,7 +125,7 @@ const MemberDashboard = () => {
                     style={{
                         background: 'none',
                         border: 'none',
-                        color: '#718096',
+                        color: 'white',
                         cursor: 'pointer',
                         padding: '5px',
                         display: 'flex', alignItems: 'center'

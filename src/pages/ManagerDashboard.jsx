@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, RotateCw, ClipboardList } from 'lucide-react';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo_new.png';
 
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
@@ -639,7 +639,7 @@ const ManagerDashboard = () => {
                 alignItems: 'center',
                 padding: '10px 20px',
                 paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
-                backgroundColor: 'transparent',
+                backgroundColor: 'var(--color-primary)',
                 flexShrink: 0
             }}>
                 <button
@@ -647,7 +647,7 @@ const ManagerDashboard = () => {
                     style={{
                         background: 'none',
                         border: 'none',
-                        color: '#718096',
+                        color: 'white',
                         cursor: 'pointer',
                         padding: '5px',
                         display: 'flex', alignItems: 'center'
