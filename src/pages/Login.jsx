@@ -244,13 +244,16 @@ const Login = () => {
                 type="button"
                 onClick={handleInstallClick}
                 style={{
-                    background: 'none',
+                    width: '100%',
+                    padding: '16px',
+                    borderRadius: '12px',
                     border: 'none',
-                    color: '#a0aec0',
-                    fontSize: '0.85rem',
-                    marginTop: '20px',
-                    textDecoration: 'underline',
-                    cursor: 'pointer'
+                    background: '#edf2f7',
+                    color: '#4a5568',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    marginTop: '15px'
                 }}
             >
                 홈 화면에 추가하기
