@@ -359,7 +359,7 @@ const InlineVacationRequest = () => {
                                             fontWeight: 'bold',
                                             color: textColor
                                         }}>
-                                            {req.type === 'full' ? '월차' : '반차'}
+                                            {req.type === 'full' ? '월차' : (req.periods?.includes(1) ? '오전반차' : (req.periods?.includes(5) ? '오후반차' : '반차'))}
                                         </span>
                                     </div>
                                     {!isPast && (
