@@ -140,8 +140,29 @@ const InlineVacationRequest = () => {
             height: '100%',
             overflowY: 'auto'
         }}>
+            {/* Embedded Calendar */}
+            <div style={{ marginBottom: '20px' }}>
+                <EmbeddedCalendar
+                    selectedDate={date}
+                    onSelectDate={(val) => {
+                        if (val < todayStr) {
+                            alert('지난 날짜는 신청할 수 없습니다.');
+                            return;
+                        }
+                        if (val > maxDateStr) {
+                            alert('최대 2주 뒤까지만 신청 가능합니다.');
+                            return;
+                        }
+                        setDate(val);
+                    }}
+                    events={myRequests}
+                    minDate={todayStr}
+                    maxDate={maxDateStr}
+                />
+            </div>
+
             {/* Button Group */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '25px' }}>
                 <button
                     onClick={() => setType('full')}
                     style={{
@@ -190,27 +211,6 @@ const InlineVacationRequest = () => {
                 >
                     오후반차
                 </button>
-            </div>
-
-            {/* Embedded Calendar */}
-            <div style={{ marginBottom: '25px' }}>
-                <EmbeddedCalendar
-                    selectedDate={date}
-                    onSelectDate={(val) => {
-                        if (val < todayStr) {
-                            alert('지난 날짜는 신청할 수 없습니다.');
-                            return;
-                        }
-                        if (val > maxDateStr) {
-                            alert('최대 2주 뒤까지만 신청 가능합니다.');
-                            return;
-                        }
-                        setDate(val);
-                    }}
-                    events={myRequests}
-                    minDate={todayStr}
-                    maxDate={maxDateStr}
-                />
             </div>
 
             {/* Submit Button */}
