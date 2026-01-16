@@ -95,21 +95,23 @@ const MemberDashboard = () => {
                 alignItems: 'center',
                 padding: '10px 20px',
                 paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
-                backgroundColor: '#267E82',
+                backgroundColor: 'transparent',
                 flexShrink: 0
             }}>
                 <button
                     onClick={handleLogout}
                     style={{
-                        background: 'none',
+                        background: '#267E82',
                         border: 'none',
                         color: 'white',
                         cursor: 'pointer',
-                        padding: '5px',
-                        display: 'flex', alignItems: 'center'
+                        padding: '8px',
+                        borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                     }}
                 >
-                    <LogOut size={24} />
+                    <LogOut size={20} />
                 </button>
 
                 <div style={{
@@ -127,15 +129,17 @@ const MemberDashboard = () => {
                 <button
                     onClick={handleRefresh}
                     style={{
-                        background: 'none',
+                        background: '#267E82',
                         border: 'none',
                         color: 'white',
                         cursor: 'pointer',
-                        padding: '5px',
-                        display: 'flex', alignItems: 'center'
+                        padding: '8px',
+                        borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                     }}
                 >
-                    <RotateCw size={24} />
+                    <RotateCw size={20} />
                 </button>
             </div>
 
