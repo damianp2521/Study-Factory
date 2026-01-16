@@ -118,7 +118,7 @@ const MemberDashboard = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: 'white',
+                    backgroundColor: '#267E82',
                     padding: '8px 16px',
                     borderRadius: '20px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
