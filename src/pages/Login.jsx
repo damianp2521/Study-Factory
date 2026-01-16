@@ -37,6 +37,37 @@ const Login = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // PWA Install Prompt State
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [showIosInstallModal, setShowIosInstallModal] = useState(false);
+
+    // Capture the PWA install prompt event
+    useState(() => {
+        const handler = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handler);
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstallClick = async () => {
+        // Detect iOS
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        if (isIos) {
+            setShowIosInstallModal(true);
+        } else if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                setDeferredPrompt(null);
+            }
+        } else {
+            alert('현재 브라우저에서는 바로 설치 기능을 지원하지 않습니다.\n브라우저 메뉴의 [홈 화면에 추가]를 이용해주세요.');
+        }
+    };
+
     // --- Actions ---
 
     const handleLogin = async (e) => {
@@ -208,7 +239,62 @@ const Login = () => {
             >
                 사원등록
             </button>
+
+            <button
+                type="button"
+                onClick={handleInstallClick}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#a0aec0',
+                    fontSize: '0.85rem',
+                    marginTop: '20px',
+                    textDecoration: 'underline',
+                    cursor: 'pointer'
+                }}
+            >
+                홈 화면에 추가하기
+            </button>
         </form>
+    );
+
+    // iOS Install Instructions Modal
+    const renderIosModal = () => (
+        <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+        }} onClick={() => setShowIosInstallModal(false)}>
+            <div style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '24px',
+                maxWidth: '320px',
+                width: '100%',
+                textAlign: 'center'
+            }} onClick={e => e.stopPropagation()}>
+                <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2d3748' }}>홈 화면에 추가</h3>
+                <p style={{ color: '#4a5568', marginBottom: '20px', lineHeight: '1.5', fontSize: '0.95rem' }}>
+                    아이폰에서는 Safari 브라우저 하단의<br />
+                    <strong>공유 버튼</strong> <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSZNMTIgM1YxNk0xMiAzTDggN00xMiAzTDE2IDdNMjEgMTNWMTlDMjEgMTkuNTMwNCAyMC43ODkzIDIwSDMuMjEwNzFDMy43ODkzMSAyMCA0IDE5LjUzMDQgNCAxOVYxMyIgc3Ryb2tlPSIjNGE1NTY4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" style={{ verticalAlign: 'middle' }} alt="Share" /> 을 누르신 후,<br />
+                    <strong>[홈 화면에 추가]</strong>를 선택해주세요.
+                </p>
+                <button
+                    onClick={() => setShowIosInstallModal(false)}
+                    style={primaryButtonStyle}
+                >
+                    닫기
+                </button>
+            </div>
+        </div>
     );
 
     const renderCheck = () => (
@@ -327,6 +413,7 @@ const Login = () => {
             )}
 
             {mode === 'login' && renderLogin()}
+            {showIosInstallModal && renderIosModal()}
             {mode === 'register_check' && renderCheck()}
             {mode === 'register_setup' && renderSetup()}
         </div>
