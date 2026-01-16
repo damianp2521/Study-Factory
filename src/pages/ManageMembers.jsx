@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import PageTemplate from '../components/PageTemplate';
 import { supabase } from '../lib/supabaseClient';
+import { BRANCH_OPTIONS } from '../constants/branches';
 
 const ManageMembers = () => {
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedBranch, setSelectedBranch] = useState('전체');
 
-    const branches = ['전체', '망미점'];
+    const branches = BRANCH_OPTIONS;
 
     useEffect(() => {
         fetchMembers();

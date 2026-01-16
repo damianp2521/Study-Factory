@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { BRANCH_OPTIONS } from '../constants/branches';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Check, Trash2, AlertCircle, MessageCircle } from 'lucide-react';
 
@@ -12,7 +13,7 @@ const StaffTaskBoard = () => {
 
     // Branch configuration
     // Branch configuration
-    const BASIC_BRANCHES = ['전체', '망미점', '화명점'];
+    const BASIC_BRANCHES = BRANCH_OPTIONS;
 
     // Sorted Branch List
     const branches = React.useMemo(() => {

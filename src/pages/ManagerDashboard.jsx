@@ -10,14 +10,14 @@ import AdminMemberStatus from './AdminMemberStatus';
 import AdminMemberRegister from './AdminMemberRegister';
 import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
 import StaffTaskBoard from './StaffTaskBoard';
+import { BRANCH_OPTIONS } from '../constants/branches';
 
 // Inline Component for Employee Vacation Status
 const EmployeeVacationStatus = () => {
     const { user } = useAuth(); // Access user context
 
     // Branch configuration
-    // Branch configuration
-    const BASIC_BRANCHES = ['전체', '망미점', '화명점'];
+    const BASIC_BRANCHES = BRANCH_OPTIONS;
 
     // Sorted Branch List
     const branches = React.useMemo(() => {

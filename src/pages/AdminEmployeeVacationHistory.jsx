@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, User } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { BRANCH_OPTIONS } from '../constants/branches';
 
 const AdminEmployeeVacationHistory = ({ onBack }) => {
     const [users, setUsers] = useState([]);
@@ -11,7 +12,7 @@ const AdminEmployeeVacationHistory = ({ onBack }) => {
     const [userVacations, setUserVacations] = useState([]);
     const [vacationLoading, setVacationLoading] = useState(false);
 
-    const branches = ['전체', '망미점'];
+    const branches = BRANCH_OPTIONS;
 
     // 1. Fetch Users
     useEffect(() => {

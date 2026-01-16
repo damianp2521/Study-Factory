@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { BRANCH_LIST } from '../constants/branches';
 
 // Helper: Convert Name to Deterministic Hex Email
 const nameToEmail = (name) => {
@@ -230,7 +231,7 @@ const Login = () => {
                     onChange={(e) => setBranch(e.target.value)}
                     style={{ ...inputStyle, appearance: 'none' }}
                 >
-                    <option value="망미점">망미점</option>
+                    {BRANCH_LIST.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
             </div>
 

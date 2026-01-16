@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { BRANCH_LIST } from '../constants/branches';
 
 const AdminMemberRegister = ({ onBack }) => {
     console.log('AdminMemberRegister mounting');
@@ -11,7 +12,7 @@ const AdminMemberRegister = ({ onBack }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const branches = ['망미점']; // Add more as needed
+    const branches = BRANCH_LIST;
 
     useEffect(() => {
         fetchList();

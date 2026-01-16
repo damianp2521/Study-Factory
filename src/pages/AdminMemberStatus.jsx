@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Trash2, Edit2, Save, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { BRANCH_OPTIONS, BRANCH_LIST } from '../constants/branches';
 
 const AdminMemberStatus = ({ onBack }) => {
     const [users, setUsers] = useState([]);
@@ -9,7 +10,7 @@ const AdminMemberStatus = ({ onBack }) => {
     const [editForm, setEditForm] = useState({ branch: '', role: '' });
     const [selectedBranch, setSelectedBranch] = useState('전체');
 
-    const branches = ['전체', '망미점'];
+    const branches = BRANCH_OPTIONS;
 
     useEffect(() => {
         fetchUsers();
@@ -193,7 +194,7 @@ const AdminMemberStatus = ({ onBack }) => {
                                             onChange={(e) => setEditForm({ ...editForm, branch: e.target.value })}
                                             style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }}
                                         >
-                                            {branches.map(b => <option key={b} value={b}>{b}</option>)}
+                                            {BRANCH_LIST.map(b => <option key={b} value={b}>{b}</option>)}
                                         </select>
                                     </div>
                                     <div style={{ flex: 1 }}>
