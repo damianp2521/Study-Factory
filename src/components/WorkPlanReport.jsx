@@ -233,14 +233,39 @@ const WorkPlanReport = () => {
 
                         setLoading(true);
                         try {
-                            const { error } = await supabase
+                            // 1. Check if row exists
+                            const { data: existing } = await supabase
                                 .from('weekly_reports')
-                                .upsert({
-                                    user_id: user.id,
-                                    week_start_date: weekStartStr,
-                                    plan_snapshot: tasks, // Snapshot current tasks
-                                    plan_reported_at: new Date().toISOString()
-                                }, { onConflict: 'user_id, week_start_date' });
+                                .select('id')
+                                .eq('user_id', user.id)
+                                .eq('week_start_date', weekStartStr)
+                                .single();
+
+                            const payload = {
+                                user_id: user.id,
+                                week_start_date: weekStartStr,
+                                plan_snapshot: tasks,
+                                plan_reported_at: new Date().toISOString()
+                            };
+
+                            let error;
+                            if (existing) {
+                                // Update
+                                const res = await supabase
+                                    .from('weekly_reports')
+                                    .update({
+                                        plan_snapshot: tasks,
+                                        plan_reported_at: new Date().toISOString()
+                                    })
+                                    .eq('id', existing.id);
+                                error = res.error;
+                            } else {
+                                // Insert
+                                const res = await supabase
+                                    .from('weekly_reports')
+                                    .insert([payload]);
+                                error = res.error;
+                            }
 
                             if (error) throw error;
                             alert('작업 계획 보고가 완료되었습니다!');
@@ -271,14 +296,39 @@ const WorkPlanReport = () => {
 
                         setLoading(true);
                         try {
-                            const { error } = await supabase
+                            // 1. Check if row exists
+                            const { data: existing } = await supabase
                                 .from('weekly_reports')
-                                .upsert({
-                                    user_id: user.id,
-                                    week_start_date: weekStartStr,
-                                    result_snapshot: tasks, // Snapshot current tasks
-                                    result_reported_at: new Date().toISOString()
-                                }, { onConflict: 'user_id, week_start_date' });
+                                .select('id')
+                                .eq('user_id', user.id)
+                                .eq('week_start_date', weekStartStr)
+                                .single();
+
+                            const payload = {
+                                user_id: user.id,
+                                week_start_date: weekStartStr,
+                                result_snapshot: tasks,
+                                result_reported_at: new Date().toISOString()
+                            };
+
+                            let error;
+                            if (existing) {
+                                // Update
+                                const res = await supabase
+                                    .from('weekly_reports')
+                                    .update({
+                                        result_snapshot: tasks,
+                                        result_reported_at: new Date().toISOString()
+                                    })
+                                    .eq('id', existing.id);
+                                error = res.error;
+                            } else {
+                                // Insert
+                                const res = await supabase
+                                    .from('weekly_reports')
+                                    .insert([payload]);
+                                error = res.error;
+                            }
 
                             if (error) throw error;
                             alert('작업 결과 보고가 완료되었습니다!');

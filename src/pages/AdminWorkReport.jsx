@@ -125,10 +125,17 @@ const AdminWorkReport = ({ onBack }) => {
                     </div>
 
                     {/* Content Grid */}
-                    <div style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    <div style={{
+                        flex: 1,
+                        overflowY: 'auto',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', // Responsive Grid
+                        gap: '20px',
+                        paddingBottom: '20px'
+                    }}>
 
                         {/* LEFT: PLAN */}
-                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px' }}>
+                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', minHeight: '200px' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '15px', color: '#2b6cb0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 📋 작업 계획
                                 {selectedReport.plan_reported_at ? (
@@ -139,8 +146,17 @@ const AdminWorkReport = ({ onBack }) => {
                                     <span style={{ fontSize: '0.7rem', background: '#fed7d7', color: '#c53030', padding: '2px 6px', borderRadius: '4px' }}>미제출</span>
                                 )}
                             </h3>
-                            {planTasks.length === 0 ? (
-                                <div style={{ color: '#a0aec0', textAlign: 'center', marginTop: '20px' }}>계획 내용 없음</div>
+                            {!selectedReport.plan_reported_at || planTasks.length === 0 ? (
+                                <div style={{
+                                    color: '#a0aec0',
+                                    textAlign: 'center',
+                                    marginTop: '40px',
+                                    fontSize: '0.9rem',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
+                                }}>
+                                    <Circle size={24} color="#e2e8f0" />
+                                    제출 전입니다
+                                </div>
                             ) : (
                                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                     {planTasks.map((t, i) => (
@@ -153,7 +169,7 @@ const AdminWorkReport = ({ onBack }) => {
                         </div>
 
                         {/* RIGHT: RESULT */}
-                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px' }}>
+                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', minHeight: '200px' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '15px', color: '#2f855a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 ✅ 작업 결과
                                 {selectedReport.result_reported_at ? (
@@ -164,8 +180,17 @@ const AdminWorkReport = ({ onBack }) => {
                                     <span style={{ fontSize: '0.7rem', background: '#fed7d7', color: '#c53030', padding: '2px 6px', borderRadius: '4px' }}>미제출</span>
                                 )}
                             </h3>
-                            {resultTasks.length === 0 ? (
-                                <div style={{ color: '#a0aec0', textAlign: 'center', marginTop: '20px' }}>결과 내용 없음</div>
+                            {!selectedReport.result_reported_at || resultTasks.length === 0 ? (
+                                <div style={{
+                                    color: '#a0aec0',
+                                    textAlign: 'center',
+                                    marginTop: '40px',
+                                    fontSize: '0.9rem',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'
+                                }}>
+                                    <Circle size={24} color="#e2e8f0" />
+                                    제출 전입니다
+                                </div>
                             ) : (
                                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                     {resultTasks.map((t, i) => (
