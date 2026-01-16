@@ -801,7 +801,8 @@ const ManagerDashboard = () => {
                                 overflowY: 'auto',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                paddingBottom: '60px', /* Space for Bottom Dots */
+                                paddingBottom: '20px',
+                                marginBottom: '60px', /* Make dots appear outside */
                                 scrollbarWidth: 'none',
                                 msOverflowStyle: 'none'
                             }}>

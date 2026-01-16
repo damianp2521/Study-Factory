@@ -258,7 +258,8 @@ const MemberDashboard = () => {
                             <div style={{
                                 flex: 1,
                                 overflowY: 'auto',
-                                paddingBottom: '60px', /* Space for Bottom Dots */
+                                paddingBottom: '20px',
+                                marginBottom: '60px', /* Make dots appear outside */
                                 // Hide scrollbar for cleaner look
                                 scrollbarWidth: 'none',
                                 msOverflowStyle: 'none'
