@@ -64,7 +64,18 @@ const Login = () => {
                 setDeferredPrompt(null);
             }
         } else {
-            alert('현재 브라우저에서는 바로 설치 기능을 지원하지 않습니다.\n브라우저 메뉴의 [홈 화면에 추가]를 이용해주세요.');
+
+            // Check for In-App Browsers (KakaoTalk, Naver, etc.)
+            const isKakao = /KAKAOTALK/i.test(navigator.userAgent);
+            const isNaver = /NAVER/i.test(navigator.userAgent);
+            const isInApp = isKakao || isNaver || /Instagram|FBAN|FBAV/i.test(navigator.userAgent);
+
+            if (isInApp) {
+                alert('카카오톡/네이버 등 인앱 브라우저에서는 설치가 지원되지 않습니다.\n\n우측 하단(또는 상단)의 메뉴 버튼(...)을 눌러 [다른 브라우저로 열기]를 선택한 후 다시 시도해주세요.');
+            } else {
+                // Generic fallback for proper browsers that just didn't fire the event yet (or already installed)
+                alert('현재 브라우저에서는 자동 설치를 지원하지 않거나 이미 설치되어 있습니다.\n\n[브라우저 메뉴] -> [홈 화면에 추가] 또는 [앱 설치]를 직접 선택해주세요.');
+            }
         }
     };
 
