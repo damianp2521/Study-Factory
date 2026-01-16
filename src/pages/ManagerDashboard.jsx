@@ -13,7 +13,31 @@ import StaffTaskBoard from './StaffTaskBoard';
 
 // Inline Component for Employee Vacation Status
 const EmployeeVacationStatus = () => {
-    const [selectedBranch, setSelectedBranch] = useState('전체');
+    const { user } = useAuth(); // Access user context
+
+    // Branch configuration
+    const BASIC_BRANCHES = ['전체', '망미점', '화명점'];
+    const [branches, setBranches] = useState(BASIC_BRANCHES);
+
+    useEffect(() => {
+        if (user?.branch && user.branch !== '미정' && !BASIC_BRANCHES.includes(user.branch)) {
+            setBranches([...BASIC_BRANCHES, user.branch]);
+        }
+    }, [user?.branch]);
+
+    // Initialize with user's branch if possible
+    const [selectedBranch, setSelectedBranch] = useState(() => {
+        if (user?.branch && user.branch !== '미정') return user.branch;
+        return '전체';
+    });
+
+    // Update selected branch if user loads late
+    useEffect(() => {
+        if (user?.branch && user.branch !== '미정' && selectedBranch === '전체') {
+            setSelectedBranch(user.branch);
+        }
+    }, [user?.branch]);
+
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [filters, setFilters] = useState({
         full: true,    // 월차 - Red
@@ -23,7 +47,6 @@ const EmployeeVacationStatus = () => {
     const [vacations, setVacations] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const branches = ['전체', '망미점']; // Currently only Mangmi branch exists
 
     useEffect(() => {
         fetchVacations();
@@ -83,29 +106,48 @@ const EmployeeVacationStatus = () => {
                 marginBottom: '15px',
                 alignItems: 'center'
             }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflow: 'hidden', flex: 1 }}>
+                    {/* Branch Filter (Horizontal Scroll) */}
                     <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>지점선택</span>
-                    <select
-                        value={selectedBranch}
-                        onChange={(e) => setSelectedBranch(e.target.value)}
-                        style={{
-                            padding: '12px',
-                            height: '46px', // Fixed height to match date picker if possible, or just standard
-                            borderRadius: '12px',
-                            border: '1px solid #e2e8f0',
-                            fontSize: '1rem',
-                            fontWeight: 'bold',
-                            color: '#2d3748',
-                            background: 'white',
-                            minWidth: '100px',
-                            boxSizing: 'border-box'
-                        }}
-                    >
-                        {branches.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
+                    <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        overflowX: 'auto',
+                        paddingBottom: '5px',
+                        whiteSpace: 'nowrap',
+                        scrollbarWidth: 'none', // Firefox
+                        msOverflowStyle: 'none' // IE/Edge
+                    }}>
+                        <style>{`
+                            /* Hide scrollbar for Chrome/Safari/Opera */
+                            div::-webkit-scrollbar {
+                                display: none;
+                            }
+                        `}</style>
+                        {branches.map(branch => (
+                            <button
+                                key={branch}
+                                onClick={() => setSelectedBranch(branch)}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '20px',
+                                    border: selectedBranch === branch ? 'none' : '1px solid #e2e8f0',
+                                    background: selectedBranch === branch ? 'var(--color-primary)' : 'white',
+                                    color: selectedBranch === branch ? 'white' : '#718096',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    flexShrink: 0
+                                }}
+                            >
+                                {branch}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <div style={{ width: '140px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>날짜선택</span>
                     <div style={{ position: 'relative', width: '100%', height: '46px' }}>
                         {/* Visible UI matching Select Box */}
