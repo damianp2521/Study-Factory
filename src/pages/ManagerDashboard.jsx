@@ -102,11 +102,11 @@ const EmployeeVacationStatus = () => {
             {/* Top Controls: Branch & Date */}
             <div style={{
                 display: 'flex',
-                gap: '10px',
-                marginBottom: '15px',
-                alignItems: 'center'
+                flexDirection: 'column',
+                gap: '15px',
+                marginBottom: '20px',
             }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflow: 'hidden', flex: 1 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflow: 'hidden' }}>
                     {/* Branch Filter (Horizontal Scroll) */}
                     <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>지점선택</span>
                     <div style={{
@@ -147,8 +147,8 @@ const EmployeeVacationStatus = () => {
                     </div>
                 </div>
 
-                <div style={{ width: '140px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>날짜선택</span>
+                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    {/* Date Picker - Full Width, No Label */}
                     <div style={{ position: 'relative', width: '100%', height: '46px' }}>
                         {/* Visible UI matching Select Box */}
                         <div style={{
