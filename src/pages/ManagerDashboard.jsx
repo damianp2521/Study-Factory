@@ -16,13 +16,29 @@ const EmployeeVacationStatus = () => {
     const { user } = useAuth(); // Access user context
 
     // Branch configuration
+    // Branch configuration
     const BASIC_BRANCHES = ['전체', '망미점', '화명점'];
-    const [branches, setBranches] = useState(BASIC_BRANCHES);
 
-    useEffect(() => {
-        if (user?.branch && user.branch !== '미정' && !BASIC_BRANCHES.includes(user.branch)) {
-            setBranches([...BASIC_BRANCHES, user.branch]);
-        }
+    // Sorted Branch List
+    const branches = React.useMemo(() => {
+        const userBranch = user?.branch || '';
+        // 1. Combine and Deduplicate
+        const all = new Set([...BASIC_BRANCHES]);
+        if (userBranch && userBranch !== '미정') all.add(userBranch);
+
+        // 2. Sort
+        return Array.from(all).sort((a, b) => {
+            // '전체' always first
+            if (a === '전체') return -1;
+            if (b === '전체') return 1;
+
+            // User branch always second (right after '전체')
+            if (a === userBranch) return -1;
+            if (b === userBranch) return 1;
+
+            // Others alphabetical
+            return a.localeCompare(b);
+        });
     }, [user?.branch]);
 
     // Initialize with user's branch if possible
@@ -31,10 +47,11 @@ const EmployeeVacationStatus = () => {
         return '전체';
     });
 
-    // Update selected branch if user loads late
+    // Update selected branch if user loads late or changes
     useEffect(() => {
-        if (user?.branch && user.branch !== '미정' && selectedBranch === '전체') {
-            setSelectedBranch(user.branch);
+        if (user?.branch) {
+            const target = (user.branch === '미정' || user.branch === '전체') ? '전체' : user.branch;
+            setSelectedBranch(target);
         }
     }, [user?.branch]);
 
