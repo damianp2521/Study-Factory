@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { ChevronLeft, ChevronRight, Calendar, CheckCircle, Circle, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
@@ -75,14 +76,15 @@ const AdminWorkReport = ({ onBack }) => {
         }
     };
 
-    // 4. Modal Renderer
+    // 4. Modal Renderer using Portal
     const renderDetailModal = () => {
         if (!selectedReport) return null;
 
         const planTasks = selectedReport.plan_snapshot || [];
         const resultTasks = selectedReport.result_snapshot || [];
 
-        return (
+        // Create Portal to render outside of the carousel's transform context
+        return ReactDOM.createPortal(
             <div style={{
                 position: 'fixed',
                 top: 0, left: 0, right: 0, bottom: 0,
@@ -90,7 +92,7 @@ const AdminWorkReport = ({ onBack }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                zIndex: 1000,
+                zIndex: 9999, // High Z-Index
                 padding: '20px'
             }} onClick={() => setSelectedReport(null)}>
                 <div style={{
@@ -103,7 +105,8 @@ const AdminWorkReport = ({ onBack }) => {
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
-                    position: 'relative'
+                    position: 'relative',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
                 }} onClick={e => e.stopPropagation()}>
 
                     {/* Header */}
@@ -207,7 +210,8 @@ const AdminWorkReport = ({ onBack }) => {
 
                     </div>
                 </div>
-            </div>
+            </div>,
+            document.body // Append to body
         );
     };
 
