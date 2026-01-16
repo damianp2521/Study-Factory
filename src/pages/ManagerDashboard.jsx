@@ -639,7 +639,7 @@ const ManagerDashboard = () => {
                 alignItems: 'center',
                 padding: '10px 20px',
                 paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
-                backgroundColor: 'var(--color-primary)',
+                backgroundColor: '#267E82',
                 flexShrink: 0
             }}>
                 <button
@@ -659,7 +659,11 @@ const ManagerDashboard = () => {
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    backgroundColor: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
                 }}>
                     <img src={logo} alt="자격증공장" style={{ height: '24px', objectFit: 'contain' }} />
                 </div>
