@@ -112,6 +112,10 @@ const StaffTaskBoard = () => {
 
     // Add Staff Todo
     const handleAddTodo = async () => {
+        if (selectedBranch === '전체') {
+            alert('지점을 선택 후 할 일을 입력해주세요.');
+            return;
+        }
         if (!newTodo.trim()) return;
         try {
             const targetBranch = selectedBranch === '전체' ? user.branch : selectedBranch;
@@ -312,7 +316,8 @@ const StaffTaskBoard = () => {
                         type="text"
                         value={newTodo}
                         onChange={(e) => setNewTodo(e.target.value)}
-                        placeholder="할 일을 입력하세요..."
+                        placeholder={selectedBranch === '전체' ? '지점 선택 후 할 일을 입력하여 주세요' : '할 일을 입력하세요...'}
+                        disabled={selectedBranch === '전체'}
                         style={{
                             width: '100%',
                             padding: '12px 15px',
@@ -321,7 +326,9 @@ const StaffTaskBoard = () => {
                             border: `2px solid ${isUrgent ? '#feb2b2' : '#e2e8f0'}`,
                             outline: 'none',
                             transition: 'all 0.2s',
-                            fontSize: '1rem'
+                            fontSize: '1rem',
+                            backgroundColor: selectedBranch === '전체' ? '#f7fafc' : 'white',
+                            cursor: selectedBranch === '전체' ? 'not-allowed' : 'text'
                         }}
                     />
                     <div
@@ -350,13 +357,14 @@ const StaffTaskBoard = () => {
                 </div>
                 <button
                     onClick={handleAddTodo}
+                    disabled={selectedBranch === '전체'}
                     style={{
                         padding: '0 16px',
                         borderRadius: '12px',
-                        background: 'var(--color-primary)',
+                        background: selectedBranch === '전체' ? '#cbd5e0' : 'var(--color-primary)',
                         color: 'white',
                         border: 'none',
-                        cursor: 'pointer',
+                        cursor: selectedBranch === '전체' ? 'not-allowed' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
