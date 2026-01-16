@@ -93,15 +93,22 @@ const WorkPlanReport = () => {
 
     const toggleCompletion = async (task) => {
         try {
+            const now = new Date().toISOString();
+            const newCompletedState = !task.is_completed;
+            const newCompletedAt = newCompletedState ? now : null;
+
             const { error } = await supabase
                 .from('work_plans')
-                .update({ is_completed: !task.is_completed })
+                .update({
+                    is_completed: newCompletedState,
+                    completed_at: newCompletedAt
+                })
                 .eq('id', task.id);
 
             if (error) throw error;
 
             setTasks(tasks.map(t =>
-                t.id === task.id ? { ...t, is_completed: !t.is_completed } : t
+                t.id === task.id ? { ...t, is_completed: newCompletedState, completed_at: newCompletedAt } : t
             ));
         } catch (err) {
             console.error('Error updating task:', err);
@@ -206,14 +213,23 @@ const WorkPlanReport = () => {
                                     <Circle size={20} color="#cbd5e0" />
                                 }
                             </button>
-                            <span style={{
-                                flex: 1,
-                                fontSize: '1rem',
-                                color: task.is_completed ? '#a0aec0' : '#2d3748',
-                                textDecoration: task.is_completed ? 'line-through' : 'none'
-                            }}>
-                                {task.content}
-                            </span>
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <span style={{
+                                    fontSize: '1rem',
+                                    color: task.is_completed ? '#a0aec0' : '#2d3748',
+                                    textDecoration: task.is_completed ? 'line-through' : 'none'
+                                }}>
+                                    {task.content}
+                                </span>
+                                {task.is_completed && task.completed_at && (
+                                    <span style={{ fontSize: '0.75rem', color: '#a0aec0' }}>
+                                        {(() => {
+                                            const d = new Date(task.completed_at);
+                                            return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                        })()}
+                                    </span>
+                                )}
+                            </div>
                             <button
                                 onClick={() => handleDeleteTask(task.id)}
                                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#fc8181' }}

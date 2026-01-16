@@ -205,9 +205,19 @@ const AdminWorkReport = ({ onBack }) => {
                                     {resultTasks.map((t, i) => (
                                         <li key={i} style={{ marginBottom: '8px', padding: '8px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             {t.is_completed ? <CheckCircle size={16} color="#48bb78" /> : <Circle size={16} color="#cbd5e0" />}
-                                            <span style={{ textDecoration: t.is_completed ? 'line-through' : 'none', color: t.is_completed ? '#718096' : '#2d3748' }}>
-                                                {t.content}
-                                            </span>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ textDecoration: t.is_completed ? 'line-through' : 'none', color: t.is_completed ? '#718096' : '#2d3748' }}>
+                                                    {t.content}
+                                                </span>
+                                                {t.is_completed && t.completed_at && (
+                                                    <span style={{ fontSize: '0.75rem', color: '#a0aec0' }}>
+                                                        {(() => {
+                                                            const d = new Date(t.completed_at);
+                                                            return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                                        })()}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
