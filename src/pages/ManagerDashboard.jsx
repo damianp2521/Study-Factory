@@ -659,11 +659,7 @@ const ManagerDashboard = () => {
                 <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'white',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    justifyContent: 'center'
                 }}>
                     <img src={logo} alt="자격증공장" style={{ height: '24px', objectFit: 'contain' }} />
                 </div>
@@ -673,7 +669,7 @@ const ManagerDashboard = () => {
                     style={{
                         background: 'none',
                         border: 'none',
-                        color: '#718096',
+                        color: 'white',
                         cursor: 'pointer',
                         padding: '5px',
                         display: 'flex', alignItems: 'center'
