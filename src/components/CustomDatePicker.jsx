@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Calendar } from 'lucide-react';
 
-const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }) => {
+const CustomDatePicker = ({ value, onChange, label, ...props }) => {
     const inputRef = useRef(null);
 
     const handleContainerClick = () => {
@@ -29,9 +29,11 @@ const CustomDatePicker = ({ value, onChange, label = "날짜 선택", ...props }
             style={{ position: 'relative', width: '100%' }}
             onClick={handleContainerClick}
         >
-            <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>
-                {label}
-            </label>
+            {label && (
+                <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>
+                    {label}
+                </label>
+            )}
 
             {/* Visible Custom UI */}
             {/* Visible Custom UI */}
