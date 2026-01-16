@@ -11,32 +11,42 @@ const StaffTaskBoard = () => {
     const [isUrgent, setIsUrgent] = useState(false);
 
     // Branch configuration
+    // Branch configuration
     const BASIC_BRANCHES = ['전체', '망미점', '화명점'];
-    // Merge user's branch if legitimate and not in list, usually just stick to basics + user's if valid
-    // For now, simple static list + user.branch if needed is enough, but user asked for specific list.
-    // Let's ensure User's branch is in the list if it's not '전체' or '미정'
-    const [branches, setBranches] = useState(BASIC_BRANCHES);
 
-    useEffect(() => {
-        if (user?.branch && user.branch !== '미정' && !BASIC_BRANCHES.includes(user.branch)) {
-            setBranches([...BASIC_BRANCHES, user.branch]);
-        }
+    // Sorted Branch List
+    const branches = React.useMemo(() => {
+        const userBranch = user?.branch || '';
+        // 1. Combine and Deduplicate
+        const all = new Set([...BASIC_BRANCHES]);
+        if (userBranch && userBranch !== '미정') all.add(userBranch);
+
+        // 2. Sort
+        return Array.from(all).sort((a, b) => {
+            // '전체' always first
+            if (a === '전체') return -1;
+            if (b === '전체') return 1;
+
+            // User branch always second (right after '전체')
+            if (a === userBranch) return -1;
+            if (b === userBranch) return 1;
+
+            // Others alphabetical
+            return a.localeCompare(b);
+        });
     }, [user?.branch]);
 
-    // Initialize selection: User's branch if valid, else '전체'
-    // Note: We use lazy initialization/effect to set this correct if user loads later, 
-    // but useState arg is only initial. 
-    // Let's use an effect to set default once user is loaded if it's still '전체' (optional, or just rely on manual)
-    // Actually, simpler: Initialize based on available user data or '전체'
+    // Initialize selection
     const [selectedBranch, setSelectedBranch] = useState(() => {
         if (user?.branch && user.branch !== '미정') return user.branch;
         return '전체';
     });
 
-    // Update selected branch if user loads late and we are arguably still at default
+    // Update selected branch if user data updates
     useEffect(() => {
-        if (user?.branch && user.branch !== '미정' && selectedBranch === '전체') {
-            setSelectedBranch(user.branch);
+        if (user?.branch) {
+            const target = (user.branch === '미정' || user.branch === '전체') ? '전체' : user.branch;
+            setSelectedBranch(target);
         }
     }, [user?.branch]);
 
