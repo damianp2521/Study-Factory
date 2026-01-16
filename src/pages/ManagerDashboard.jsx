@@ -125,7 +125,7 @@ const EmployeeVacationStatus = () => {
             }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflow: 'hidden' }}>
                     {/* Branch Filter (Horizontal Scroll) */}
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096' }}>지점선택</span>
+
                     <div style={{
                         display: 'flex',
                         gap: '8px',
