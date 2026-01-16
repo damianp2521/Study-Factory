@@ -143,6 +143,43 @@ const WorkPlanReport = () => {
                 </div>
             </div>
 
+            {/* Add Task Input */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                <input
+                    type="text"
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+                    placeholder="할 일을 입력하세요..."
+                    style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '1rem',
+                        outline: 'none'
+                    }}
+                />
+                <button
+                    onClick={handleAddTask}
+                    disabled={loading || !newTask.trim()}
+                    style={{
+                        background: 'var(--color-primary)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        width: '40px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        opacity: loading ? 0.7 : 1
+                    }}
+                >
+                    <Plus size={24} />
+                </button>
+            </div>
+
             {/* Task List */}
             <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {tasks.length === 0 ? (
@@ -186,43 +223,6 @@ const WorkPlanReport = () => {
                         </div>
                     ))
                 )}
-            </div>
-
-            {/* Add Task Input */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                <input
-                    type="text"
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
-                    placeholder="할 일을 입력하세요..."
-                    style={{
-                        flex: 1,
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
-                        fontSize: '1rem',
-                        outline: 'none'
-                    }}
-                />
-                <button
-                    onClick={handleAddTask}
-                    disabled={loading || !newTask.trim()}
-                    style={{
-                        background: 'var(--color-primary)',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        width: '40px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        opacity: loading ? 0.7 : 1
-                    }}
-                >
-                    <Plus size={24} />
-                </button>
             </div>
 
             {/* Scale/Report Buttons */}
