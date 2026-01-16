@@ -144,7 +144,7 @@ const AdminWorkReport = ({ onBack }) => {
                     }}>
 
                         {/* LEFT: PLAN */}
-                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', minHeight: '200px' }}>
+                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', minHeight: '200px', overflow: 'hidden' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '15px', color: '#2b6cb0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 작업 계획
                                 {selectedReport.plan_reported_at ? (
@@ -178,7 +178,7 @@ const AdminWorkReport = ({ onBack }) => {
                         </div>
 
                         {/* RIGHT: RESULT */}
-                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', minHeight: '200px' }}>
+                        <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', minHeight: '200px', overflow: 'hidden' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '15px', color: '#2f855a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 작업 결과
                                 {selectedReport.result_reported_at ? (
