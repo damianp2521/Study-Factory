@@ -352,7 +352,9 @@ const InlineVacationRequest = () => {
                                     borderLeft: `4px solid ${borderColor} `
                                 }}>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 'bold', color: isPast ? '#a0aec0' : '#2d3748' }}>{req.date}</span>
+                                        <span style={{ fontWeight: 'bold', color: isPast ? '#a0aec0' : '#2d3748' }}>
+                                            {req.date}({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
+                                        </span>
                                         <span style={{
                                             fontSize: '0.9rem',
                                             fontWeight: 'bold',
