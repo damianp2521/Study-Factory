@@ -349,7 +349,7 @@ const primaryButtonStyle = {
     padding: '16px',
     borderRadius: '12px',
     border: 'none',
-    background: 'var(--color-primary, #2b6cb0)',
+    background: 'var(--color-primary, #387679)',
     color: 'white',
     fontSize: '1rem',
     fontWeight: 'bold',

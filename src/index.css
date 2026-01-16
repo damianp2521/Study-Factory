@@ -1,9 +1,12 @@
 :root {
   /* Premium Color Palette */
-  --color-primary: #1a237e;
-  /* Deep Indigo */
-  --color-primary-light: #534bae;
-  --color-primary-dark: #000051;
+  /* Premium Color Palette - Muted Teal */
+  --color-primary: #387679;
+  /* Low Saturation Teal */
+  --color-primary-light: #4A888E;
+  /* Lighter Muted Teal */
+  --color-primary-dark: #285E61;
+  /* Dark Slate Teal */
 
   --color-secondary: #ff6f00;
   /* Amber/Gold Accent */
