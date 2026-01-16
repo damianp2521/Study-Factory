@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageTemplate from '../components/PageTemplate';
-import { LogOut, ChevronLeft, ChevronRight, CircleHelp } from 'lucide-react';
+import { LogOut, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 import WorkPlanReport from '../components/WorkPlanReport';
@@ -12,8 +12,17 @@ const MemberDashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
 
-    // Carousel State
-    const [activeIndex, setActiveIndex] = useState(0);
+    // Carousel State - Initialize from LocalStorage
+    const [activeIndex, setActiveIndex] = useState(() => {
+        const saved = localStorage.getItem('member_dashboard_index');
+        return saved ? parseInt(saved, 10) : 0;
+    });
+
+    // Save to LocalStorage whenever index changes
+    React.useEffect(() => {
+        localStorage.setItem('member_dashboard_index', activeIndex);
+    }, [activeIndex]);
+
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
 
@@ -31,6 +40,10 @@ const MemberDashboard = () => {
             console.error('Logout failed:', error);
             navigate('/login');
         }
+    };
+
+    const handleRefresh = () => {
+        window.location.reload();
     };
 
     // Handle Swipe
@@ -75,7 +88,7 @@ const MemberDashboard = () => {
             backgroundColor: '#f8fafc',
             position: 'relative' // Needed for absolute positioning of dots if preferred, but flex is fine
         }}>
-            {/* 1. Global Header Bar (Logout - Logo - Help) */}
+            {/* 1. Global Header Bar (Logout - Logo - Refresh) */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -112,7 +125,7 @@ const MemberDashboard = () => {
                 </div>
 
                 <button
-                    onClick={() => { }} // Placeholder
+                    onClick={handleRefresh}
                     style={{
                         background: 'none',
                         border: 'none',
@@ -122,7 +135,7 @@ const MemberDashboard = () => {
                         display: 'flex', alignItems: 'center'
                     }}
                 >
-                    <CircleHelp size={24} />
+                    <RotateCw size={24} />
                 </button>
             </div>
 

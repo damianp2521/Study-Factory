@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, CircleHelp, ClipboardList } from 'lucide-react';
+import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, RotateCw, ClipboardList } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 import { useAuth } from '../context/AuthContext';
@@ -12,6 +12,11 @@ import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
 import AdminWorkReport from './AdminWorkReport';
 import StaffTaskBoard from './StaffTaskBoard';
 import { BRANCH_OPTIONS } from '../constants/branches';
+
+// ... (skipping inline components)
+
+// ~~~~ Main Dashboard Component ~~~~
+
 
 // Inline Component for Employee Vacation Status
 const EmployeeVacationStatus = () => {
@@ -77,9 +82,9 @@ const EmployeeVacationStatus = () => {
             let query = supabase
                 .from('vacation_requests')
                 .select(`
-    *,
-    profiles: user_id(name, branch)
-                `)
+        *,
+        profiles: user_id(name, branch)
+        `)
                 .eq('date', selectedDate)
                 .order('created_at', { ascending: false }); // Sort by newest first
 
@@ -543,8 +548,18 @@ const ManagerDashboard = () => {
     const isAdmin = user?.role === 'admin';
     const initialIndex = isAdmin ? 1 : 0;
 
-    // Carousel State
-    const [activeIndex, setActiveIndex] = useState(initialIndex);
+    // Carousel State - Initialize from LocalStorage
+    const [activeIndex, setActiveIndex] = useState(() => {
+        const saved = localStorage.getItem('manager_dashboard_index');
+        if (saved !== null) return parseInt(saved, 10);
+        return initialIndex;
+    });
+
+    // Save to LocalStorage whenever index changes
+    useEffect(() => {
+        localStorage.setItem('manager_dashboard_index', activeIndex);
+    }, [activeIndex]);
+
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
 
@@ -567,6 +582,10 @@ const ManagerDashboard = () => {
             console.error('Logout failed:', error);
             navigate('/login');
         }
+    };
+
+    const handleRefresh = () => {
+        window.location.reload();
     };
 
     // Handle Swipe
@@ -646,7 +665,7 @@ const ManagerDashboard = () => {
                 </div>
 
                 <button
-                    onClick={() => { }} // Placeholder
+                    onClick={handleRefresh}
                     style={{
                         background: 'none',
                         border: 'none',
@@ -656,7 +675,7 @@ const ManagerDashboard = () => {
                         display: 'flex', alignItems: 'center'
                     }}
                 >
-                    <CircleHelp size={24} />
+                    <RotateCw size={24} />
                 </button>
             </div>
 
