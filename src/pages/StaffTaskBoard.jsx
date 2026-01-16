@@ -10,7 +10,35 @@ const StaffTaskBoard = () => {
     const [newTodo, setNewTodo] = useState('');
     const [isUrgent, setIsUrgent] = useState(false);
 
-    const [selectedBranch, setSelectedBranch] = useState('전체'); // '전체' | '망미점'
+    // Branch configuration
+    const BASIC_BRANCHES = ['전체', '망미점', '화명점'];
+    // Merge user's branch if legitimate and not in list, usually just stick to basics + user's if valid
+    // For now, simple static list + user.branch if needed is enough, but user asked for specific list.
+    // Let's ensure User's branch is in the list if it's not '전체' or '미정'
+    const [branches, setBranches] = useState(BASIC_BRANCHES);
+
+    useEffect(() => {
+        if (user?.branch && user.branch !== '미정' && !BASIC_BRANCHES.includes(user.branch)) {
+            setBranches([...BASIC_BRANCHES, user.branch]);
+        }
+    }, [user?.branch]);
+
+    // Initialize selection: User's branch if valid, else '전체'
+    // Note: We use lazy initialization/effect to set this correct if user loads later, 
+    // but useState arg is only initial. 
+    // Let's use an effect to set default once user is loaded if it's still '전체' (optional, or just rely on manual)
+    // Actually, simpler: Initialize based on available user data or '전체'
+    const [selectedBranch, setSelectedBranch] = useState(() => {
+        if (user?.branch && user.branch !== '미정') return user.branch;
+        return '전체';
+    });
+
+    // Update selected branch if user loads late and we are arguably still at default
+    useEffect(() => {
+        if (user?.branch && user.branch !== '미정' && selectedBranch === '전체') {
+            setSelectedBranch(user.branch);
+        }
+    }, [user?.branch]);
 
     // Fetch Data
     const fetchData = async () => {
@@ -225,9 +253,24 @@ const StaffTaskBoard = () => {
 
     return (
         <div style={{ padding: '20px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Branch Filter */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '15px' }}>
-                {['전체', '망미점'].map(branch => (
+            {/* Branch Filter (Horizontal Scroll) */}
+            <div style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '15px',
+                overflowX: 'auto',
+                paddingBottom: '5px',
+                whiteSpace: 'nowrap',
+                scrollbarWidth: 'none', // Firefox
+                msOverflowStyle: 'none' // IE/Edge
+            }}>
+                <style>{`
+                    /* Hide scrollbar for Chrome/Safari/Opera */
+                    div::-webkit-scrollbar {
+                        display: none;
+                    }
+                `}</style>
+                {branches.map(branch => (
                     <button
                         key={branch}
                         onClick={() => setSelectedBranch(branch)}
@@ -240,7 +283,8 @@ const StaffTaskBoard = () => {
                             fontWeight: 'bold',
                             fontSize: '0.9rem',
                             cursor: 'pointer',
-                            transition: 'all 0.2s'
+                            transition: 'all 0.2s',
+                            flexShrink: 0 // Prevent shrinking
                         }}
                     >
                         {branch}
