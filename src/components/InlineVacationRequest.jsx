@@ -162,7 +162,7 @@ const InlineVacationRequest = () => {
             </div>
 
             {/* Button Group */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '25px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                 <button
                     onClick={() => setType('full')}
                     style={{
