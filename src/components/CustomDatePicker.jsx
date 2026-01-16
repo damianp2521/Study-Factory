@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Calendar } from 'lucide-react';
 
 const CustomDatePicker = ({ value, onChange, label, ...props }) => {
+    const inputRef = useRef(null);
+
+    const handleContainerClick = () => {
+        if (inputRef.current) {
+            try {
+                if (typeof inputRef.current.showPicker === 'function') {
+                    inputRef.current.showPicker();
+                } else {
+                    // Fallback for browsers without showPicker support
+                    inputRef.current.focus();
+                    inputRef.current.click();
+                }
+            } catch (err) {
+                console.error("Date picker error:", err);
+            }
+        }
+    };
+
     const formatDisplayDate = (dateStr) => {
         if (!dateStr) return '날짜를 선택해주세요';
         const [y, m, d] = dateStr.split('-');
@@ -16,7 +34,15 @@ const CustomDatePicker = ({ value, onChange, label, ...props }) => {
                 </label>
             )}
 
-            <div style={{ position: 'relative', width: '100%', height: '46px' }}>
+            <div
+                onClick={handleContainerClick}
+                style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '46px',
+                    cursor: 'pointer' // Make sure users know it's clickable
+                }}
+            >
                 {/* Visible Custom UI */}
                 <div style={{
                     position: 'absolute',
@@ -33,7 +59,7 @@ const CustomDatePicker = ({ value, onChange, label, ...props }) => {
                     justifyContent: 'space-between',
                     boxSizing: 'border-box',
                     overflow: 'hidden',
-                    pointerEvents: 'none' // Let clicks pass through to the input below if z-index wasn't enough (though input is on top)
+                    pointerEvents: 'none' // Pass clicks to the parent div
                 }}>
                     <span style={{
                         fontSize: '1rem',
@@ -49,8 +75,9 @@ const CustomDatePicker = ({ value, onChange, label, ...props }) => {
                     <Calendar size={20} color="#718096" />
                 </div>
 
-                {/* Invisible Native Input - Covers ENTIRE area */}
+                {/* Hidden Native Input */}
                 <input
+                    ref={inputRef}
                     type="date"
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
@@ -58,17 +85,15 @@ const CustomDatePicker = ({ value, onChange, label, ...props }) => {
                     max={props.max}
                     style={{
                         position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
+                        width: 0,
+                        height: 0,
                         opacity: 0,
-                        zIndex: 10,
-                        cursor: 'pointer',
-                        // Remove default appearance to ensure it behaves as a simple click layer
-                        appearance: 'none',
-                        WebkitAppearance: 'none'
+                        overflow: 'hidden',
+                        border: 0,
+                        padding: 0,
+                        margin: 0
                     }}
+                    tabIndex={-1} // Prevent tabbing to hidden input
                     {...props}
                 />
             </div>
