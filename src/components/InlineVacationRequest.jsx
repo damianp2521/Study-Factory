@@ -281,7 +281,6 @@ const InlineVacationRequest = () => {
                         }
                         setDate(val);
                     }}
-                    label="날짜 선택"
                     min={todayStr}
                     max={maxDateStr}
                 />
