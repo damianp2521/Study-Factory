@@ -285,10 +285,12 @@ const Login = () => {
                 textAlign: 'center'
             }} onClick={e => e.stopPropagation()}>
                 <h3 style={{ marginTop: 0, marginBottom: '15px', color: '#2d3748' }}>홈 화면에 추가</h3>
-                <p style={{ color: '#4a5568', marginBottom: '20px', lineHeight: '1.5', fontSize: '0.95rem' }}>
-                    아이폰에서는 Safari 브라우저 하단의<br />
-                    <strong>공유 버튼</strong> <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSZNMTIgM1YxNk0xMiAzTDggN00xMiAzTDE2IDdNMjEgMTNWMTlDMjEgMTkuNTMwNCAyMC43ODkzIDIwSDMuMjEwNzFDMy43ODkzMSAyMCA0IDE5LjUzMDQgNCAxOVYxMyIgc3Ryb2tlPSIjNGE1NTY4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==" style={{ verticalAlign: 'middle' }} alt="Share" /> 을 누르신 후,<br />
-                    <strong>[홈 화면에 추가]</strong>를 선택해주세요.
+                <p style={{ color: '#4a5568', marginBottom: '20px', lineHeight: '1.6', fontSize: '0.95rem', textAlign: 'left', wordBreak: 'keep-all' }}>
+                    아이폰에서는 다음과 같은 방법으로 홈화면에 추가해주세요:<br /><br />
+                    1. Safari 브라우저 우측 하단 <strong>... 버튼</strong> 클릭<br />
+                    2. <strong>공유</strong> 클릭<br />
+                    3. 우측 하단 <strong>더보기</strong> 클릭<br />
+                    4. <strong>홈 화면에 추가</strong> 클릭
                 </p>
                 <button
                     onClick={() => setShowIosInstallModal(false)}
