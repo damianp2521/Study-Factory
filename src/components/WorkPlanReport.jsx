@@ -229,7 +229,7 @@ const WorkPlanReport = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <button
                     onClick={async () => {
-                        if (!confirm('현재 작성된 내용을 [작업 계획]으로 보고하시겠습니까?\n보고 후 내용을 수정해도 [계획 보고] 내용은 변하지 않습니다.')) return;
+                        if (!confirm('현재 작성된 내용을 [작업 계획]으로 보고하시겠습니까?\n이미 보고내역이 있는 경우, 새로운 내용으로 수정됩니다.')) return;
 
                         setLoading(true);
                         try {
@@ -292,7 +292,7 @@ const WorkPlanReport = () => {
                 </button>
                 <button
                     onClick={async () => {
-                        if (!confirm('현재 작성된 내용을 [작업 결과]로 보고하시겠습니까?\n완료 여부와 최종 수정 내용이 저장됩니다.')) return;
+                        if (!confirm('현재 작성된 내용을 [작업 결과]로 보고하시겠습니까?\n이미 보고내역이 있는 경우, 새로운 내용으로 수정됩니다.')) return;
 
                         setLoading(true);
                         try {

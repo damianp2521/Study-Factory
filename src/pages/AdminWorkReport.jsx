@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { ChevronLeft, ChevronRight, Calendar, CheckCircle, Circle, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, CheckCircle, Circle, X, Search } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 
@@ -10,6 +10,7 @@ const AdminWorkReport = ({ onBack }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState(''); // NEW: Search Query State
 
     // DETAIL MODAL STATE
     const [selectedReport, setSelectedReport] = useState(null);
@@ -76,6 +77,11 @@ const AdminWorkReport = ({ onBack }) => {
         }
     };
 
+    // Filter reports based on search query
+    const displayedReports = reports.filter(r =>
+        (r.profiles?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     // 4. Modal Renderer using Portal
     const renderDetailModal = () => {
         if (!selectedReport) return null;
@@ -134,13 +140,13 @@ const AdminWorkReport = ({ onBack }) => {
                         display: 'grid',
                         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', // Responsive Grid
                         gap: '20px',
-                        paddingBottom: '20px'
+                        paddingBottom: '50px' // Increased padding to prevent cut-off
                     }}>
 
                         {/* LEFT: PLAN */}
                         <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', minHeight: '200px' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '15px', color: '#2b6cb0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                📋 작업 계획
+                                작업 계획
                                 {selectedReport.plan_reported_at ? (
                                     <span style={{ fontSize: '0.7rem', background: '#bee3f8', color: '#2c5282', padding: '2px 6px', borderRadius: '4px' }}>
                                         {new Date(selectedReport.plan_reported_at).toLocaleDateString()} 제출
@@ -174,7 +180,7 @@ const AdminWorkReport = ({ onBack }) => {
                         {/* RIGHT: RESULT */}
                         <div style={{ background: '#f7fafc', padding: '15px', borderRadius: '12px', minHeight: '200px' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '15px', color: '#2f855a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                ✅ 작업 결과
+                                작업 결과
                                 {selectedReport.result_reported_at ? (
                                     <span style={{ fontSize: '0.7rem', background: '#c6f6d5', color: '#22543d', padding: '2px 6px', borderRadius: '4px' }}>
                                         {new Date(selectedReport.result_reported_at).toLocaleDateString()} 제출
@@ -240,7 +246,7 @@ const AdminWorkReport = ({ onBack }) => {
                 <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>작업 계획 및 결과 보고</h2>
             </div>
 
-            {/* Controls: Branch & Week */}
+            {/* Controls: Branch & Week & Search */}
             <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
 
                 {/* Branch Scroll */}
@@ -290,17 +296,39 @@ const AdminWorkReport = ({ onBack }) => {
                         </button>
                     </div>
                 </div>
+
+                {/* NEW: Search Input */}
+                <div style={{ position: 'relative' }}>
+                    <Search size={20} color="#a0aec0" style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                        type="text"
+                        placeholder="이름으로 검색"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px 12px 12px 45px',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '1rem',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                        }}
+                    />
+                </div>
             </div>
 
             {/* List */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 {loading ? (
                     <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '40px' }}>데이터 불러오는 중...</div>
-                ) : reports.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '40px' }}>제출된 보고서가 없습니다.</div>
+                ) : displayedReports.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '40px' }}>
+                        {searchQuery ? '검색 결과가 없습니다.' : '제출된 보고서가 없습니다.'}
+                    </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {reports.map((report) => (
+                        {displayedReports.map((report) => (
                             <div
                                 key={report.id}
                                 onClick={() => setSelectedReport(report)}

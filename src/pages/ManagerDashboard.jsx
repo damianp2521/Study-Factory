@@ -781,7 +781,7 @@ const ManagerDashboard = () => {
                             style={{
                                 width: `${100 / slides.length}% `,
                                 height: '100%',
-                                padding: '10px 20px 30px 20px',
+                                padding: '10px 20px 80px 20px', // Extra padding for mobile scroll
                                 boxSizing: 'border-box',
                                 overflowY: 'hidden'
                             }}
