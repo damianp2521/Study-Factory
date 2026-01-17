@@ -74,18 +74,18 @@ const AdminMemberRegister = ({ onBack }) => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('정말 삭제하시겠습니까?')) return;
+        if (!window.confirm('정말 삭제하시겠습니까? 계정 정보가 완전히 제거됩니다.')) return;
         try {
-            const { error } = await supabase
-                .from('authorized_users')
-                .delete()
-                .eq('id', id);
+            // Use the RPC to delete from both authorized_users and auth.users
+            const { error } = await supabase.rpc('delete_user_completely', {
+                target_user_id: id
+            });
 
             if (error) throw error;
             fetchList();
         } catch (err) {
             console.error('Delete error:', err);
-            alert('삭제 실패');
+            alert(`삭제 실패: ${err.message}`);
         }
     };
 

@@ -35,20 +35,21 @@ const AdminMemberStatus = ({ onBack }) => {
     };
 
     const handleDelete = async (id, name) => {
-        if (!window.confirm(`${name} 님을 정말 삭제하시겠습니까?\n삭제 후에는 로그인이 불가능합니다.`)) return;
+        if (!window.confirm(`${name} 님을 정말 삭제하시겠습니까?\n삭제 후에는 로그인이 불가능하며, 계정 정보가 완전히 제거됩니다.`)) return;
 
         try {
-            const { error } = await supabase
-                .from('authorized_users')
-                .delete()
-                .eq('id', id);
+            // Use the RPC to delete from both authorized_users and auth.users
+            const { error } = await supabase.rpc('delete_user_completely', {
+                target_user_id: id
+            });
 
             if (error) throw error;
+
             fetchUsers();
             alert('삭제되었습니다.');
         } catch (error) {
             console.error('Delete error:', error);
-            alert('삭제에 실패했습니다.');
+            alert(`삭제에 실패했습니다.\n${error.message}`);
         }
     };
 
