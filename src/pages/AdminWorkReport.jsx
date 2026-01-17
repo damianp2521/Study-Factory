@@ -213,7 +213,9 @@ const AdminWorkReport = ({ onBack }) => {
                                                     <span style={{ fontSize: '0.75rem', color: '#a0aec0' }}>
                                                         {(() => {
                                                             const d = new Date(t.completed_at);
-                                                            return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                                            const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                                            const day = days[d.getDay()];
+                                                            return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}(${day}) ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
                                                         })()}
                                                     </span>
                                                 )}
