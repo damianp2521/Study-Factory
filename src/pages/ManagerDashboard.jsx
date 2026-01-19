@@ -294,8 +294,8 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                                 const isAm = (req.periods || []).includes(1);
                                 if (isAm) {
                                     typeLabel = '오전반차';
-                                    color = '#2c5282'; // Blue
-                                    bg = '#ebf8ff';
+                                    color = '#c53030'; // Red
+                                    bg = '#fff5f5';
                                 } else {
                                     typeLabel = '오후반차';
                                     color = '#2c5282'; // Blue
