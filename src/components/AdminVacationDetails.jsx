@@ -61,10 +61,10 @@ const AdminVacationDetails = ({ user, onBack }) => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     };
 
-    const getVacationForDate = (date) => {
-        if (!date) return null;
+    const getVacationsForDate = (date) => {
+        if (!date) return [];
         const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        return userVacations.find(v => v.date === dateString);
+        return userVacations.filter(v => v.date === dateString);
     };
 
     const days = getDaysInMonth(currentDate);
@@ -133,46 +133,28 @@ const AdminVacationDetails = ({ user, onBack }) => {
                     {days.map((date, i) => {
                         if (!date) return <div key={`empty-${i}`} />;
 
-                        const vacation = getVacationForDate(date);
-                        let label = '';
-                        let bgColor = 'white';
-                        let textColor = '#2d3748';
-                        let borderColor = '#f7fafc';
+                        const vacations = getVacationsForDate(date);
 
-                        if (vacation) {
-                            if (vacation.type === 'full') {
-                                label = '월차';
-                                bgColor = '#fff5f5';
-                                textColor = '#c53030';
-                                borderColor = '#feb2b2';
-                            } else if (vacation.type === 'half') {
-                                const periods = vacation.periods || [];
-                                if (periods.includes(1)) {
-                                    label = '오전반차';
-                                    bgColor = '#ebf8ff'; // Blue
-                                    textColor = '#2c5282';
-                                    borderColor = '#90cdf4';
-                                } else {
-                                    label = '오후반차';
-                                    bgColor = '#ebf8ff'; // Blue
-                                    textColor = '#2c5282';
-                                    borderColor = '#90cdf4';
-                                }
-                            }
-                        }
+                        // Default Style
+                        let cellBg = 'white';
+                        let cellBorder = '#f7fafc';
+
+                        // If any vacation exists, maybe tint the cell background lightly? 
+                        // Or just keep individual items styled. Keeping white bg for clarity.
 
                         return (
                             <div key={i} style={{
-                                background: bgColor,
+                                background: cellBg,
                                 borderRadius: '8px',
-                                border: `1px solid ${borderColor}`,
+                                border: `1px solid ${cellBorder}`,
                                 padding: '4px',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
                                 justifyContent: 'flex-start',
                                 position: 'relative',
-                                opacity: loading ? 0.5 : 1
+                                opacity: loading ? 0.5 : 1,
+                                overflow: 'hidden'
                             }}>
                                 <span style={{
                                     fontSize: '0.8rem',
@@ -182,18 +164,53 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                 }}>
                                     {date.getDate()}
                                 </span>
-                                {vacation && (
-                                    <div style={{
-                                        fontSize: '0.75rem',
-                                        fontWeight: 'bold',
-                                        color: textColor,
-                                        textAlign: 'center',
-                                        wordBreak: 'keep-all',
-                                        lineHeight: 1.2
-                                    }}>
-                                        {label}
-                                    </div>
-                                )}
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', alignItems: 'center' }}>
+                                    {vacations.map((vacation, idx) => {
+                                        let label = '';
+                                        let bgColor = '#fff';
+                                        let textColor = '#2d3748';
+                                        let borderColor = 'transparent';
+
+                                        if (vacation.type === 'full') {
+                                            label = '월차';
+                                            bgColor = '#fff5f5';
+                                            textColor = '#c53030';
+                                            borderColor = '#feb2b2';
+                                        } else if (vacation.type === 'half') {
+                                            const periods = vacation.periods || [];
+                                            if (periods.includes(1)) {
+                                                label = '오전반차';
+                                                bgColor = '#ebf8ff'; // Blue
+                                                textColor = '#2c5282';
+                                                borderColor = '#90cdf4'; // Blue Border
+                                            } else {
+                                                label = '오후반차';
+                                                bgColor = '#ebf8ff'; // Blue
+                                                textColor = '#2c5282';
+                                                borderColor = '#90cdf4'; // Blue Border
+                                            }
+                                        }
+
+                                        return (
+                                            <div key={idx} style={{
+                                                fontSize: '0.75rem',
+                                                fontWeight: 'bold',
+                                                color: textColor,
+                                                backgroundColor: bgColor,
+                                                border: `1px solid ${borderColor}`,
+                                                borderRadius: '4px',
+                                                textAlign: 'center',
+                                                wordBreak: 'keep-all',
+                                                lineHeight: 1.2,
+                                                padding: '2px 4px',
+                                                width: '90%'
+                                            }}>
+                                                {label}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         );
                     })}
