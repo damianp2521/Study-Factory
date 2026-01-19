@@ -194,7 +194,14 @@ const VacationRequest = () => {
 
                         {/* 1. Date Selection with Embedded Calendar */}
                         <div style={{ marginBottom: '10px' }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096', display: 'block', marginBottom: '8px' }}>날짜선택</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#718096', display: 'block', marginBottom: '8px' }}>
+                                {date ? (() => {
+                                    const [y, m, d] = date.split('-');
+                                    const dateObj = new Date(date);
+                                    const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                    return `날짜선택: ${y}. ${m}. ${d}. (${days[dateObj.getDay()]})`;
+                                })() : '날짜선택'}
+                            </span>
                             <EmbeddedCalendar
                                 selectedDate={date}
                                 onSelectDate={(val) => {
@@ -472,7 +479,7 @@ const VacationRequest = () => {
                             >
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                     <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
-                                        {req.date}
+                                        {req.date} ({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
                                     </span>
                                     <span style={{
                                         background: req.type === 'full' ? '#e9d8fd' : req.type === 'special' ? '#fed7d7' : '#ebf8ff',

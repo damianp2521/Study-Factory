@@ -193,7 +193,10 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                             {(() => {
                                 if (!selectedDate) return '날짜 선택';
                                 const [y, m, d] = selectedDate.split('-');
-                                return `${y}. ${m}. ${d}.`;
+                                const dateObj = new Date(selectedDate);
+                                const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                const dayName = days[dateObj.getDay()];
+                                return `${y}. ${m}. ${d}. (${dayName})`;
                             })()}
                         </span>
                         <Calendar size={20} color="#718096" />

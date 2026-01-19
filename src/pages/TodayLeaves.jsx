@@ -127,7 +127,13 @@ const TodayLeaves = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Calendar size={20} color="#718096" />
                         <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                            {date.split('-')[0]}. {date.split('-')[1]}. {date.split('-')[2]}.
+                            {(() => {
+                                const [y, m, d] = date.split('-');
+                                const dateObj = new Date(date);
+                                const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                const dayName = days[dateObj.getDay()];
+                                return `${y}. ${m}. ${d}. (${dayName})`;
+                            })()}
                         </span>
                     </div>
                     <span style={{ fontSize: '0.8rem', color: '#718096' }}>
