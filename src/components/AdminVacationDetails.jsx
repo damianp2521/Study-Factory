@@ -149,36 +149,14 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                 const periods = vacation.periods || [];
                                 if (periods.includes(1)) {
                                     label = '오전반차';
-                                    bgColor = '#fff5f5';
-                                    textColor = '#c53030';
-                                    borderColor = '#feb2b2';
+                                    bgColor = '#ebf8ff'; // Blue
+                                    textColor = '#2c5282';
+                                    borderColor = '#90cdf4';
                                 } else {
                                     label = '오후반차';
-                                    bgColor = '#ebf8ff'; // Blue for PM requested by user previously, but strictly speaking user said "Red Blue width tweak" recently. 
-                                    // I'll stick to what was in AdminEmployeeVacationHistory (which had logic I just copied).
-                                    // Wait, in AdminEmployeeVacationHistory viewing earlier:
-                                    /*
-                                    } else {
-                                        label = '오후반차'; // PM
-                                        bgColor = '#fff5f5'; // Red requested for PM too?
-                                        textColor = '#c53030';
-                                    */
-                                    // Ah, I recall user requested PM to be RED too in a previous turn?
-                                    // Or was it "Blue for PM" in filters?
-                                    // In ManagerDashboard (Slide 1), PM is Blue.
-                                    // In current AdminPage code (viewed above), PM was set to Red/Pink bg?
-                                    // Let's stick to the code I extracted.
-                                    // Actually, line 332 in viewed file: `bgColor = '#fff5f5'; // Red requested for PM too`
-                                    // I will KEEP the extracted code identical to preserve current behavior unless user complained.
-                                    // Wait, user complained about "Red Blue width".
-                                    // In ManagerDashboard list, PM is Blue.
-                                    // I will use Blue for PM in Calendar too to be consistent if possible, but let's copy the code from AdminHistory first to be safe.
-                                    // Re-reading file content of AdminEmployeeVacationHistory line 332:
-                                    // `bgColor = '#fff5f5'; // Red requested for PM too`
-                                    // I will copy this EXACTLY.
-                                    bgColor = '#fff5f5';
-                                    textColor = '#c53030';
-                                    borderColor = '#feb2b2';
+                                    bgColor = '#ebf8ff'; // Blue
+                                    textColor = '#2c5282';
+                                    borderColor = '#90cdf4';
                                 }
                             }
                         }
