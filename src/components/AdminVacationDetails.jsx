@@ -194,17 +194,17 @@ const AdminVacationDetails = ({ user, onBack }) => {
 
                                         return (
                                             <div key={idx} style={{
-                                                fontSize: '0.75rem',
+                                                fontSize: '0.7rem',
                                                 fontWeight: 'bold',
                                                 color: textColor,
                                                 backgroundColor: bgColor,
                                                 border: `1px solid ${borderColor}`,
                                                 borderRadius: '4px',
                                                 textAlign: 'center',
-                                                wordBreak: 'keep-all',
-                                                lineHeight: 1.2,
-                                                padding: '2px 4px',
-                                                width: '90%'
+                                                wordBreak: 'break-all',
+                                                lineHeight: 1.1,
+                                                padding: '2px',
+                                                width: '95%'
                                             }}>
                                                 {label}
                                             </div>
