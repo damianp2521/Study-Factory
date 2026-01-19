@@ -13,17 +13,11 @@ import AdminWorkReport from './AdminWorkReport';
 import StaffTaskBoard from './StaffTaskBoard';
 import InlineVacationRequest from '../components/InlineVacationRequest';
 import { BRANCH_OPTIONS } from '../constants/branches';
-
-// ... (skipping inline components)
-
-// ~~~~ Main Dashboard Component ~~~~
-
+import AdminVacationDetails from '../components/AdminVacationDetails';
 
 // Inline Component for Employee Vacation Status
-const EmployeeVacationStatus = () => {
+const EmployeeVacationStatus = ({ onUserClick }) => {
     const { user } = useAuth(); // Access user context
-
-    // Branch configuration
     const BASIC_BRANCHES = BRANCH_OPTIONS;
 
     // Sorted Branch List
@@ -310,16 +304,19 @@ const EmployeeVacationStatus = () => {
                             }
 
                             return (
-                                <div key={req.id} style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    padding: '12px 15px', // Reduced vertical padding
-                                    borderRadius: '12px',
-                                    background: bg,
-                                    border: '1px solid transparent',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                                }}>
+                                <div key={req.id}
+                                    onClick={() => onUserClick && onUserClick({ id: req.user_id, ...req.profiles })}
+                                    style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '12px 15px', // Reduced vertical padding
+                                        borderRadius: '12px',
+                                        background: bg,
+                                        border: '1px solid transparent',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                        cursor: 'pointer'
+                                    }}>
                                     <div>
                                         <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
                                             {req.profiles?.name || '알 수 없음'}
@@ -566,19 +563,16 @@ const ManagerDashboard = () => {
     const { user, logout } = useAuth();
 
     // Determine initial slide based on role
-    // Admin: Start at index 1 (Employee Vacation Status), index 0 is Admin Page
-    // Staff: Start at index 0 (Employee Vacation Status)
     const isAdmin = user?.role === 'admin';
     const initialIndex = isAdmin ? 1 : 0;
 
-    // Carousel State - Initialize from LocalStorage
+    // Carousel State
     const [activeIndex, setActiveIndex] = useState(() => {
         const saved = localStorage.getItem('manager_dashboard_index');
         if (saved !== null) return parseInt(saved, 10);
         return initialIndex;
     });
 
-    // Save to LocalStorage whenever index changes
     useEffect(() => {
         localStorage.setItem('manager_dashboard_index', activeIndex);
     }, [activeIndex]);
@@ -586,15 +580,16 @@ const ManagerDashboard = () => {
     const [touchStart, setTouchStart] = useState(0);
     const [touchEnd, setTouchEnd] = useState(0);
 
+    // Detail View State (Popup over everything)
+    const [detailUser, setDetailUser] = useState(null);
+
     const slides = [
-        { title: '사원 휴무 현황', component: <EmployeeVacationStatus /> },
+        { title: '사원 휴무 현황', component: <EmployeeVacationStatus onUserClick={setDetailUser} /> },
         { title: '스탭 업무 현황', component: <StaffTaskBoard /> },
         { title: '휴무 신청', component: <InlineVacationRequest /> },
     ];
 
-    // Admin Only Slides
     if (isAdmin) {
-        // Prepend Admin Page (0th page)
         slides.unshift({ title: '관리자 페이지', component: <AdminQuickMenu /> });
     }
 
@@ -612,14 +607,18 @@ const ManagerDashboard = () => {
         window.location.reload();
     };
 
-    // Handle Swipe
     const minSwipeDistance = 50;
     const onTouchStart = (e) => {
+        if (detailUser) return; // Disable swipe in detail view
         setTouchEnd(0);
         setTouchStart(e.targetTouches[0].clientX);
     };
-    const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+    const onTouchMove = (e) => {
+        if (detailUser) return;
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
     const onTouchEnd = () => {
+        if (detailUser) return;
         if (!touchStart || !touchEnd) return;
         const distance = touchStart - touchEnd;
         const isLeftSwipe = distance > minSwipeDistance;
@@ -707,193 +706,222 @@ const ManagerDashboard = () => {
                 </button>
             </div>
 
-            {/* 2. Navigation Title Bar (Moved Down) */}
-            <div style={{
-                padding: '15px 20px',
-                paddingBottom: '5px',
-                position: 'relative',
-                flexShrink: 0
-            }}>
-                {/* Grid for perfect centering */}
+            {/* DETAIL VIEW OVERLAY */}
+            {detailUser ? (
                 <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto 1fr',
-                    alignItems: 'center',
-                    width: '100%',
-                    userSelect: 'none'
+                    flex: 1,
+                    overflow: 'hidden',
+                    padding: '20px',
+                    paddingTop: '0',
+                    display: 'flex',
+                    flexDirection: 'column'
                 }}>
-                    {/* Prev Title */}
-                    <div
-                        onClick={handlePrev}
-                        style={{
-                            display: 'flex',
-                            justifyContent: 'flex-end', // Force alignment to right
-                            alignItems: 'center',
-                            opacity: prevTitle ? 0.6 : 0, // Slightly more opacity
-                            fontSize: '0.9rem',
-                            fontWeight: 'bold',
-                            transform: 'scale(0.9)',
-                            cursor: 'pointer',
-                            paddingRight: '10px',
-                            transition: 'all 0.3s',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            width: '100%', // Ensure full width for flex
-                            maskImage: 'linear-gradient(to right, transparent, black 30%)', // Softer fade (0-30%)
-                            WebkitMaskImage: 'linear-gradient(to right, transparent, black 30%)',
-                            lineHeight: '1.2'
-                        }}
-                    >
-                        {prevTitle || '　'}
-                    </div>
-
-                    {/* Active Title */}
                     <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        fontSize: '1.3rem',
-                        fontWeight: 'bold',
-                        color: 'var(--color-primary)',
-                        whiteSpace: 'nowrap',
-                        zIndex: 10
+                        flex: 1,
+                        background: 'white',
+                        borderRadius: '20px',
+                        padding: '20px',
+                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                        overflow: 'hidden', // Details component handles scroll
+                        boxSizing: 'border-box'
                     }}>
-                        <button
-                            onClick={handlePrev}
-                            disabled={activeIndex === 0}
-                            style={{ background: 'none', border: 'none', color: 'inherit', opacity: activeIndex === 0 ? 0.2 : 1, cursor: 'pointer' }}
-                        >
-                            <ChevronLeft size={24} />
-                        </button>
-                        <span>{slides[activeIndex].title}</span>
-                        <button
-                            onClick={handleNext}
-                            disabled={activeIndex === slides.length - 1}
-                            style={{ background: 'none', border: 'none', color: 'inherit', opacity: activeIndex === slides.length - 1 ? 0.2 : 1, cursor: 'pointer' }}
-                        >
-                            <ChevronRight size={24} />
-                        </button>
-                    </div>
-
-                    {/* Next Title */}
-                    <div
-                        onClick={handleNext}
-                        style={{
-                            display: 'flex',
-                            justifyContent: 'flex-start', // Force alignment to left
-                            alignItems: 'center',
-                            opacity: nextTitle ? 0.6 : 0,
-                            fontSize: '0.9rem',
-                            fontWeight: 'bold',
-                            transform: 'scale(0.9)',
-                            cursor: 'pointer',
-                            paddingLeft: '10px',
-                            paddingRight: '10px',
-                            transition: 'all 0.3s',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            width: '100%',
-                            maskImage: 'linear-gradient(to right, black 70%, transparent)', // Softer fade (70-100%)
-                            WebkitMaskImage: 'linear-gradient(to right, black 70%, transparent)',
-                            lineHeight: '1.2'
-                        }}
-                    >
-                        {nextTitle || '　'}
+                        <AdminVacationDetails
+                            user={detailUser}
+                            onBack={() => setDetailUser(null)}
+                        />
                     </div>
                 </div>
-            </div>
+            ) : (
+                <>
+                    {/* 2. Navigation Title Bar (Moved Down) */}
+                    <div style={{
+                        padding: '15px 20px',
+                        paddingBottom: '5px',
+                        position: 'relative',
+                        flexShrink: 0
+                    }}>
+                        {/* Grid for perfect centering */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr auto 1fr',
+                            alignItems: 'center',
+                            width: '100%',
+                            userSelect: 'none'
+                        }}>
+                            {/* Prev Title */}
+                            <div
+                                onClick={handlePrev}
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'flex-end', // Force alignment to right
+                                    alignItems: 'center',
+                                    opacity: prevTitle ? 0.6 : 0, // Slightly more opacity
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold',
+                                    transform: 'scale(0.9)',
+                                    cursor: 'pointer',
+                                    paddingRight: '10px',
+                                    transition: 'all 0.3s',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    width: '100%', // Ensure full width for flex
+                                    maskImage: 'linear-gradient(to right, transparent, black 30%)', // Softer fade (0-30%)
+                                    WebkitMaskImage: 'linear-gradient(to right, transparent, black 30%)',
+                                    lineHeight: '1.2'
+                                }}
+                            >
+                                {prevTitle || '　'}
+                            </div>
 
-            {/* Main Content Carousel */}
-            <div
-                style={{
-                    flex: 1,
-                    position: 'relative',
-                    width: '100%',
-                    overflow: 'hidden'
-                }}
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEnd}
-            >
-                <div
-                    style={{
-                        display: 'flex',
-                        width: `${slides.length * 100}% `,
-                        height: '100%',
-                        transform: `translateX(-${activeIndex * (100 / slides.length)}%)`,
-                        transition: 'transform 0.3s ease-out'
-                    }}
-                >
-                    {slides.map((slide, index) => (
-                        <div
-                            key={index}
-                            style={{
-                                width: `${100 / slides.length}% `,
-                                height: '100%',
-                                padding: '10px 20px',
-                                boxSizing: 'border-box',
-                                overflow: 'hidden',
-                                display: 'flex',
-                                flexDirection: 'column'
-                            }}
-                        >
-                            {/* White Box with Internal Scroll */}
+                            {/* Active Title */}
                             <div style={{
-                                flex: 1,
-                                background: 'white',
-                                borderRadius: '20px',
-                                padding: '20px',
-                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                overflowY: 'auto',
                                 display: 'flex',
-                                flexDirection: 'column',
-                                paddingBottom: '20px',
-                                marginBottom: '60px', /* Make dots appear outside */
-                                scrollbarWidth: 'none',
-                                msOverflowStyle: 'none'
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '10px',
+                                fontSize: '1.3rem',
+                                fontWeight: 'bold',
+                                color: 'var(--color-primary)',
+                                whiteSpace: 'nowrap',
+                                zIndex: 10
                             }}>
-                                <style>{`
-                                    div::-webkit-scrollbar { display: none; }
-                                `}</style>
-                                <div style={{ flex: 1 }}>
-                                    {slide.component}
-                                </div>
+                                <button
+                                    onClick={handlePrev}
+                                    disabled={activeIndex === 0}
+                                    style={{ background: 'none', border: 'none', color: 'inherit', opacity: activeIndex === 0 ? 0.2 : 1, cursor: 'pointer' }}
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                                <span>{slides[activeIndex].title}</span>
+                                <button
+                                    onClick={handleNext}
+                                    disabled={activeIndex === slides.length - 1}
+                                    style={{ background: 'none', border: 'none', color: 'inherit', opacity: activeIndex === slides.length - 1 ? 0.2 : 1, cursor: 'pointer' }}
+                                >
+                                    <ChevronRight size={24} />
+                                </button>
+                            </div>
+
+                            {/* Next Title */}
+                            <div
+                                onClick={handleNext}
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'flex-start', // Force alignment to left
+                                    alignItems: 'center',
+                                    opacity: nextTitle ? 0.6 : 0,
+                                    fontSize: '0.9rem',
+                                    fontWeight: 'bold',
+                                    transform: 'scale(0.9)',
+                                    cursor: 'pointer',
+                                    paddingLeft: '10px',
+                                    paddingRight: '10px',
+                                    transition: 'all 0.3s',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    width: '100%',
+                                    maskImage: 'linear-gradient(to right, black 70%, transparent)', // Softer fade (70-100%)
+                                    WebkitMaskImage: 'linear-gradient(to right, black 70%, transparent)',
+                                    lineHeight: '1.2'
+                                }}
+                            >
+                                {nextTitle || '　'}
                             </div>
                         </div>
-                    ))}
-                </div>
-            </div>
+                    </div>
 
-            {/* Pagination Indicators - Floating at Bottom with Background */}
-            <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '15px 0',
-                paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)',
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 20,
-                background: 'linear-gradient(to top, rgba(245,246,250, 0.9) 0%, rgba(245,246,250, 0) 100%)', // Subtle fade
-                pointerEvents: 'none' // Click through just in case
-            }}>
-                {slides.map((_, index) => (
+                    {/* Main Content Carousel */}
                     <div
-                        key={index}
                         style={{
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            backgroundColor: index === activeIndex ? 'var(--color-primary)' : '#cbd5e0',
-                            transition: 'background-color 0.3s',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                            flex: 1,
+                            position: 'relative',
+                            width: '100%',
+                            overflow: 'hidden'
                         }}
-                    />
-                ))}
-            </div>
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                    >
+                        <div
+                            style={{
+                                display: 'flex',
+                                width: `${slides.length * 100}% `,
+                                height: '100%',
+                                transform: `translateX(-${activeIndex * (100 / slides.length)}%)`,
+                                transition: 'transform 0.3s ease-out'
+                            }}
+                        >
+                            {slides.map((slide, index) => (
+                                <div
+                                    key={index}
+                                    style={{
+                                        width: `${100 / slides.length}% `,
+                                        height: '100%',
+                                        padding: '10px 20px',
+                                        boxSizing: 'border-box',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                    }}
+                                >
+                                    {/* White Box with Internal Scroll */}
+                                    <div style={{
+                                        flex: 1,
+                                        background: 'white',
+                                        borderRadius: '20px',
+                                        padding: '20px',
+                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                                        overflowY: 'auto',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        paddingBottom: '20px',
+                                        marginBottom: '60px', /* Make dots appear outside */
+                                        scrollbarWidth: 'none',
+                                        msOverflowStyle: 'none'
+                                    }}>
+                                        <style>{`
+                                            div::-webkit-scrollbar { display: none; }
+                                        `}</style>
+                                        <div style={{ flex: 1 }}>
+                                            {slide.component}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Pagination Indicators - Floating at Bottom with Background */}
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        padding: '15px 0',
+                        paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)',
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 20,
+                        background: 'linear-gradient(to top, rgba(245,246,250, 0.9) 0%, rgba(245,246,250, 0) 100%)', // Subtle fade
+                        pointerEvents: 'none' // Click through just in case
+                    }}>
+                        {slides.map((_, index) => (
+                            <div
+                                key={index}
+                                style={{
+                                    width: '8px',
+                                    height: '8px',
+                                    borderRadius: '50%',
+                                    backgroundColor: index === activeIndex ? 'var(--color-primary)' : '#cbd5e0',
+                                    transition: 'background-color 0.3s',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                }}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
 };
