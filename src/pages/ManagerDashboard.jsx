@@ -314,7 +314,7 @@ const EmployeeVacationStatus = () => {
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    padding: '15px',
+                                    padding: '12px 15px', // Reduced vertical padding
                                     borderRadius: '12px',
                                     background: bg,
                                     border: '1px solid transparent',
@@ -328,12 +328,30 @@ const EmployeeVacationStatus = () => {
                                             {req.profiles?.branch || '지점 미정'}
                                         </div>
                                     </div>
-                                    <div style={{
-                                        fontSize: '0.9rem',
-                                        fontWeight: 'bold',
-                                        color: color
-                                    }}>
-                                        {typeLabel}
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{
+                                            fontSize: '0.9rem',
+                                            fontWeight: 'bold',
+                                            color: color,
+                                            marginBottom: '2px'
+                                        }}>
+                                            {typeLabel}
+                                        </div>
+                                        {req.created_at && (
+                                            <div style={{ fontSize: '0.7rem', color: '#a0aec0' }}>
+                                                {(() => {
+                                                    const d = new Date(req.created_at);
+                                                    const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                                    const day = days[d.getDay()];
+                                                    const yyyy = d.getFullYear();
+                                                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                                    const dd = String(d.getDate()).padStart(2, '0');
+                                                    const hh = String(d.getHours()).padStart(2, '0');
+                                                    const min = String(d.getMinutes()).padStart(2, '0');
+                                                    return `${yyyy}.${mm}.${dd}(${day}) ${hh}:${min}`;
+                                                })()}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
