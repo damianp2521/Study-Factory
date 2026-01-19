@@ -180,12 +180,12 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                         } else if (vacation.type === 'half') {
                                             const periods = vacation.periods || [];
                                             if (periods.includes(1)) {
-                                                label = '오전반차';
+                                                label = <>오전<wbr />반차</>;
                                                 bgColor = '#ebf8ff'; // Blue
                                                 textColor = '#2c5282';
                                                 borderColor = '#90cdf4'; // Blue Border
                                             } else {
-                                                label = '오후반차';
+                                                label = <>오후<wbr />반차</>;
                                                 bgColor = '#ebf8ff'; // Blue
                                                 textColor = '#2c5282';
                                                 borderColor = '#90cdf4'; // Blue Border
@@ -201,7 +201,8 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                                 border: `1px solid ${borderColor}`,
                                                 borderRadius: '4px',
                                                 textAlign: 'center',
-                                                wordBreak: 'break-all',
+                                                wordBreak: 'keep-all',
+                                                overflowWrap: 'break-word',
                                                 lineHeight: 1.1,
                                                 padding: '2px',
                                                 width: '95%'
