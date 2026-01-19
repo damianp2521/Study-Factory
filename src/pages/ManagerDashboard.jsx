@@ -11,6 +11,7 @@ import AdminMemberRegister from './AdminMemberRegister';
 import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
 import AdminWorkReport from './AdminWorkReport';
 import StaffTaskBoard from './StaffTaskBoard';
+import InlineVacationRequest from '../components/InlineVacationRequest';
 import { BRANCH_OPTIONS } from '../constants/branches';
 
 // ... (skipping inline components)
@@ -570,6 +571,7 @@ const ManagerDashboard = () => {
     const slides = [
         { title: '사원 휴무 현황', component: <EmployeeVacationStatus /> },
         { title: '스탭 업무 현황', component: <StaffTaskBoard /> },
+        { title: '휴무 신청', component: <InlineVacationRequest /> },
     ];
 
     // Admin Only Slides
