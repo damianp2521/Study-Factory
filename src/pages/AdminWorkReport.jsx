@@ -122,7 +122,7 @@ const AdminWorkReport = ({ onBack }) => {
                                 {selectedReport.profiles?.name} 님의 보고서
                             </h2>
                             <p style={{ color: '#718096', margin: '5px 0 0 0' }}>
-                                {selectedReport.profiles?.branch} | {weekStart.getMonth() + 1}.{weekStart.getDate()} ~ {weekEnd.getMonth() + 1}.{weekEnd.getDate()}
+                                {selectedReport.profiles?.branch} | {weekStart.getMonth() + 1}.{weekStart.getDate()}({['일', '월', '화', '수', '목', '금', '토'][weekStart.getDay()]}) ~ {weekEnd.getMonth() + 1}.{weekEnd.getDate()}({['일', '월', '화', '수', '목', '금', '토'][weekEnd.getDay()]})
                             </p>
                         </div>
                         <button
@@ -149,7 +149,11 @@ const AdminWorkReport = ({ onBack }) => {
                                 작업 계획
                                 {selectedReport.plan_reported_at ? (
                                     <span style={{ fontSize: '0.7rem', background: '#bee3f8', color: '#2c5282', padding: '2px 6px', borderRadius: '4px' }}>
-                                        {new Date(selectedReport.plan_reported_at).toLocaleDateString()} 제출
+                                        {(() => {
+                                            const d = new Date(selectedReport.plan_reported_at);
+                                            const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                            return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}(${days[d.getDay()]})`;
+                                        })()} 제출
                                     </span>
                                 ) : (
                                     <span style={{ fontSize: '0.7rem', background: '#fed7d7', color: '#c53030', padding: '2px 6px', borderRadius: '4px' }}>미제출</span>
@@ -183,7 +187,11 @@ const AdminWorkReport = ({ onBack }) => {
                                 작업 결과
                                 {selectedReport.result_reported_at ? (
                                     <span style={{ fontSize: '0.7rem', background: '#c6f6d5', color: '#22543d', padding: '2px 6px', borderRadius: '4px' }}>
-                                        {new Date(selectedReport.result_reported_at).toLocaleDateString()} 제출
+                                        {(() => {
+                                            const d = new Date(selectedReport.result_reported_at);
+                                            const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                            return `${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}(${days[d.getDay()]})`;
+                                        })()} 제출
                                     </span>
                                 ) : (
                                     <span style={{ fontSize: '0.7rem', background: '#fed7d7', color: '#c53030', padding: '2px 6px', borderRadius: '4px' }}>미제출</span>
@@ -228,7 +236,7 @@ const AdminWorkReport = ({ onBack }) => {
 
                     </div>
                 </div>
-            </div>,
+            </div >,
             document.body // Append to body
         );
     };
@@ -301,7 +309,7 @@ const AdminWorkReport = ({ onBack }) => {
                         </button>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#2d3748' }}>
                             <Calendar size={18} color="#718096" />
-                            <span>{weekStart.getFullYear()}. {weekStart.getMonth() + 1}. {weekStart.getDate()} ~ {weekEnd.getMonth() + 1}. {weekEnd.getDate()}</span>
+                            <span>{weekStart.getFullYear()}. {weekStart.getMonth() + 1}. {weekStart.getDate()}({['일', '월', '화', '수', '목', '금', '토'][weekStart.getDay()]}) ~ {weekEnd.getMonth() + 1}. {weekEnd.getDate()}({['일', '월', '화', '수', '목', '금', '토'][weekEnd.getDay()]})</span>
                         </div>
                         <button onClick={handleNextWeek} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: '5px' }}>
                             <ChevronRight size={20} color="#4a5568" />
