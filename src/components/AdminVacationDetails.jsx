@@ -195,10 +195,14 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                             }
                                         }
 
-                                        // 2. Override Label if Reason exists
+                                        // 2. Override Label and Style if 'reason' exists (Other Leave)
                                         if (vacation.reason) {
                                             label = vacation.reason;
-                                            // Optional: Add prefix if needed, but keeping it short for calendar
+
+                                            // Gray Style for Other Leave
+                                            bgColor = '#F7FAFC'; // Gray 50
+                                            textColor = '#4A5568'; // Gray 700
+                                            borderColor = '#CBD5E0'; // Gray 300
                                         }
 
                                         return (

@@ -239,7 +239,7 @@ div::-webkit-scrollbar {
                         fontSize: '0.9rem'
                     }}
                 >
-                    종일
+                    월차
                 </button>
                 <button
                     onClick={() => toggleFilter('half_am')}
@@ -247,7 +247,7 @@ div::-webkit-scrollbar {
                         flex: 1,
                         padding: '10px',
                         borderRadius: '8px',
-                        border: filters.half_am ? '2px solid #e53e3e' : '1px solid #e2e8f0', // Red for AM as requested
+                        border: filters.half_am ? '2px solid #e53e3e' : '1px solid #e2e8f0', // Red for AM
                         background: filters.half_am ? '#fff5f5' : 'white',
                         color: filters.half_am ? '#c53030' : '#a0aec0',
                         fontWeight: 'bold',
@@ -308,7 +308,7 @@ div::-webkit-scrollbar {
                             // Reason override
                             let displayLabel = typeLabel;
                             if (req.reason) {
-                                displayLabel = `${req.reason}`;
+                                // "Other Leave" logic
                                 if (req.type === 'full') {
                                     displayLabel = `종일 ${req.reason}`;
                                 } else if (req.type === 'half') {

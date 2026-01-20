@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Search, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, Check, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
 
@@ -17,6 +17,9 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
     const [reasonType, setReasonType] = useState('알바'); // '알바', '스터디', '병원', '기타'
     const [customReason, setCustomReason] = useState('');
 
+    // History State
+    const [history, setHistory] = useState([]);
+
     useEffect(() => {
         fetchUsers();
     }, []);
@@ -29,11 +32,18 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
         }
     }, [searchTerm, users]);
 
+    // Fetch History when User is selected
+    useEffect(() => {
+        if (selectedUser) {
+            fetchHistory();
+        }
+    }, [selectedUser]);
+
     const fetchUsers = async () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('profiles')
+                .from('profiles') // Fetches from correct table now
                 .select('*')
                 .order('name');
             if (error) throw error;
@@ -44,6 +54,24 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
             alert('사용자 목록을 불러오지 못했습니다.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchHistory = async () => {
+        if (!selectedUser) return;
+        try {
+            // Fetch requests where reason is NOT NULL (assuming 'Other Leave' always has reason)
+            const { data, error } = await supabase
+                .from('vacation_requests')
+                .select('*')
+                .eq('user_id', selectedUser.id)
+                .not('reason', 'is', null) // Filter for Other Leave
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            setHistory(data || []);
+        } catch (err) {
+            console.error('Error fetching history:', err);
         }
     };
 
@@ -114,13 +142,30 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
                 if (error) throw error;
 
                 alert('신청되었습니다.');
-                onBack(); // Go back to menu
+                setSelectedDates([]);
+                fetchHistory(); // Refresh history
             } catch (err) {
                 console.error(err);
                 alert('신청 실패: ' + err.message);
             } finally {
                 setLoading(false);
             }
+        }
+    };
+
+    const handleDeleteHistory = async (id) => {
+        if (!confirm('정말 삭제하시겠습니까?')) return;
+        try {
+            const { error } = await supabase
+                .from('vacation_requests')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            fetchHistory();
+        } catch (err) {
+            console.error(err);
+            alert('삭제 실패');
         }
     };
 
@@ -213,7 +258,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
             </div>
 
             {/* Reason Selection */}
-            <div style={{ marginBottom: '25px', flex: 1 }}>
+            <div style={{ marginBottom: '25px' }}>
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유</label>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                     {['알바', '스터디', '병원'].map(r => (
@@ -275,11 +320,65 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
                     border: 'none', fontSize: '1.1rem', fontWeight: 'bold',
                     cursor: loading ? 'wait' : 'pointer',
                     opacity: (loading || selectedDates.length === 0) ? 0.7 : 1,
-                    marginBottom: '20px'
+                    marginBottom: '30px'
                 }}
             >
                 {loading ? '처리 중...' : '신청하기'}
             </button>
+
+            {/* History Section */}
+            <div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '15px', color: '#2d3748' }}>
+                    신청 내역 (기타 휴무)
+                </h3>
+                {history.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px', background: '#f7fafc', borderRadius: '12px' }}>
+                        신청 내역이 없습니다.
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {history.map(item => {
+                            const isAm = (item.periods || []).includes(1);
+                            let label = item.type === 'full' ? '종일' : isAm ? '오전' : '오후';
+                            if (item.reason) label += ` ${item.reason}`;
+
+                            return (
+                                <div key={item.id} style={{
+                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                    padding: '15px', background: 'white', borderRadius: '12px',
+                                    border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}>
+                                    <div>
+                                        <div style={{ fontWeight: 'bold', color: '#2d3748', marginBottom: '4px' }}>
+                                            {item.date}
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem', color: '#4a5568' }}>
+                                            <span style={{
+                                                display: 'inline-block',
+                                                padding: '2px 6px',
+                                                borderRadius: '4px',
+                                                background: item.type === 'full' ? '#fff5f5' : '#ebf8ff',
+                                                color: item.type === 'full' ? '#c53030' : '#2c5282',
+                                                fontSize: '0.8rem',
+                                                marginRight: '6px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {label}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteHistory(item.id)}
+                                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: '#cbd5e0' }}
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
