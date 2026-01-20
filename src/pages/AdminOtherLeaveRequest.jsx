@@ -33,7 +33,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('authorized_users')
+                .from('profiles')
                 .select('*')
                 .order('name');
             if (error) throw error;
