@@ -1,4 +1,3 @@
-```
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, RotateCw, ClipboardList, UserPlus } from 'lucide-react';
@@ -79,11 +78,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
             // 1. Fetch requests for the date
             let query = supabase
                 .from('vacation_requests')
-                .select(`
-    *,
-    profiles: user_id(name, branch),
-        reason
-            `)
+                .select('*, profiles:user_id(name, branch), reason')
                 .eq('date', selectedDate)
                 .order('created_at', { ascending: false }); // Sort by newest first
 
@@ -142,7 +137,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                     }}>
                         <style>{`
 /* Hide scrollbar for Chrome/Safari/Opera */
-div:: -webkit - scrollbar {
+div::-webkit-scrollbar {
     display: none;
 }
 `}</style>
@@ -199,7 +194,7 @@ div:: -webkit - scrollbar {
                                 const dateObj = new Date(selectedDate);
                                 const days = ['일', '월', '화', '수', '목', '금', '토'];
                                 const dayName = days[dateObj.getDay()];
-                                return `${ y }. ${ m }. ${ d }.(${ dayName })`;
+                                return `${y}. ${m}. ${d}. (${dayName})`;
                             })()}
                         </span>
                         <Calendar size={20} color="#718096" />
@@ -309,16 +304,16 @@ div:: -webkit - scrollbar {
                                     bg = '#ebf8ff';
                                 }
                             }
-                            
+
                             // Reason override
                             let displayLabel = typeLabel;
                             if (req.reason) {
-                                displayLabel = `${ req.reason } `;
+                                displayLabel = `${req.reason}`;
                                 if (req.type === 'full') {
-                                    displayLabel = `종일 ${ req.reason } `;
+                                    displayLabel = `종일 ${req.reason}`;
                                 } else if (req.type === 'half') {
-                                    if (isAm) displayLabel = `오전 ${ req.reason } `;
-                                    else displayLabel = `오후 ${ req.reason } `;
+                                    if (isAm) displayLabel = `오전 ${req.reason}`;
+                                    else displayLabel = `오후 ${req.reason}`;
                                 }
                             }
 
@@ -364,7 +359,7 @@ div:: -webkit - scrollbar {
                                                     const dd = String(d.getDate()).padStart(2, '0');
                                                     const hh = String(d.getHours()).padStart(2, '0');
                                                     const min = String(d.getMinutes()).padStart(2, '0');
-                                                    return `${ yyyy }.${ mm }.${ dd } (${ day }) ${ hh }:${ min } `;
+                                                    return `${yyyy}.${mm}.${dd}(${day}) ${hh}:${min}`;
                                                 })()}
                                             </div>
                                         )}
@@ -399,7 +394,6 @@ const AdminQuickMenu = () => {
         return <AdminOtherLeaveRequest onBack={() => setCurrentView('management_menu')} />;
     }
 
-    // Sub-menu for Employee Management
     if (currentView === 'management_menu') {
         return (
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -504,7 +498,6 @@ const AdminQuickMenu = () => {
                         </div>
                         <span style={{ textAlign: 'center' }}>사원 현황</span>
                     </button>
-
                     {/* 4. Vacation History (Shifted) */}
                     <button
                         onClick={() => setCurrentView('vacation_history')}
@@ -531,7 +524,6 @@ const AdminQuickMenu = () => {
                         </div>
                         <span style={{ textAlign: 'center', lineHeight: '1.2' }}>사원별<br />휴가 현황</span>
                     </button>
-
                     {/* 5. Other Leave Request (NEW) */}
                     <button
                         onClick={() => setCurrentView('other_leave_request')}
@@ -894,9 +886,9 @@ const ManagerDashboard = () => {
                         <div
                             style={{
                                 display: 'flex',
-                                width: `${ slides.length * 100 }% `,
+                                width: `${slides.length * 100}%`,
                                 height: '100%',
-                                transform: `translateX(-${ activeIndex * (100 / slides.length)}%)`,
+                                transform: `translateX(-${activeIndex * (100 / slides.length)}%)`,
                                 transition: 'transform 0.3s ease-out'
                             }}
                         >
@@ -904,7 +896,7 @@ const ManagerDashboard = () => {
                                 <div
                                     key={index}
                                     style={{
-                                        width: `${ 100 / slides.length }% `,
+                                        width: `${100 / slides.length}%`,
                                         height: '100%',
                                         padding: '10px 20px',
                                         boxSizing: 'border-box',
@@ -929,7 +921,7 @@ const ManagerDashboard = () => {
                                         msOverflowStyle: 'none'
                                     }}>
                                         <style>{`
-div:: -webkit - scrollbar { display: none; }
+div::-webkit-scrollbar { display: none; }
 `}</style>
                                         <div style={{ flex: 1 }}>
                                             {slide.component}

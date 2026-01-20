@@ -341,4 +341,3 @@ const InlineVacationRequest = () => {
 };
 
 export default InlineVacationRequest;
-```
