@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const EmbeddedCalendar = ({
-    selectedDate,
+    selectedDate,       // Single date (backward compatibility)
+    selectedDates = [], // Array of dates for multi-select
     onSelectDate,
     events = [], // Array of objects: { date: 'YYYY-MM-DD', type: 'full'|'half'|'special', ... }
     minDate,
     maxDate
 }) => {
-    // Initialize calendar view to selectedDate or today
+    // Initialize calendar view to selectedDate, or the first of selectedDates, or today
     const [currentMonth, setCurrentMonth] = useState(() => {
-        return selectedDate ? new Date(selectedDate) : new Date();
+        if (selectedDate) return new Date(selectedDate);
+        if (selectedDates.length > 0) return new Date(selectedDates[0]);
+        return new Date();
     });
 
     useEffect(() => {
@@ -69,7 +72,10 @@ const EmbeddedCalendar = ({
 
             // Find event for this day
             const dayEvent = events.find(e => e.date === dateStr);
-            const isSelected = selectedDate === dateStr;
+
+            // Check selection (Single OR Multi)
+            const isSelected = selectedDate === dateStr || selectedDates.includes(dateStr);
+
             const disabled = isDateDisabled(dateStr);
             const isToday = dateStr === new Date().toISOString().split('T')[0];
 

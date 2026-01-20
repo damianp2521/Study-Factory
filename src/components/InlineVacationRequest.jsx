@@ -254,22 +254,42 @@ const InlineVacationRequest = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {sortedRequests.map(req => {
                             const isPast = req.date < todayStr;
-                            let bgColor, borderColor, textColor;
+                            let bgColor, borderColor, textColor, labelText;
 
-                            if (isPast) {
+                            if (req.reason) {
+                                // Gray styling for requests with a reason (other leave)
+                                bgColor = '#f7fafc'; // Light gray background
+                                borderColor = '#cbd5e0'; // Gray border
+                                textColor = '#718096'; // Darker gray text
+
+                                let timePrefix = '';
+                                if (req.type === 'half') {
+                                    if (req.periods?.includes(1)) {
+                                        timePrefix = '오전 ';
+                                    } else if (req.periods?.includes(5)) {
+                                        timePrefix = '오후 ';
+                                    }
+                                } else if (req.type === 'full') {
+                                    timePrefix = '종일 ';
+                                }
+                                labelText = `${timePrefix}${req.reason}`;
+                            } else if (isPast) {
                                 bgColor = '#f7fafc'; // Gray
                                 borderColor = '#cbd5e0';
                                 textColor = '#a0aec0';
+                                labelText = req.type === 'full' ? '월차' : (req.periods?.includes(1) ? '오전반차' : (req.periods?.includes(5) ? '오후반차' : '반차'));
                             } else {
-                                // Future
+                                // Future requests without a reason (regular vacation)
                                 if (req.type === 'full') {
                                     bgColor = '#fff5f5';
                                     borderColor = '#e53e3e';
                                     textColor = '#c53030';
+                                    labelText = '월차';
                                 } else {
                                     bgColor = '#ebf8ff';
                                     borderColor = '#3182ce';
                                     textColor = '#2c5282';
+                                    labelText = req.periods?.includes(1) ? '오전반차' : (req.periods?.includes(5) ? '오후반차' : '반차');
                                 }
                             }
 
@@ -282,7 +302,7 @@ const InlineVacationRequest = () => {
                                     borderLeft: `4px solid ${borderColor} `
                                 }}>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 'bold', color: isPast ? '#a0aec0' : '#2d3748' }}>
+                                        <span style={{ fontWeight: 'bold', color: isPast && !req.reason ? '#a0aec0' : '#2d3748' }}>
                                             {req.date.split('-')[1]}.{req.date.split('-')[2]} ({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
                                         </span>
                                         <span style={{
@@ -290,7 +310,7 @@ const InlineVacationRequest = () => {
                                             fontWeight: 'bold',
                                             color: textColor
                                         }}>
-                                            {req.type === 'full' ? '월차' : (req.periods?.includes(1) ? '오전반차' : (req.periods?.includes(5) ? '오후반차' : '반차'))}
+                                            {labelText}
                                         </span>
                                     </div>
                                     {!isPast && (
@@ -321,3 +341,4 @@ const InlineVacationRequest = () => {
 };
 
 export default InlineVacationRequest;
+```

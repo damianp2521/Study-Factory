@@ -172,24 +172,33 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                         let textColor = '#2d3748';
                                         let borderColor = 'transparent';
 
+                                        const isAm = (vacation.periods || []).includes(1);
+                                        const isPm = (vacation.periods || []).includes(2);
+
+                                        // 1. Determine Base Style & Label
                                         if (vacation.type === 'full') {
                                             label = '월차';
                                             bgColor = '#fff5f5';
                                             textColor = '#c53030';
                                             borderColor = '#feb2b2';
                                         } else if (vacation.type === 'half') {
-                                            const periods = vacation.periods || [];
-                                            if (periods.includes(1)) {
-                                                label = <>오전<wbr />반차</>;
-                                                bgColor = '#ebf8ff'; // Blue
-                                                textColor = '#2c5282';
-                                                borderColor = '#90cdf4'; // Blue Border
+                                            if (isAm) {
+                                                label = '오전반차';
+                                                bgColor = '#fff5f5'; // Red for AM
+                                                textColor = '#c53030';
+                                                borderColor = '#feb2b2';
                                             } else {
-                                                label = <>오후<wbr />반차</>;
-                                                bgColor = '#ebf8ff'; // Blue
+                                                label = '오후반차';
+                                                bgColor = '#ebf8ff'; // Blue for PM
                                                 textColor = '#2c5282';
-                                                borderColor = '#90cdf4'; // Blue Border
+                                                borderColor = '#90cdf4';
                                             }
+                                        }
+
+                                        // 2. Override Label if Reason exists
+                                        if (vacation.reason) {
+                                            label = vacation.reason;
+                                            // Optional: Add prefix if needed, but keeping it short for calendar
                                         }
 
                                         return (

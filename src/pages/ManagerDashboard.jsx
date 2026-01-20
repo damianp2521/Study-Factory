@@ -1,6 +1,7 @@
+```
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, RotateCw, ClipboardList } from 'lucide-react';
+import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, RotateCw, ClipboardList, UserPlus } from 'lucide-react';
 import logo from '../assets/logo_new.png';
 
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +12,7 @@ import AdminMemberRegister from './AdminMemberRegister';
 import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
 import AdminWorkReport from './AdminWorkReport';
 import StaffTaskBoard from './StaffTaskBoard';
+import AdminOtherLeaveRequest from './AdminOtherLeaveRequest';
 import InlineVacationRequest from '../components/InlineVacationRequest';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import AdminVacationDetails from '../components/AdminVacationDetails';
@@ -78,9 +80,10 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
             let query = supabase
                 .from('vacation_requests')
                 .select(`
-        *,
-        profiles: user_id(name, branch)
-        `)
+    *,
+    profiles: user_id(name, branch),
+        reason
+            `)
                 .eq('date', selectedDate)
                 .order('created_at', { ascending: false }); // Sort by newest first
 
@@ -138,11 +141,11 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                         msOverflowStyle: 'none' // IE/Edge
                     }}>
                         <style>{`
-                            /* Hide scrollbar for Chrome/Safari/Opera */
-                            div::-webkit-scrollbar {
-                                display: none;
-                            }
-                        `}</style>
+/* Hide scrollbar for Chrome/Safari/Opera */
+div:: -webkit - scrollbar {
+    display: none;
+}
+`}</style>
                         {branches.map(branch => (
                             <button
                                 key={branch}
@@ -196,7 +199,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                                 const dateObj = new Date(selectedDate);
                                 const days = ['일', '월', '화', '수', '목', '금', '토'];
                                 const dayName = days[dateObj.getDay()];
-                                return `${y}. ${m}. ${d}. (${dayName})`;
+                                return `${ y }. ${ m }. ${ d }.(${ dayName })`;
                             })()}
                         </span>
                         <Calendar size={20} color="#718096" />
@@ -241,7 +244,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                         fontSize: '0.9rem'
                     }}
                 >
-                    월차
+                    종일
                 </button>
                 <button
                     onClick={() => toggleFilter('half_am')}
@@ -258,7 +261,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                         fontSize: '0.9rem'
                     }}
                 >
-                    오전반차
+                    오전
                 </button>
                 <button
                     onClick={() => toggleFilter('half_pm')}
@@ -275,7 +278,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                         fontSize: '0.9rem'
                     }}
                 >
-                    오후반차
+                    오후
                 </button>
             </div>
 
@@ -293,8 +296,9 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                             let color = '#c53030'; // Red
                             let bg = '#fff5f5';
 
+                            const isAm = (req.periods || []).includes(1);
+
                             if (req.type === 'half') {
-                                const isAm = (req.periods || []).includes(1);
                                 if (isAm) {
                                     typeLabel = '오전반차';
                                     color = '#c53030'; // Red
@@ -303,6 +307,18 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                                     typeLabel = '오후반차';
                                     color = '#2c5282'; // Blue
                                     bg = '#ebf8ff';
+                                }
+                            }
+                            
+                            // Reason override
+                            let displayLabel = typeLabel;
+                            if (req.reason) {
+                                displayLabel = `${ req.reason } `;
+                                if (req.type === 'full') {
+                                    displayLabel = `종일 ${ req.reason } `;
+                                } else if (req.type === 'half') {
+                                    if (isAm) displayLabel = `오전 ${ req.reason } `;
+                                    else displayLabel = `오후 ${ req.reason } `;
                                 }
                             }
 
@@ -335,7 +351,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                                             color: color,
                                             marginBottom: '2px'
                                         }}>
-                                            {typeLabel}
+                                            {displayLabel}
                                         </div>
                                         {req.created_at && (
                                             <div style={{ fontSize: '0.7rem', color: '#a0aec0' }}>
@@ -348,7 +364,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
                                                     const dd = String(d.getDate()).padStart(2, '0');
                                                     const hh = String(d.getHours()).padStart(2, '0');
                                                     const min = String(d.getMinutes()).padStart(2, '0');
-                                                    return `${yyyy}.${mm}.${dd}(${day}) ${hh}:${min}`;
+                                                    return `${ yyyy }.${ mm }.${ dd } (${ day }) ${ hh }:${ min } `;
                                                 })()}
                                             </div>
                                         )}
@@ -365,7 +381,7 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
 
 // Admin Quick Menu (Flex Layout)
 const AdminQuickMenu = () => {
-    const [currentView, setCurrentView] = useState('grid'); // 'grid', 'management_menu', 'register', 'status', 'vacation_history'
+    const [currentView, setCurrentView] = useState('grid'); // 'grid', 'management_menu', 'register', 'status', 'vacation_history', 'other_leave_request'
 
     if (currentView === 'register') {
         return <AdminMemberRegister onBack={() => setCurrentView('management_menu')} />;
@@ -378,6 +394,9 @@ const AdminQuickMenu = () => {
     }
     if (currentView === 'work_report') {
         return <AdminWorkReport onBack={() => setCurrentView('management_menu')} />;
+    }
+    if (currentView === 'other_leave_request') {
+        return <AdminOtherLeaveRequest onBack={() => setCurrentView('management_menu')} />;
     }
 
     // Sub-menu for Employee Management
@@ -511,6 +530,33 @@ const AdminQuickMenu = () => {
                             <Calendar size={20} />
                         </div>
                         <span style={{ textAlign: 'center', lineHeight: '1.2' }}>사원별<br />휴가 현황</span>
+                    </button>
+
+                    {/* 5. Other Leave Request (NEW) */}
+                    <button
+                        onClick={() => setCurrentView('other_leave_request')}
+                        style={{
+                            width: 'calc(33.33% - 10px)',
+                            aspectRatio: '1',
+                            borderRadius: '16px',
+                            border: 'none',
+                            background: '#f7fafc',
+                            color: '#2d3748',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
+                            <UserPlus size={20} />
+                        </div>
+                        <span style={{ textAlign: 'center', lineHeight: '1.2' }}>사원 기타<br />휴무 신청</span>
                     </button>
                 </div>
             </div>
@@ -848,9 +894,9 @@ const ManagerDashboard = () => {
                         <div
                             style={{
                                 display: 'flex',
-                                width: `${slides.length * 100}% `,
+                                width: `${ slides.length * 100 }% `,
                                 height: '100%',
-                                transform: `translateX(-${activeIndex * (100 / slides.length)}%)`,
+                                transform: `translateX(-${ activeIndex * (100 / slides.length)}%)`,
                                 transition: 'transform 0.3s ease-out'
                             }}
                         >
@@ -858,7 +904,7 @@ const ManagerDashboard = () => {
                                 <div
                                     key={index}
                                     style={{
-                                        width: `${100 / slides.length}% `,
+                                        width: `${ 100 / slides.length }% `,
                                         height: '100%',
                                         padding: '10px 20px',
                                         boxSizing: 'border-box',
@@ -883,8 +929,8 @@ const ManagerDashboard = () => {
                                         msOverflowStyle: 'none'
                                     }}>
                                         <style>{`
-                                            div::-webkit-scrollbar { display: none; }
-                                        `}</style>
+div:: -webkit - scrollbar { display: none; }
+`}</style>
                                         <div style={{ flex: 1 }}>
                                             {slide.component}
                                         </div>
