@@ -823,7 +823,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
                     <UserPlus size={20} />
                 </div>
-                <span style={{ textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
             </button>
 
             {/* 4. Attendance Book (출석부) */}

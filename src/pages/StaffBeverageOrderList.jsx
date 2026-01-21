@@ -128,7 +128,7 @@ const StaffBeverageOrderList = ({ onBack }) => {
     ];
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '0 20px 20px 20px' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '0 0 20px 0' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
