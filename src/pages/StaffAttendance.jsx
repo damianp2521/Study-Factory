@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Calendar, Check, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
+import { formatDateWithDay } from '../utils/dateUtils';
 
 const StaffAttendance = ({ onBack }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -163,7 +164,7 @@ const StaffAttendance = ({ onBack }) => {
                         cursor: 'pointer'
                     }}
                 >
-                    {selectedDate}
+                    {formatDateWithDay(selectedDate)}
                     <Calendar size={16} color="#718096" />
                 </button>
             </div>

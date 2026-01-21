@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
+import EmbeddedCalendar from '../components/EmbeddedCalendar';
+import { formatDateWithDay } from '../utils/dateUtils';
 
 const StaffBeverageOrderList = ({ onBack }) => {
     const [loading, setLoading] = useState(true);
@@ -9,6 +11,7 @@ const StaffBeverageOrderList = ({ onBack }) => {
     const [absentUsers, setAbsentUsers] = useState([]); // List of names excluded
     const [selectedBranch, setSelectedBranch] = useState('망미점');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [showCalendar, setShowCalendar] = useState(false);
 
     const branches = BRANCH_OPTIONS.filter(b => b !== '전체');
 
@@ -146,23 +149,35 @@ const StaffBeverageOrderList = ({ onBack }) => {
                     </button>
                     <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>음료 제조표</h3>
                 </div>
-                <div>
-                    <input
-                        type="date"
-                        value={date}
-                        onChange={(e) => setDate(e.target.value)}
-                        style={{
-                            padding: '6px 10px',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0',
-                            fontSize: '0.9rem',
-                            color: '#4a5568',
-                            outline: 'none',
-                            fontFamily: 'inherit'
+                {/* Date Picker Button */}
+                <button
+                    onClick={() => setShowCalendar(!showCalendar)}
+                    style={{
+                        padding: '6px 12px',
+                        borderRadius: '12px',
+                        border: '1px solid #e2e8f0',
+                        background: 'white',
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                        fontSize: '0.9rem', fontWeight: 'bold', color: '#2d3748',
+                        cursor: 'pointer'
+                    }}
+                >
+                    {formatDateWithDay(date)}
+                    <Calendar size={16} color="#718096" />
+                </button>
+            </div>
+
+            {showCalendar && (
+                <div style={{ position: 'absolute', top: '60px', right: '20px', zIndex: 100, background: 'white', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', padding: '10px' }}>
+                    <EmbeddedCalendar
+                        selectedDate={date}
+                        onSelectDate={(val) => {
+                            setDate(val);
+                            setShowCalendar(false);
                         }}
                     />
                 </div>
-            </div>
+            )}
 
             {/* Branch Selection */}
             <div style={{ display: 'flex', gap: '5px', marginBottom: '15px', overflowX: 'auto', paddingBottom: '5px', scrollbarWidth: 'none' }}>
