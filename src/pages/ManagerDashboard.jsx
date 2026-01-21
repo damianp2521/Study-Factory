@@ -14,50 +14,10 @@ import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
 import AdminWorkReport from './AdminWorkReport';
 import StaffAttendance from './StaffAttendance';
 import AdminAttendanceStatus from './AdminAttendanceStatus';
-// ... imports
-import StaffBeverageManagement from './StaffBeverageManagement';
-
-// ... inside StaffGridMenu ...
-
-if (currentView === 'beverage_management') {
-    return <StaffBeverageManagement onBack={() => setCurrentView('grid')} />;
-}
-
-// ... handleMenuClick ...
-const handleMenuClick = (num) => {
-    if (num === 1) setCurrentView('employee_vacation');
-    else if (num === 2) setCurrentView('work_status');
-    else if (num === 3) setCurrentView('vacation_request');
-    else if (num === 4) setCurrentView('attendance');
-    else if (num === 5) setCurrentView('seat_management');
-    else if (num === 6) setCurrentView('beverage_management');
-    else alert('준비 중인 기능입니다.');
-};
-
-// ... Button 6 render ...
-{/* 6. Beverage Management */ }
-<button
-    onClick={() => handleMenuClick(6)}
-    style={{
-        width: 'calc(33.33% - 10px)',
-        aspectRatio: '1',
-        borderRadius: '16px',
-        border: 'none',
-        background: '#f7fafc',
-        color: '#2d3748',
-        cursor: 'pointer',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-    }}
->
-    <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
-        <Coffee size={20} />
-    </div>
-    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>음료<br />관리</span>
-</button>
 import AdminOtherLeaveRequest from './AdminOtherLeaveRequest';
 import InlineVacationRequest from '../components/InlineVacationRequest';
 import { BRANCH_OPTIONS } from '../constants/branches';
+
 
 // ... imports
 
