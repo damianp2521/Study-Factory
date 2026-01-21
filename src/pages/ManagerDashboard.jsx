@@ -689,8 +689,21 @@ const StaffGridMenu = () => {
     const [currentView, setCurrentView] = useState('grid'); // 'grid', 'employee_vacation', 'work_status', 'vacation_request', 'attendance', 'seat_management', 'beverage_management'
 
     // Sub-views
+    // Sub-views
     if (currentView === 'employee_vacation') {
-        // ...
+        return (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <button onClick={() => setCurrentView('grid')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
+                        <ChevronLeft size={24} color="#2d3748" />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>일별 사원 휴무 현황</h3>
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <EmployeeVacationStatus />
+                </div>
+            </div>
+        );
     }
     if (currentView === 'work_status') {
         return (
@@ -707,11 +720,30 @@ const StaffGridMenu = () => {
             </div>
         );
     }
-    // ...
+    if (currentView === 'vacation_request') {
+        return (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <button onClick={() => setCurrentView('grid')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
+                        <ChevronLeft size={24} color="#2d3748" />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>스탭 휴무 신청</h3>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    <InlineVacationRequest />
+                </div>
+            </div>
+        );
+    }
+    if (currentView === 'attendance') {
+        return <StaffAttendance onBack={() => setCurrentView('grid')} />;
+    }
+    if (currentView === 'seat_management') {
+        return <StaffSeatManagement onBack={() => setCurrentView('grid')} />;
+    }
     if (currentView === 'beverage_management') {
         return <StaffBeverageManagement onBack={() => setCurrentView('grid')} />;
     }
-    // ...
 
     // Grid View
     const handleMenuClick = (num) => {
@@ -786,7 +818,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
                     <UserPlus size={20} />
                 </div>
-                <span style={{ textAlign: 'center', lineHeight: '1.2' }}>사원 기타<br />휴무 신청</span>
+                <span style={{ textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
             </button>
 
             {/* 4. Attendance Book (출석부) */}
