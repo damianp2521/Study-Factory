@@ -237,16 +237,12 @@ const StaffAttendance = ({ onBack }) => {
                             background: 'white'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <div style={{ width: '28px', height: '28px', background: '#ebf8ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#2b6cb0' }}>{seatNum}</div>
-                                <div style={{ fontWeight: 'bold', color: '#2d3748', width: '60px' }}>{user.name}</div>
-                            </div>
-
-                            {/* Status Indicator */}
-                            <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                                <div style={{ width: '28px', height: '28px', background: '#ebf8ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#2b6cb0', fontSize: '1rem' }}>{seatNum}</div>
+                                <div style={{ fontWeight: 'bold', color: '#2d3748', fontSize: '1rem' }}>{user.name}</div>
                                 {status && (
                                     <div style={{
-                                        fontSize: '0.8rem',
-                                        padding: '4px 8px',
+                                        fontSize: '1rem',
+                                        padding: '4px 12px',
                                         borderRadius: '12px',
                                         background: status.type === 'full' ? '#fff5f5' : '#ebf8ff',
                                         color: status.type === 'full' ? '#c53030' : '#2c5282',
@@ -256,6 +252,8 @@ const StaffAttendance = ({ onBack }) => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Spacer to push button to right (handled by justify-content: space-between on parent) */}
 
                             {/* Check Button */}
                             <button
