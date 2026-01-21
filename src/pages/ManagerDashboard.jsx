@@ -12,10 +12,10 @@ import AdminMemberStatus from './AdminMemberStatus';
 import AdminMemberRegister from './AdminMemberRegister';
 import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
 import AdminWorkReport from './AdminWorkReport';
-import StaffTaskBoard from './StaffTaskBoard';
-import AdminOtherLeaveRequest from './AdminOtherLeaveRequest';
+import StaffAttendance from './StaffAttendance';
+import AdminAttendanceStatus from './AdminAttendanceStatus';
+
 // ... imports
-// ... other code
 
 const EmployeeVacationStatus = ({ onUserClick }) => {
     const { user } = useAuth(); // Access user context
@@ -393,6 +393,9 @@ const AdminQuickMenu = () => {
     if (currentView === 'other_leave_request') {
         return <AdminOtherLeaveRequest onBack={() => setCurrentView('management_menu')} />;
     }
+    if (currentView === 'attendance_status') {
+        return <AdminAttendanceStatus onBack={() => setCurrentView('management_menu')} />;
+    }
 
     if (currentView === 'management_menu') {
         return (
@@ -550,6 +553,32 @@ const AdminQuickMenu = () => {
                         </div>
                         <span style={{ textAlign: 'center', lineHeight: '1.2' }}>사원 기타<br />휴무 신청</span>
                     </button>
+                    {/* 6. Attendance Status (NEW) */}
+                    <button
+                        onClick={() => setCurrentView('attendance_status')}
+                        style={{
+                            width: 'calc(33.33% - 10px)',
+                            aspectRatio: '1',
+                            borderRadius: '16px',
+                            border: 'none',
+                            background: '#f7fafc',
+                            color: '#2d3748',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <div style={{ width: '32px', height: '32px', background: '#f0fff4', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2f855a', marginBottom: '5px' }}>
+                            <UserCheck size={20} />
+                        </div>
+                        <span style={{ textAlign: 'center', lineHeight: '1.2' }}>출석<br />현황</span>
+                    </button>
                 </div>
             </div>
         );
@@ -658,6 +687,7 @@ const StaffGridMenu = () => {
         if (num === 1) setCurrentView('employee_vacation');
         else if (num === 2) setCurrentView('work_status');
         else if (num === 3) setCurrentView('vacation_request');
+        else if (num === 4) setCurrentView('attendance');
         else if (num === 5) setCurrentView('seat_management');
         else if (num === 4 || num === 6) alert('준비 중인 기능입니다.');
         else alert('준비 중인 기능입니다.');
