@@ -649,6 +649,9 @@ const StaffGridMenu = () => {
         );
     }
 
+    if (currentView === 'seat_management') {
+        return <StaffSeatManagement onBack={() => setCurrentView('grid')} />;
+    }
 
     // Grid View
     const handleMenuClick = (num) => {
