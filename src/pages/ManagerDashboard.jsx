@@ -678,6 +678,10 @@ const StaffGridMenu = () => {
         );
     }
 
+    if (currentView === 'attendance') {
+        return <StaffAttendance onBack={() => setCurrentView('grid')} />;
+    }
+
     if (currentView === 'seat_management') {
         return <StaffSeatManagement onBack={() => setCurrentView('grid')} />;
     }
