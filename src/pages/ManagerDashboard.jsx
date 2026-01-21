@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, RotateCw, ClipboardList, UserPlus } from 'lucide-react';
+import { LogOut, ChevronLeft, ChevronRight, Calendar, Filter, RotateCw, ClipboardList, UserPlus, UserCheck, MapPin, Coffee } from 'lucide-react';
 import logo from '../assets/logo_new.png';
 
 import { useAuth } from '../context/AuthContext';
@@ -649,11 +649,13 @@ const StaffGridMenu = () => {
         );
     }
 
+
     // Grid View
     const handleMenuClick = (num) => {
         if (num === 1) setCurrentView('employee_vacation');
         else if (num === 2) setCurrentView('work_status');
         else if (num === 3) setCurrentView('vacation_request');
+        else if (num === 4 || num === 5 || num === 6) alert('준비 중인 기능입니다.');
         else alert('준비 중인 기능입니다.');
     };
 
@@ -722,8 +724,71 @@ const StaffGridMenu = () => {
                 <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
             </button>
 
-            {/* 4-9 Placeholders */}
-            {[4, 5, 6, 7, 8, 9].map(num => (
+            {/* 4. Attendance Book (출석부) */}
+            <button
+                onClick={() => handleMenuClick(4)}
+                style={{
+                    width: 'calc(33.33% - 10px)',
+                    aspectRatio: '1',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: '#f7fafc',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+            >
+                <div style={{ width: '32px', height: '32px', background: '#e9d8fd', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b46c1', marginBottom: '5px' }}>
+                    <UserCheck size={20} />
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>출석부</span>
+            </button>
+
+            {/* 5. Employee Seat Management (사원 좌석 관리) */}
+            <button
+                onClick={() => handleMenuClick(5)}
+                style={{
+                    width: 'calc(33.33% - 10px)',
+                    aspectRatio: '1',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: '#f7fafc',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+            >
+                <div style={{ width: '32px', height: '32px', background: '#faf5ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#805ad5', marginBottom: '5px' }}>
+                    <MapPin size={20} />
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />좌석 관리</span>
+            </button>
+
+            {/* 6. Employee Beverage Management (사원 음료 관리) */}
+            <button
+                onClick={() => handleMenuClick(6)}
+                style={{
+                    width: 'calc(33.33% - 10px)',
+                    aspectRatio: '1',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: '#f7fafc',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+            >
+                <div style={{ width: '32px', height: '32px', background: '#fffff0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d69e2e', marginBottom: '5px' }}>
+                    <Coffee size={20} />
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />음료 관리</span>
+            </button>
+
+            {/* 7-9 Placeholders */}
+            {[7, 8, 9].map(num => (
                 <button
                     key={num}
                     onClick={() => handleMenuClick(num)}
