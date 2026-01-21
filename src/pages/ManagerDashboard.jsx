@@ -16,6 +16,8 @@ import StaffAttendance from './StaffAttendance';
 import AdminAttendanceStatus from './AdminAttendanceStatus';
 import AdminOtherLeaveRequest from './AdminOtherLeaveRequest';
 import InlineVacationRequest from '../components/InlineVacationRequest';
+import StaffBeverageManagement from './StaffBeverageManagement';
+import StaffBeverageOrderList from './StaffBeverageOrderList';
 import { BRANCH_OPTIONS } from '../constants/branches';
 
 
@@ -744,6 +746,9 @@ const StaffGridMenu = () => {
     if (currentView === 'beverage_management') {
         return <StaffBeverageManagement onBack={() => setCurrentView('grid')} />;
     }
+    if (currentView === 'beverage_order_list') {
+        return <StaffBeverageOrderList onBack={() => setCurrentView('grid')} />;
+    }
 
     // Grid View
     const handleMenuClick = (num) => {
@@ -753,6 +758,7 @@ const StaffGridMenu = () => {
         else if (num === 4) setCurrentView('attendance');
         else if (num === 5) setCurrentView('seat_management');
         else if (num === 6) setCurrentView('beverage_management');
+        else if (num === 7) setCurrentView('beverage_order_list');
         else alert('준비 중인 기능입니다.');
     };
 
@@ -884,8 +890,29 @@ const StaffGridMenu = () => {
                 <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />음료 관리</span>
             </button>
 
-            {/* 7-9 Placeholders */}
-            {[7, 8, 9].map(num => (
+            {/* 7. Beverage Order List */}
+            <button
+                onClick={() => handleMenuClick(7)}
+                style={{
+                    width: 'calc(33.33% - 10px)',
+                    aspectRatio: '1',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: '#f7fafc',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+            >
+                <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#319795', marginBottom: '5px' }}>
+                    <ClipboardList size={20} />
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>음료<br />제조표</span>
+            </button>
+
+            {/* 8-9 Placeholders */}
+            {[8, 9].map(num => (
                 <button
                     key={num}
                     onClick={() => handleMenuClick(num)}
