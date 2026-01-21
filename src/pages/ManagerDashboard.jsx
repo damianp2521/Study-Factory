@@ -77,6 +77,15 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
     const [weeklyUsage, setWeeklyUsage] = useState({}); // user_id -> usage count
 
     useEffect(() => {
+        const updateDate = () => {
+            const today = new Date().toISOString().split('T')[0];
+            setSelectedDate(today);
+        };
+        window.addEventListener('focus', updateDate);
+        return () => window.removeEventListener('focus', updateDate);
+    }, []);
+
+    useEffect(() => {
         fetchVacations();
     }, [selectedBranch, selectedDate, filters]);
 

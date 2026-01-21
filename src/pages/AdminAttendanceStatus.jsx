@@ -13,6 +13,15 @@ const AdminAttendanceStatus = ({ onBack }) => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        const updateDate = () => {
+            const today = new Date().toISOString().split('T')[0];
+            setSelectedDate(today);
+        };
+        window.addEventListener('focus', updateDate);
+        return () => window.removeEventListener('focus', updateDate);
+    }, []);
+
+    useEffect(() => {
         fetchData();
     }, [selectedDate, branch]);
 

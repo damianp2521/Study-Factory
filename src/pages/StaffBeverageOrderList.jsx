@@ -13,6 +13,15 @@ const StaffBeverageOrderList = ({ onBack }) => {
     const branches = BRANCH_OPTIONS.filter(b => b !== '전체');
 
     useEffect(() => {
+        const updateDate = () => {
+            const today = new Date().toISOString().split('T')[0];
+            setDate(today);
+        };
+        window.addEventListener('focus', updateDate);
+        return () => window.removeEventListener('focus', updateDate);
+    }, []);
+
+    useEffect(() => {
         fetchData();
     }, [selectedBranch, date]);
 
