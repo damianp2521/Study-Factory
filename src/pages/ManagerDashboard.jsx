@@ -598,41 +598,179 @@ const AdminQuickMenu = () => {
     );
 };
 
-// Manager Dashboard with Carousel
+// Staff Grid Menu (Similar to Admin but for Staff)
+const StaffGridMenu = () => {
+    const [currentView, setCurrentView] = useState('grid'); // 'grid', 'employee_vacation', 'work_status', 'vacation_request'
+
+    // Sub-views
+    if (currentView === 'employee_vacation') {
+        return (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <button onClick={() => setCurrentView('grid')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
+                        <ChevronLeft size={24} color="#2d3748" />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>사원 휴무 현황</h3>
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <EmployeeVacationStatus />
+                </div>
+            </div>
+        );
+    }
+    if (currentView === 'work_status') {
+        return (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <button onClick={() => setCurrentView('grid')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
+                        <ChevronLeft size={24} color="#2d3748" />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>스탭 업무 현황</h3>
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <StaffTaskBoard />
+                </div>
+            </div>
+        );
+    }
+    if (currentView === 'vacation_request') {
+        return (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <button onClick={() => setCurrentView('grid')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
+                        <ChevronLeft size={24} color="#2d3748" />
+                    </button>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>휴무 신청</h3>
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    <InlineVacationRequest />
+                </div>
+            </div>
+        );
+    }
+
+    // Grid View
+    const handleMenuClick = (num) => {
+        if (num === 1) setCurrentView('employee_vacation');
+        else if (num === 2) setCurrentView('work_status');
+        else if (num === 3) setCurrentView('vacation_request');
+        else alert('준비 중인 기능입니다.');
+    };
+
+    return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start', height: '100%' }}>
+            {/* 1. Employee Leave Status */}
+            <button
+                onClick={() => handleMenuClick(1)}
+                style={{
+                    width: 'calc(33.33% - 10px)',
+                    aspectRatio: '1',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: '#f7fafc',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+            >
+                <div style={{ width: '32px', height: '32px', background: '#fff5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c53030', marginBottom: '5px' }}>
+                    <Calendar size={20} />
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />휴무 현황</span>
+            </button>
+
+            {/* 2. Staff Work Status */}
+            <button
+                onClick={() => handleMenuClick(2)}
+                style={{
+                    width: 'calc(33.33% - 10px)',
+                    aspectRatio: '1',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: '#f7fafc',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+            >
+                <div style={{ width: '32px', height: '32px', background: '#ebf8ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2b6cb0', marginBottom: '5px' }}>
+                    <ClipboardList size={20} />
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />업무 현황</span>
+            </button>
+
+            {/* 3. Leave Request */}
+            <button
+                onClick={() => handleMenuClick(3)}
+                style={{
+                    width: 'calc(33.33% - 10px)',
+                    aspectRatio: '1',
+                    borderRadius: '16px',
+                    border: 'none',
+                    background: '#f7fafc',
+                    color: '#2d3748',
+                    cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+            >
+                <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
+                    <UserPlus size={20} />
+                </div>
+                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
+            </button>
+
+            {/* 4-9 Placeholders */}
+            {[4, 5, 6, 7, 8, 9].map(num => (
+                <button
+                    key={num}
+                    onClick={() => handleMenuClick(num)}
+                    style={{
+                        width: 'calc(33.33% - 10px)',
+                        aspectRatio: '1',
+                        borderRadius: '16px',
+                        border: 'none',
+                        background: '#f7fafc',
+                        color: '#a0aec0',
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                >
+                    {num}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+// Manager Dashboard (No Carousel, Tab Layout)
 const ManagerDashboard = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-
-    // Determine initial slide based on role
     const isAdmin = user?.role === 'admin';
-    const initialIndex = isAdmin ? 1 : 0;
 
-    // Carousel State
-    const [activeIndex, setActiveIndex] = useState(() => {
-        const saved = localStorage.getItem('manager_dashboard_index');
-        if (saved !== null) return parseInt(saved, 10);
-        return initialIndex;
+    // Dashboard Mode: 'manager' or 'staff'
+    // Default: 'manager' for admins, 'staff' for staff/others
+    const [dashboardMode, setDashboardMode] = useState(() => {
+        if (isAdmin) {
+            const saved = localStorage.getItem('manager_dashboard_mode');
+            return saved === 'staff' ? 'staff' : 'manager';
+        }
+        return 'staff';
     });
 
+    // Sync localStorage for admin preference
     useEffect(() => {
-        localStorage.setItem('manager_dashboard_index', activeIndex);
-    }, [activeIndex]);
+        if (isAdmin) {
+            localStorage.setItem('manager_dashboard_mode', dashboardMode);
+        }
+    }, [dashboardMode, isAdmin]);
 
-    const [touchStart, setTouchStart] = useState(0);
-    const [touchEnd, setTouchEnd] = useState(0);
-
-    // Detail View State (Popup over everything)
-    const [detailUser, setDetailUser] = useState(null);
-
-    const slides = [
-        { title: '사원 휴무 현황', component: <EmployeeVacationStatus onUserClick={setDetailUser} /> },
-        { title: '스탭 업무 현황', component: <StaffTaskBoard /> },
-        { title: '휴무 신청', component: <InlineVacationRequest /> },
-    ];
-
-    if (isAdmin) {
-        slides.unshift({ title: '관리자 페이지', component: <AdminQuickMenu /> });
-    }
 
     const handleLogout = async () => {
         try {
@@ -648,41 +786,6 @@ const ManagerDashboard = () => {
         window.location.reload();
     };
 
-    const minSwipeDistance = 50;
-    const onTouchStart = (e) => {
-        if (detailUser) return; // Disable swipe in detail view
-        setTouchEnd(0);
-        setTouchStart(e.targetTouches[0].clientX);
-    };
-    const onTouchMove = (e) => {
-        if (detailUser) return;
-        setTouchEnd(e.targetTouches[0].clientX);
-    };
-    const onTouchEnd = () => {
-        if (detailUser) return;
-        if (!touchStart || !touchEnd) return;
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
-
-        if (isLeftSwipe && activeIndex < slides.length - 1) {
-            setActiveIndex(prev => prev + 1);
-        }
-        if (isRightSwipe && activeIndex > 0) {
-            setActiveIndex(prev => prev - 1);
-        }
-    };
-
-    const handlePrev = () => {
-        if (activeIndex > 0) setActiveIndex(prev => prev - 1);
-    };
-
-    const handleNext = () => {
-        if (activeIndex < slides.length - 1) setActiveIndex(prev => prev + 1);
-    };
-
-    const prevTitle = activeIndex > 0 ? slides[activeIndex - 1].title : '';
-    const nextTitle = activeIndex < slides.length - 1 ? slides[activeIndex + 1].title : '';
 
     return (
         <div style={{
@@ -690,16 +793,16 @@ const ManagerDashboard = () => {
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            position: 'relative'
+            backgroundColor: '#ffffff'
         }}>
-            {/* 1. Global Header Bar (Logout - Logo - Help) */}
+            {/* 1. Global Header Bar */}
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '10px 20px',
                 paddingTop: 'calc(env(safe-area-inset-top) + 15px)',
-                backgroundColor: 'transparent',
+                backgroundColor: 'white',
                 flexShrink: 0
             }}>
                 <button
@@ -722,12 +825,66 @@ const ManagerDashboard = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: '#267E82',
-                    padding: '5px 12px',
-                    borderRadius: '20px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    flexDirection: 'column',
+                    gap: '5px'
                 }}>
-                    <img src={logo} alt="자격증공장" style={{ height: '30px', objectFit: 'contain' }} />
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: '#267E82',
+                        padding: '5px 12px',
+                        borderRadius: '20px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                    }}>
+                        <img src={logo} alt="자격증공장" style={{ height: '30px', objectFit: 'contain' }} />
+                    </div>
+
+                    {/* Mode Toggle for Admin */}
+                    {isAdmin && (
+                        <div style={{
+                            display: 'flex',
+                            background: '#f1f5f9',
+                            padding: '3px',
+                            borderRadius: '20px',
+                            marginTop: '5px'
+                        }}>
+                            <button
+                                onClick={() => setDashboardMode('manager')}
+                                style={{
+                                    border: 'none',
+                                    borderRadius: '16px',
+                                    padding: '4px 12px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    background: dashboardMode === 'manager' ? '#267E82' : 'transparent',
+                                    color: dashboardMode === 'manager' ? 'white' : '#718096',
+                                    boxShadow: dashboardMode === 'manager' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+                                }}
+                            >
+                                관리자
+                            </button>
+                            <button
+                                onClick={() => setDashboardMode('staff')}
+                                style={{
+                                    border: 'none',
+                                    borderRadius: '16px',
+                                    padding: '4px 12px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    background: dashboardMode === 'staff' ? '#267E82' : 'transparent',
+                                    color: dashboardMode === 'staff' ? 'white' : '#718096',
+                                    boxShadow: dashboardMode === 'staff' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+                                }}
+                            >
+                                스탭
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <button
@@ -747,222 +904,41 @@ const ManagerDashboard = () => {
                 </button>
             </div>
 
-            {/* DETAIL VIEW OVERLAY */}
-            {detailUser ? (
+            {/* 2. Main Content Area */}
+            <div style={{
+                flex: 1,
+                padding: '20px',
+                paddingTop: '10px',
+                overflow: 'hidden', // Inner components handle scroll
+                display: 'flex',
+                gap: '20px',
+                flexDirection: 'column'
+            }}>
+                {/* Content Box */}
                 <div style={{
                     flex: 1,
+                    background: 'white',
+                    borderRadius: '20px',
+                    // padding: '20px', // QuickMenu includes padding handling if needed, but let's give it wrapper padding
+                    // Actually AdminQuickMenu layout expects some space. Let's keep it simple.
                     overflow: 'hidden',
-                    padding: '20px',
-                    paddingTop: '0',
                     display: 'flex',
                     flexDirection: 'column'
                 }}>
-                    <div style={{
-                        flex: 1,
-                        background: 'white',
-                        borderRadius: '20px',
-                        padding: '20px',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                        overflow: 'hidden', // Details component handles scroll
-                        boxSizing: 'border-box'
-                    }}>
-                        <AdminVacationDetails
-                            user={detailUser}
-                            onBack={() => setDetailUser(null)}
-                        />
-                    </div>
+                    {dashboardMode === 'manager' ? (
+                        <div style={{ height: '100%', overflowY: 'auto', padding: '10px', scrollbarWidth: 'none' }}>
+                            <style>{`div::-webkit-scrollbar { display: none; }`}</style>
+                            <AdminQuickMenu />
+                        </div>
+                    ) : (
+                        <div style={{ height: '100%', overflowY: 'auto', padding: '10px', scrollbarWidth: 'none' }}>
+                            <style>{`div::-webkit-scrollbar { display: none; }`}</style>
+                            <StaffGridMenu />
+                        </div>
+                    )}
                 </div>
-            ) : (
-                <>
-                    {/* 2. Navigation Title Bar (Moved Down) */}
-                    <div style={{
-                        padding: '15px 20px',
-                        paddingBottom: '5px',
-                        position: 'relative',
-                        flexShrink: 0
-                    }}>
-                        {/* Grid for perfect centering */}
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr auto 1fr',
-                            alignItems: 'center',
-                            width: '100%',
-                            userSelect: 'none'
-                        }}>
-                            {/* Prev Title */}
-                            <div
-                                onClick={handlePrev}
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'flex-end', // Force alignment to right
-                                    alignItems: 'center',
-                                    opacity: prevTitle ? 0.6 : 0, // Slightly more opacity
-                                    fontSize: '0.9rem',
-                                    fontWeight: 'bold',
-                                    transform: 'scale(0.9)',
-                                    cursor: 'pointer',
-                                    paddingRight: '10px',
-                                    transition: 'all 0.3s',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    width: '100%', // Ensure full width for flex
-                                    maskImage: 'linear-gradient(to right, transparent, black 30%)', // Softer fade (0-30%)
-                                    WebkitMaskImage: 'linear-gradient(to right, transparent, black 30%)',
-                                    lineHeight: '1.2'
-                                }}
-                            >
-                                {prevTitle || '　'}
-                            </div>
+            </div>
 
-                            {/* Active Title */}
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '10px',
-                                fontSize: '1.3rem',
-                                fontWeight: 'bold',
-                                color: 'var(--color-primary)',
-                                whiteSpace: 'nowrap',
-                                zIndex: 10
-                            }}>
-                                <button
-                                    onClick={handlePrev}
-                                    disabled={activeIndex === 0}
-                                    style={{ background: 'none', border: 'none', color: 'inherit', opacity: activeIndex === 0 ? 0.2 : 1, cursor: 'pointer' }}
-                                >
-                                    <ChevronLeft size={24} />
-                                </button>
-                                <span>{slides[activeIndex].title}</span>
-                                <button
-                                    onClick={handleNext}
-                                    disabled={activeIndex === slides.length - 1}
-                                    style={{ background: 'none', border: 'none', color: 'inherit', opacity: activeIndex === slides.length - 1 ? 0.2 : 1, cursor: 'pointer' }}
-                                >
-                                    <ChevronRight size={24} />
-                                </button>
-                            </div>
-
-                            {/* Next Title */}
-                            <div
-                                onClick={handleNext}
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'flex-start', // Force alignment to left
-                                    alignItems: 'center',
-                                    opacity: nextTitle ? 0.6 : 0,
-                                    fontSize: '0.9rem',
-                                    fontWeight: 'bold',
-                                    transform: 'scale(0.9)',
-                                    cursor: 'pointer',
-                                    paddingLeft: '10px',
-                                    paddingRight: '10px',
-                                    transition: 'all 0.3s',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                    width: '100%',
-                                    maskImage: 'linear-gradient(to right, black 70%, transparent)', // Softer fade (70-100%)
-                                    WebkitMaskImage: 'linear-gradient(to right, black 70%, transparent)',
-                                    lineHeight: '1.2'
-                                }}
-                            >
-                                {nextTitle || '　'}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Main Content Carousel */}
-                    <div
-                        style={{
-                            flex: 1,
-                            position: 'relative',
-                            width: '100%',
-                            overflow: 'hidden'
-                        }}
-                        onTouchStart={onTouchStart}
-                        onTouchMove={onTouchMove}
-                        onTouchEnd={onTouchEnd}
-                    >
-                        <div
-                            style={{
-                                display: 'flex',
-                                width: `${slides.length * 100}%`,
-                                height: '100%',
-                                transform: `translateX(-${activeIndex * (100 / slides.length)}%)`,
-                                transition: 'transform 0.3s ease-out'
-                            }}
-                        >
-                            {slides.map((slide, index) => (
-                                <div
-                                    key={index}
-                                    style={{
-                                        width: `${100 / slides.length}%`,
-                                        height: '100%',
-                                        padding: '10px 20px',
-                                        boxSizing: 'border-box',
-                                        overflow: 'hidden',
-                                        display: 'flex',
-                                        flexDirection: 'column'
-                                    }}
-                                >
-                                    {/* White Box with Internal Scroll */}
-                                    <div style={{
-                                        flex: 1,
-                                        background: 'white',
-                                        borderRadius: '20px',
-                                        padding: '20px',
-                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                        overflowY: 'auto',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        paddingBottom: '20px',
-                                        marginBottom: '60px', /* Make dots appear outside */
-                                        scrollbarWidth: 'none',
-                                        msOverflowStyle: 'none'
-                                    }}>
-                                        <style>{`
-div::-webkit-scrollbar { display: none; }
-`}</style>
-                                        <div style={{ flex: 1 }}>
-                                            {slide.component}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Pagination Indicators - Floating at Bottom with Background */}
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        padding: '15px 0',
-                        paddingBottom: 'calc(env(safe-area-inset-bottom) + 20px)',
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: 20,
-                        background: 'linear-gradient(to top, rgba(245,246,250, 0.9) 0%, rgba(245,246,250, 0) 100%)', // Subtle fade
-                        pointerEvents: 'none' // Click through just in case
-                    }}>
-                        {slides.map((_, index) => (
-                            <div
-                                key={index}
-                                style={{
-                                    width: '8px',
-                                    height: '8px',
-                                    borderRadius: '50%',
-                                    backgroundColor: index === activeIndex ? 'var(--color-primary)' : '#cbd5e0',
-                                    transition: 'background-color 0.3s',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                                }}
-                            />
-                        ))}
-                    </div>
-                </>
-            )}
         </div>
     );
 };
