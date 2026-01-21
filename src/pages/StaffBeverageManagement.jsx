@@ -14,8 +14,15 @@ const StaffBeverageManagement = ({ onBack }) => {
     // Modal State for Menu Settings
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [newOptionName, setNewOptionName] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const branches = BRANCH_OPTIONS.filter(b => b !== '전체');
+
+    // Filtered Users
+    const filteredUsers = users.filter(user => {
+        if (searchTerm && !user.name.includes(searchTerm)) return false;
+        return true;
+    });
 
     useEffect(() => {
         fetchBeverageOptions();
@@ -174,42 +181,65 @@ const StaffBeverageManagement = ({ onBack }) => {
                     }}
                 >
                     <Settings size={16} />
-                    메뉴 설정
+                    음료 메뉴 설정
                 </button>
             </div>
 
-            {/* Branch Selection (Optional, if multiple branches supported later) */}
-            {/* For now, just fixed or hidden if Mangmi only, but kept for consistency */}
-            <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
-                {branches.map(b => (
-                    <button
-                        key={b}
-                        onClick={() => setSelectedBranch(b)}
+            {/* Branch Selection & Search */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {branches.map(b => (
+                        <button
+                            key={b}
+                            onClick={() => setSelectedBranch(b)}
+                            style={{
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                border: selectedBranch === b ? 'none' : '1px solid #e2e8f0',
+                                background: selectedBranch === b ? 'var(--color-primary)' : 'white',
+                                color: selectedBranch === b ? 'white' : '#718096',
+                                fontSize: '0.85rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            {b}
+                        </button>
+                    ))}
+                </div>
+                {/* Name Search Input */}
+                <div style={{ position: 'relative', marginLeft: '10px' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#a0aec0' }} />
+                    <input
+                        type="text"
+                        placeholder="이름 검색"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         style={{
-                            padding: '6px 12px',
-                            borderRadius: '20px',
-                            border: selectedBranch === b ? 'none' : '1px solid #e2e8f0',
-                            background: selectedBranch === b ? 'var(--color-primary)' : 'white',
-                            color: selectedBranch === b ? 'white' : '#718096',
-                            fontSize: '0.85rem',
-                            fontWeight: 'bold',
-                            cursor: 'pointer'
+                            padding: '6px 10px 6px 30px',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '0.9rem',
+                            outline: 'none',
+                            width: '100px',
+                            background: '#f7fafc'
                         }}
-                    >
-                        {b}
-                    </button>
-                ))}
+                    />
+                </div>
             </div>
 
             {/* User List */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 {loading ? (
                     <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>로딩 중...</div>
-                ) : users.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>좌석 배정된 사원이 없습니다.</div>
+                ) : filteredUsers.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>
+                        {searchTerm ? '검색된 사원이 없습니다.' : '좌석 배정된 사원이 없습니다.'}
+                    </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {users.map(user => {
+                        {filteredUsers.map(user => {
                             const isExpanded = expandedUser === user.id;
                             const selection = userSelections[user.id] || {};
 
