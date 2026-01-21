@@ -8,17 +8,18 @@ const StaffBeverageOrderList = ({ onBack }) => {
     const [orders, setOrders] = useState([]); // [{ beverageName, count, users: [name, ...] }]
     const [absentUsers, setAbsentUsers] = useState([]); // List of names excluded
     const [selectedBranch, setSelectedBranch] = useState('망미점');
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
     const branches = BRANCH_OPTIONS.filter(b => b !== '전체');
 
     useEffect(() => {
         fetchData();
-    }, [selectedBranch]);
+    }, [selectedBranch, date]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const today = new Date().toISOString().split('T')[0];
+            const today = date;
 
             // 1. Fetch Users in Branch (Seated)
             const { data: userData, error: userError } = await supabase
@@ -134,10 +135,23 @@ const StaffBeverageOrderList = ({ onBack }) => {
                     <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
                         <ChevronLeft size={24} color="#2d3748" />
                     </button>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>음료 제조표 (오늘)</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>음료 제조표</h3>
                 </div>
-                <div style={{ fontSize: '0.9rem', color: '#718096' }}>
-                    {new Date().toLocaleDateString()}
+                <div>
+                    <input
+                        type="date"
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        style={{
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '0.9rem',
+                            color: '#4a5568',
+                            outline: 'none',
+                            fontFamily: 'inherit'
+                        }}
+                    />
                 </div>
             </div>
 
