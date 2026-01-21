@@ -7,7 +7,7 @@ const AdminMemberStatus = ({ onBack }) => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [editForm, setEditForm] = useState({ branch: '', role: '' });
+    const [editForm, setEditForm] = useState({ branch: '', role: '', seat_number: '' });
     const [selectedBranch, setSelectedBranch] = useState('전체');
 
     const branches = BRANCH_OPTIONS;
@@ -55,21 +55,31 @@ const AdminMemberStatus = ({ onBack }) => {
 
     const startEdit = (user) => {
         setEditingId(user.id);
-        setEditForm({ branch: user.branch, role: user.role });
+        setEditForm({
+            branch: user.branch,
+            role: user.role,
+            seat_number: user.seat_number || ''
+        });
     };
 
     const cancelEdit = () => {
         setEditingId(null);
-        setEditForm({ branch: '', role: '' });
+        setEditForm({ branch: '', role: '', seat_number: '' });
     };
 
     const saveEdit = async (id) => {
         try {
+            // Prepare seat number: if empty or '미지정', send NULL
+            const seatNum = editForm.seat_number === '미지정' || editForm.seat_number === ''
+                ? null
+                : parseInt(editForm.seat_number, 10);
+
             // Apply updates securely using the RPC function we just created
             const { data, error } = await supabase.rpc('update_employee_info', {
                 target_id: id,
                 new_branch: editForm.branch,
-                new_role: editForm.role
+                new_role: editForm.role,
+                new_seat_number: seatNum
             });
 
             if (error) throw error;
@@ -211,6 +221,26 @@ const AdminMemberStatus = ({ onBack }) => {
                                         </select>
                                     </div>
                                 </div>
+                                {/* Seat Selection */}
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>좌석 (망미점 1~102)</label>
+                                    <select
+                                        value={editForm.seat_number || '미지정'}
+                                        onChange={(e) => setEditForm({ ...editForm, seat_number: e.target.value })}
+                                        style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }}
+                                        disabled={editForm.branch !== '망미점'}
+                                    >
+                                        <option value="미지정">미지정</option>
+                                        {editForm.branch === '망미점' && Array.from({ length: 102 }, (_, i) => i + 1).map(num => (
+                                            <option key={num} value={num}>{num}번</option>
+                                        ))}
+                                    </select>
+                                    {editForm.branch !== '망미점' && (
+                                        <div style={{ fontSize: '0.75rem', color: '#a0aec0', marginTop: '2px' }}>
+                                            *좌석 지정은 망미점만 가능합니다.
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ) : (
                             // View Mode
@@ -219,7 +249,7 @@ const AdminMemberStatus = ({ onBack }) => {
                                     <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '4px' }}>
                                         {user.name}
                                     </div>
-                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                                         <span style={{ fontSize: '0.85rem', color: '#718096' }}>{user.branch}</span>
                                         <span style={{ width: '1px', height: '12px', background: '#cbd5e0' }}></span>
                                         <span style={{
@@ -229,6 +259,18 @@ const AdminMemberStatus = ({ onBack }) => {
                                         }}>
                                             {getRoleLabel(user.role)}
                                         </span>
+                                        {user.seat_number && (
+                                            <>
+                                                <span style={{ width: '1px', height: '12px', background: '#cbd5e0' }}></span>
+                                                <span style={{
+                                                    fontSize: '0.85rem',
+                                                    color: '#2b6cb0',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    좌석 {user.seat_number}번
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '10px' }}>
