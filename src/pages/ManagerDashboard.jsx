@@ -13,6 +13,7 @@ import AdminMemberRegister from './AdminMemberRegister';
 import AdminEmployeeVacationHistory from './AdminEmployeeVacationHistory';
 import AdminWorkReport from './AdminWorkReport';
 import StaffAttendance from './StaffAttendance';
+import StaffTaskBoard from './StaffTaskBoard';
 import AdminAttendanceStatus from './AdminAttendanceStatus';
 import AdminOtherLeaveRequest from './AdminOtherLeaveRequest';
 import InlineVacationRequest from '../components/InlineVacationRequest';
