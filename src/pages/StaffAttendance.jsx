@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, ZoomIn, ZoomOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, getDate, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -11,7 +11,7 @@ const StaffAttendance = ({ onBack }) => {
     // View State (Month)
     const [currentViewDate, setCurrentViewDate] = useState(new Date());
 
-    // Zoom State (1.0 = Normal, 0.6 = Compact)
+    // Zoom State (0.5 to 1.5)
     const [scale, setScale] = useState(1.0);
 
     // Branch
@@ -31,6 +31,8 @@ const StaffAttendance = ({ onBack }) => {
 
     // Refs
     const scrollContainerRef = useRef(null);
+    const touchStartDistRef = useRef(null);
+    const startScaleRef = useRef(1.0);
 
     // Dynamic Constants based on Scale
     const BASE_SEAT_WIDTH = 40;
@@ -67,7 +69,45 @@ const StaffAttendance = ({ onBack }) => {
         if (isSameDay(startOfMonth(today), startOfMonth(currentViewDate))) {
             scrollToToday();
         }
-    }, [currentViewDate, scale]); // Re-scroll on scale change too
+    }, [currentViewDate]); // Rescroll on month change to today
+
+    // Pinch Zoom Handlers
+    const handleTouchStart = (e) => {
+        if (e.touches.length === 2) {
+            const dist = getDistance(e.touches[0], e.touches[1]);
+            touchStartDistRef.current = dist;
+            startScaleRef.current = scale;
+        }
+    };
+
+    const handleTouchMove = (e) => {
+        if (e.touches.length === 2 && touchStartDistRef.current !== null) {
+            e.preventDefault(); // Prevent native zoom
+            const dist = getDistance(e.touches[0], e.touches[1]);
+            const scaleFactor = dist / touchStartDistRef.current;
+            // Clamp scale between 0.5 and 1.5
+            const newScale = Math.min(Math.max(startScaleRef.current * scaleFactor, 0.5), 1.5);
+            setScale(newScale);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        touchStartDistRef.current = null;
+    };
+
+    // Helper for distance
+    const getDistance = (touch1, touch2) => {
+        return Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+    };
+
+    // Trackpad Zoom (Ctrl + Wheel) optional support
+    const handleWheel = (e) => {
+        if (e.ctrlKey) {
+            e.preventDefault();
+            const delta = -e.deltaY * 0.01;
+            setScale(prev => Math.min(Math.max(prev + delta, 0.5), 1.5));
+        }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -208,6 +248,7 @@ const StaffAttendance = ({ onBack }) => {
         }
         if (scrollContainerRef.current) {
             const dayIndex = getDate(today) - 1;
+            // Calculate exact position for day start
             const scrollLeft = dayIndex * DAY_WIDTH;
             scrollContainerRef.current.scrollTo({ left: scrollLeft, behavior: 'smooth' });
         }
@@ -255,7 +296,7 @@ const StaffAttendance = ({ onBack }) => {
             if (vac.type === 'full') {
                 bg = '#c6f6d5';
                 color = '#22543d';
-                content = vac.reason ? `월차` : '월차'; // Truncate detail for zoom
+                content = vac.reason ? `월차` : '월차';
             } else if (vac.type === 'half') {
                 const isAm = (vac.periods || []).includes(1);
                 if (isAm && period <= 4) {
@@ -333,42 +374,18 @@ const StaffAttendance = ({ onBack }) => {
                             <ChevronRight size={20} color="#4a5568" />
                         </button>
                     </div>
-
-                    {/* Zoom Controls */}
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                        <button
-                            onClick={() => setScale(1.0)}
-                            style={{
-                                padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e0',
-                                background: scale === 1.0 ? '#edf2f7' : 'white',
-                                fontSize: '0.75rem', fontWeight: 'bold', color: '#4a5568', cursor: 'pointer'
-                            }}
-                        >
-                            기본
-                        </button>
-                        <button
-                            onClick={() => setScale(0.6)}
-                            style={{
-                                padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e0',
-                                background: scale === 0.6 ? '#edf2f7' : 'white',
-                                fontSize: '0.75rem', fontWeight: 'bold', color: '#4a5568', cursor: 'pointer'
-                            }}
-                        >
-                            축소
-                        </button>
-                    </div>
                 </div>
 
-                {/* Right Group (Stacked Buttons) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+                {/* Right Group (Stacked Buttons) - Uniform Width */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', width: '200px' }}>
                     {/* Memo Button */}
                     <button
                         onClick={() => setShowMemoModal(true)}
                         style={{
                             background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
                             padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
-                            display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer',
-                            height: '32px'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                            height: '32px', width: '100%'
                         }}
                     >
                         오늘 출석 참고사항
@@ -389,8 +406,8 @@ const StaffAttendance = ({ onBack }) => {
                         style={{
                             background: 'white', border: '1px solid #cbd5e0', borderRadius: '16px',
                             padding: '6px 12px', fontSize: '0.85rem', color: '#4a5568', fontWeight: 'bold',
-                            display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px', width: '100%'
                         }}
                     >
                         <CalendarIcon size={16} />
@@ -399,13 +416,18 @@ const StaffAttendance = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Main Table Area */}
+            {/* Main Table Area (Gesture Pad) */}
             <div
                 ref={scrollContainerRef}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onWheel={handleWheel} // Trackpad zoom
                 style={{
                     flex: 1,
                     overflow: 'auto',
-                    position: 'relative'
+                    position: 'relative',
+                    touchAction: 'pan-x pan-y' // Allow scrolling, but pinch works via JS interception if needed or browser default
                 }}
             >
                 {/* 1. Sticky Header Group */}
@@ -513,7 +535,7 @@ const StaffAttendance = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Memo Modal (Unchanged generally, but uses today as default) */}
+            {/* Memo Modal (Unchanged) */}
             {showMemoModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
