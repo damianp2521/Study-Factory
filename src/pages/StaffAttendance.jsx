@@ -7,7 +7,10 @@ import { ko } from 'date-fns/locale';
 const StaffAttendance = ({ onBack }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [branch, setBranch] = useState('망미점');
-    const [users, setUsers] = useState([]);
+
+    // Derived state for display
+    const [displayRows, setDisplayRows] = useState([]);
+
     const [attendanceData, setAttendanceData] = useState({});
     const [vacationData, setVacationData] = useState({});
     const [loading, setLoading] = useState(false);
@@ -81,12 +84,45 @@ const StaffAttendance = ({ onBack }) => {
                 .eq('date', selectedDate)
                 .order('created_at', { ascending: true });
 
-            // Ignore table not found error initially as user needs to run migration
             if (memoError) {
                 console.log('Memo fetch error (table might not exist yet):', memoError);
             }
 
-            setUsers(userData || []);
+            // Process Users into 102 rows + Unassigned
+            const MAX_SEATS = 102;
+            const fullRows = [];
+            const userMap = {};
+            const unassignedUsers = [];
+
+            (userData || []).forEach(u => {
+                if (u.seat_number) {
+                    userMap[u.seat_number] = u;
+                } else {
+                    unassignedUsers.push(u);
+                }
+            });
+
+            for (let i = 1; i <= MAX_SEATS; i++) {
+                if (userMap[i]) {
+                    fullRows.push(userMap[i]);
+                } else {
+                    // Stub for Empty Seat
+                    fullRows.push({
+                        id: `empty_${i}`,
+                        seat_number: i,
+                        name: '공석',
+                        isEmpty: true
+                    });
+                }
+            }
+
+            // Append Unassigned users at the end (or should they be separate? User said "below unassigned people...")
+            // Usually unassigned come after seated.
+            unassignedUsers.forEach(u => {
+                fullRows.push({ ...u, isUnassigned: true, seat_number: null });
+            });
+
+            setDisplayRows(fullRows);
 
             const attMap = {};
             (logData || []).forEach(l => {
@@ -111,7 +147,10 @@ const StaffAttendance = ({ onBack }) => {
         }
     };
 
-    const toggleAttendance = async (userId, period) => {
+    const toggleAttendance = async (user, period) => {
+        if (user.isEmpty) return; // Disable toggle for empty seats
+
+        const userId = user.id;
         const isAttended = attendanceData[userId]?.has(period);
 
         setAttendanceData(prev => {
@@ -221,6 +260,7 @@ const StaffAttendance = ({ onBack }) => {
     };
 
     const handleNameClick = (seatNum) => {
+        if (!seatNum) return; // Prevent highlighting unassigned/null seats if needed, or allow?
         if (highlightedSeat === seatNum) {
             setHighlightedSeat(null);
         } else {
@@ -251,12 +291,17 @@ const StaffAttendance = ({ onBack }) => {
     const renderCell = (user, period, isRowHighlighted, seatBgColor) => {
         const isAttended = attendanceData[user.id]?.has(period);
         const vac = vacationData[user.id];
+        const isDeactivated = user.isEmpty || user.isUnassigned;
 
         let bg = 'white';
         let content = null;
         let color = '#2d3748';
 
-        if (isRowHighlighted) {
+        // Deactivated Style Overrides
+        if (isDeactivated) {
+            bg = '#f7fafc'; // Matches "whole row gray" per user request (User: "전체 다 회색 칠해지도록 해줘")
+            color = '#cbd5e0'; // Faded text
+        } else if (isRowHighlighted) {
             bg = '#ebf8ff';
         }
 
@@ -284,16 +329,21 @@ const StaffAttendance = ({ onBack }) => {
             color = '#22543d';
             content = 'O';
         } else {
-            if (bg === 'white' || bg === '#ebf8ff') {
-                bg = '#fed7d7';
-                color = '#c53030';
+            if (!content && (bg === 'white' || bg === '#ebf8ff' || bg === '#f7fafc')) {
+                // If deactivated, we still show 'X' but visually faded?
+                // User said: "비활성화 된듯이 글씨체도 연해지고 전체 다 회색 칠해지도록"
+                // So yes, "X" is fine but in the faded color.
+                if (!isDeactivated) {
+                    bg = '#fed7d7';
+                    color = '#c53030';
+                }
                 content = 'X';
             }
         }
 
         return (
             <div
-                onClick={() => toggleAttendance(user.id, period)}
+                onClick={() => !isDeactivated && toggleAttendance(user, period)}
                 style={{
                     flex: 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -306,7 +356,7 @@ const StaffAttendance = ({ onBack }) => {
                     whiteSpace: 'pre-line',
                     textAlign: 'center',
                     lineHeight: 1.1,
-                    cursor: 'pointer',
+                    cursor: isDeactivated ? 'default' : 'pointer',
                     userSelect: 'none'
                 }}
             >
@@ -422,10 +472,23 @@ const StaffAttendance = ({ onBack }) => {
                 opacity: fade ? 0.5 : 1,
                 transform: fade ? 'scale(0.99)' : 'scale(1)'
             }}>
-                {users.map(user => {
-                    const isRowHighlighted = highlightedSeat === user.seat_number;
+                {displayRows.map(user => {
+                    const isDeactivated = user.isEmpty || user.isUnassigned;
+                    const isRowHighlighted = highlightedSeat === user.seat_number && !isDeactivated;
                     const { borderBottom, bgColor: seatBgColor } = getSeatStyle(user.seat_number);
-                    const finalSeatNameBg = isRowHighlighted ? '#ebf8ff' : seatBgColor;
+
+                    // Style logic for Name/Seat columns
+                    let finalSeatNameBg = seatBgColor;
+                    let fontColor = '#2d3748';
+                    let fontWeight = 'bold';
+
+                    if (isRowHighlighted) {
+                        finalSeatNameBg = '#ebf8ff';
+                    } else if (isDeactivated) {
+                        finalSeatNameBg = '#f7fafc'; // Matches deactivated cell background
+                        fontColor = '#cbd5e0';
+                        fontWeight = 'normal';
+                    }
 
                     return (
                         <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: borderBottom, position: 'relative' }}>
@@ -441,18 +504,18 @@ const StaffAttendance = ({ onBack }) => {
                             <div style={{
                                 width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7',
                                 background: finalSeatNameBg,
-                                fontSize: '0.8rem', color: '#a0aec0'
+                                fontSize: '0.8rem', color: isDeactivated ? '#cbd5e0' : '#a0aec0'
                             }}>
-                                {user.seat_number || '-'}
+                                {user.seat_number || (isDeactivated ? '-' : '-')}
                             </div>
 
                             <div
                                 onClick={() => handleNameClick(user.seat_number)}
                                 style={{
                                     width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7',
-                                    fontWeight: 'bold', fontSize: '0.9rem', color: '#2d3748',
+                                    fontWeight: fontWeight, fontSize: '0.9rem', color: fontColor,
                                     background: finalSeatNameBg,
-                                    cursor: 'pointer'
+                                    cursor: isDeactivated ? 'default' : 'pointer'
                                 }}
                             >
                                 {user.name}
