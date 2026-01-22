@@ -85,12 +85,17 @@ const StaffGridMenu = () => {
     };
 
     return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start', height: '100%' }}>
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+            gap: '15px',
+            alignContent: 'start',
+            height: '100%'
+        }}>
             {/* 1. Employee Leave Status */}
             <button
                 onClick={() => handleMenuClick(1)}
                 style={{
-                    width: 'calc(33.33% - 10px)',
                     aspectRatio: '1',
                     borderRadius: '16px',
                     border: 'none',
@@ -111,7 +116,6 @@ const StaffGridMenu = () => {
             <button
                 onClick={() => handleMenuClick(2)}
                 style={{
-                    width: 'calc(33.33% - 10px)',
                     aspectRatio: '1',
                     borderRadius: '16px',
                     border: 'none',
@@ -132,7 +136,6 @@ const StaffGridMenu = () => {
             <button
                 onClick={() => handleMenuClick(3)}
                 style={{
-                    width: 'calc(33.33% - 10px)',
                     aspectRatio: '1',
                     borderRadius: '16px',
                     border: 'none',
@@ -153,7 +156,6 @@ const StaffGridMenu = () => {
             <button
                 onClick={() => handleMenuClick(4)}
                 style={{
-                    width: 'calc(33.33% - 10px)',
                     aspectRatio: '1',
                     borderRadius: '16px',
                     border: 'none',
@@ -174,7 +176,6 @@ const StaffGridMenu = () => {
             <button
                 onClick={() => handleMenuClick(5)}
                 style={{
-                    width: 'calc(33.33% - 10px)',
                     aspectRatio: '1',
                     borderRadius: '16px',
                     border: 'none',
@@ -195,7 +196,6 @@ const StaffGridMenu = () => {
             <button
                 onClick={() => handleMenuClick(6)}
                 style={{
-                    width: 'calc(33.33% - 10px)',
                     aspectRatio: '1',
                     borderRadius: '16px',
                     border: 'none',
@@ -216,7 +216,6 @@ const StaffGridMenu = () => {
             <button
                 onClick={() => handleMenuClick(7)}
                 style={{
-                    width: 'calc(33.33% - 10px)',
                     aspectRatio: '1',
                     borderRadius: '16px',
                     border: 'none',
@@ -239,7 +238,6 @@ const StaffGridMenu = () => {
                     key={num}
                     onClick={() => handleMenuClick(num)}
                     style={{
-                        width: 'calc(33.33% - 10px)',
                         aspectRatio: '1',
                         borderRadius: '16px',
                         border: 'none',

@@ -63,12 +63,16 @@ const AdminQuickMenu = () => {
                     </button>
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>사원 관리</h2>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                    gap: '15px',
+                    alignContent: 'start'
+                }}>
                     {/* 1-1. Register */}
                     <button
                         onClick={() => navigateTo('register')}
                         style={{
-                            width: 'calc(33.33% - 10px)',
                             aspectRatio: '1',
                             borderRadius: '16px',
                             border: 'none',
@@ -94,7 +98,6 @@ const AdminQuickMenu = () => {
                     <button
                         onClick={() => navigateTo('status')}
                         style={{
-                            width: 'calc(33.33% - 10px)',
                             aspectRatio: '1',
                             borderRadius: '16px',
                             border: 'none',
@@ -145,12 +148,16 @@ const AdminQuickMenu = () => {
                     </button>
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>출석·휴무 관리</h2>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                    gap: '15px',
+                    alignContent: 'start'
+                }}>
                     {/* 2-1. Vacation History */}
                     <button
                         onClick={() => navigateTo('vacation_history')}
                         style={{
-                            width: 'calc(33.33% - 10px)',
                             aspectRatio: '1',
                             borderRadius: '16px',
                             border: 'none',
@@ -176,7 +183,6 @@ const AdminQuickMenu = () => {
                     <button
                         onClick={() => navigateTo('other_leave_request')}
                         style={{
-                            width: 'calc(33.33% - 10px)',
                             aspectRatio: '1',
                             borderRadius: '16px',
                             border: 'none',
@@ -202,7 +208,6 @@ const AdminQuickMenu = () => {
                     <button
                         onClick={() => navigateTo('attendance_status')}
                         style={{
-                            width: 'calc(33.33% - 10px)',
                             aspectRatio: '1',
                             borderRadius: '16px',
                             border: 'none',
@@ -253,12 +258,16 @@ const AdminQuickMenu = () => {
                     </button>
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>작업 관리</h2>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                    gap: '15px',
+                    alignContent: 'start'
+                }}>
                     {/* 3-1. Work Report */}
                     <button
                         onClick={() => navigateTo('work_report')}
                         style={{
-                            width: 'calc(33.33% - 10px)',
                             aspectRatio: '1',
                             borderRadius: '16px',
                             border: 'none',
@@ -299,13 +308,18 @@ const AdminQuickMenu = () => {
 
     // Default 'grid' view
     return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignContent: 'flex-start', height: '100%' }}>
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+            gap: '15px',
+            alignContent: 'start',
+            height: '100%'
+        }}>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                 <button
                     key={num}
                     onClick={() => handleMenuClick(num)}
                     style={{
-                        width: 'calc(33.33% - 10px)', // 3 per row
                         aspectRatio: '1',
                         borderRadius: '16px',
                         border: 'none',
