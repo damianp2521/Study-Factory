@@ -136,13 +136,21 @@ const UserMemoBlock = ({ user, memos, onAdd, onDelete, scale, width }) => {
                     type="text"
                     value={text}
                     onChange={e => setText(e.target.value)}
-                    onClick={e => e.stopPropagation()} // Prevent row toggle
+                    onClick={e => e.stopPropagation()}
+                    onMouseDown={e => e.stopPropagation()}
+                    onTouchStart={e => e.stopPropagation()}
                     placeholder="참고사항 입력"
                     style={{
                         flex: 1, border: '1px solid #cbd5e0', borderRadius: '6px',
-                        padding: '4px 8px', fontSize: `${0.75 * scale}rem`, outline: 'none'
+                        padding: '4px 8px', fontSize: `${0.75 * scale}rem`, outline: 'none',
+                        userSelect: 'text', cursor: 'text'
                     }}
-                    onKeyPress={e => e.key === 'Enter' && handleAdd()}
+                    onKeyDown={e => {
+                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                            e.stopPropagation();
+                            handleAdd();
+                        }
+                    }}
                 />
                 <button
                     onClick={(e) => { e.stopPropagation(); handleAdd(); }}
