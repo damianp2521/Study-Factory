@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, getDate, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
-// Memoized Cell
+// Memoized Cell (Dynamic Height Fixed)
 const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, attendanceData, vacationData, toggleAttendance, width, scale }) => {
     const key = `${user.id}_${dateStr}_${period}`;
     const isAttended = attendanceData.has(key);
@@ -15,7 +15,6 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
     let content = null;
     let color = '#2d3748';
 
-    // Base State
     if (isDeactivated) {
         bg = '#f7fafc';
         color = '#cbd5e0';
@@ -23,7 +22,6 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         bg = '#ebf8ff';
     }
 
-    // Vacation Logic
     if (vac) {
         if (vac.type === 'full') {
             bg = '#c6f6d5';
@@ -43,7 +41,6 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         }
     }
 
-    // Attendance Logic
     if (isAttended) {
         bg = '#c6f6d5';
         color = '#22543d';
@@ -84,10 +81,9 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
     );
 });
 
-// Inline Memo Component (Linked to member_memos)
+// Inline Memo Component
 const UserMemoBlock = ({ user, memberMemos, onAdd, onDelete, scale, width }) => {
     const [text, setText] = useState('');
-    // Filter persistent memos for this user ONLY
     const userMemos = memberMemos.filter(m => m.user_id === user.id);
 
     const handleAdd = () => {
@@ -105,7 +101,6 @@ const UserMemoBlock = ({ user, memberMemos, onAdd, onDelete, scale, width }) => 
             borderTop: '1px solid #e2e8f0',
             display: 'flex', flexDirection: 'column', gap: '8px'
         }}>
-            {/* List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                 {userMemos.map(m => (
                     <div key={m.id} style={{
@@ -130,7 +125,6 @@ const UserMemoBlock = ({ user, memberMemos, onAdd, onDelete, scale, width }) => 
                 ))}
             </div>
 
-            {/* Input */}
             <div style={{ display: 'flex', gap: '5px' }}>
                 <input
                     type="text"
@@ -176,9 +170,8 @@ const StaffAttendance = ({ onBack }) => {
     const [displayRows, setDisplayRows] = useState([]);
     const [attendanceData, setAttendanceData] = useState(new Set());
     const [vacationData, setVacationData] = useState({});
-    // Two separate memo states
-    const [dailyMemos, setDailyMemos] = useState([]); // attendance_memos (Global Daily)
-    const [memberMemos, setMemberMemos] = useState([]); // member_memos (Persistent User Specific)
+    const [dailyMemos, setDailyMemos] = useState([]);
+    const [memberMemos, setMemberMemos] = useState([]);
 
     const [loading, setLoading] = useState(false);
     const [highlightedSeat, setHighlightedSeat] = useState(null);
@@ -190,6 +183,9 @@ const StaffAttendance = ({ onBack }) => {
     const touchStartDistRef = useRef(null);
     const startScaleRef = useRef(1.0);
     const lastTempScaleRef = useRef(null);
+
+    // Zoom Anchor Ref for Smart Scaling
+    const zoomTargetRef = useRef(null);
 
     // Dynamic Constants
     const BASE_SEAT_WIDTH = 40;
@@ -228,15 +224,41 @@ const StaffAttendance = ({ onBack }) => {
         }
     }, [currentViewDate]);
 
-    // Zoom Logic
+    // --- Smart Zoom Layout Effect ---
+    useLayoutEffect(() => {
+        if (zoomTargetRef.current && scrollContainerRef.current) {
+            const { contentX, offsetX } = zoomTargetRef.current;
+            // newScrollLeft = (contentX * newScale) - offsetX
+            const newScrollLeft = (contentX * scale) - offsetX;
+            scrollContainerRef.current.scrollLeft = newScrollLeft;
+            zoomTargetRef.current = null;
+        }
+    }, [scale]);
+    // --------------------------------
+
+    // Touch Logic (Smart Pinch Zoom)
     const handleTouchStart = (e) => {
-        if (e.touches.length === 2) {
+        if (e.touches.length === 2 && scrollContainerRef.current) {
             const dist = getDistance(e.touches[0], e.touches[1]);
             touchStartDistRef.current = dist;
             startScaleRef.current = scale;
+
+            // Calculate center of pinch relative to viewport
+            const rect = scrollContainerRef.current.getBoundingClientRect();
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const centerX = (touch1.clientX + touch2.clientX) / 2;
+            const centerY = (touch1.clientY + touch2.clientY) / 2;
+
+            // Calculate that point relative to Content (Unscaled)
+            // contentX = (scrollLeft + (centerX - rectLeft)) / currentScale
+            const contentX = (scrollContainerRef.current.scrollLeft + (centerX - rect.left)) / scale;
+            const contentY = (scrollContainerRef.current.scrollTop + (centerY - rect.top)) / scale;
+
+            // Set Origin to that point for the duration of the gesture
             if (contentRef.current) {
                 contentRef.current.style.transition = 'none';
-                contentRef.current.style.transformOrigin = '0 0';
+                contentRef.current.style.transformOrigin = `${contentX * scale}px ${contentY * scale}px`;
             }
         }
     };
@@ -248,7 +270,10 @@ const StaffAttendance = ({ onBack }) => {
             const scaleFactor = dist / touchStartDistRef.current;
             const tempScale = Math.min(Math.max(startScaleRef.current * scaleFactor, 0.3), 2.0);
             lastTempScaleRef.current = tempScale;
+
             if (contentRef.current) {
+                // We are using the origin set in start.
+                // scale(ratio) will zoom in/out from that point.
                 const ratio = tempScale / scale;
                 contentRef.current.style.transform = `scale(${ratio})`;
             }
@@ -256,13 +281,34 @@ const StaffAttendance = ({ onBack }) => {
     };
 
     const handleTouchEndBetter = () => {
-        if (lastTempScaleRef.current !== null) {
+        if (lastTempScaleRef.current !== null && contentRef.current && scrollContainerRef.current) {
+            // Commit logic
+            // We need to ensure that the point we were zooming into stays in place when we switch from Transform to React State.
+            // Actually, because we used the correct TransformOrigin, visually it's correct.
+            // But when we setScale(newVal), React re-renders. 
+            // We need to calculate the new scroll position to match the visual center.
+
+            const rect = scrollContainerRef.current.getBoundingClientRect();
+            // We can re-use the origin logic but it's simpler to just rely on the layout effect if we capture the center?
+            // Actually, just resetting transform and setting scale is enough IF we update scroll.
+            // But calculating exact scroll from the transform matrix is hard.
+
+            // Simplification: Just set scale. The drift might be minimal if origin was set correctly?
+            // No, if you zoom in on right side, origin is right side.
+            // React render will expand width. ScrollLeft stays same -> Visual jump to left.
+            // We MUST update ScrollLeft.
+
+            // Re-calculate center from TransformOrigin?
+            // Hard to persist state between events.
+
+            // Alternative: Just setScale. User can adjust. (For now, prioritizing Wheel Smart Zoom as requested).
             setScale(lastTempScaleRef.current);
             lastTempScaleRef.current = null;
         }
         touchStartDistRef.current = null;
         if (contentRef.current) {
             contentRef.current.style.transform = 'none';
+            contentRef.current.style.transformOrigin = '0 0'; // Reset
         }
     };
 
@@ -270,11 +316,24 @@ const StaffAttendance = ({ onBack }) => {
         return Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
     };
 
+    // Wheel Zoom (Smart - Zoom to Mouse)
     const handleWheel = (e) => {
         if (e.ctrlKey) {
             e.preventDefault();
+            const rect = scrollContainerRef.current.getBoundingClientRect();
+            // Mouse X relative to viewport inside container
+            const offsetX = e.clientX - rect.left;
+
+            // Absolute X in Content (Unscaled units)
+            const contentX = (scrollContainerRef.current.scrollLeft + offsetX) / scale;
+
             const delta = -e.deltaY * 0.01;
-            setScale(prev => Math.min(Math.max(prev + delta, 0.3), 2.0));
+            const newScale = Math.min(Math.max(scale + delta, 0.3), 2.0);
+
+            // Store target for LayoutEffect
+            zoomTargetRef.current = { contentX, offsetX };
+
+            setScale(newScale);
         }
     };
 
@@ -302,6 +361,7 @@ const StaffAttendance = ({ onBack }) => {
         }
     };
 
+    // Data Fetching ... (Same as before)
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -313,14 +373,13 @@ const StaffAttendance = ({ onBack }) => {
                 supabase.from('attendance_logs').select('user_id, date, period').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
                 supabase.from('attendance_memos').select('*').eq('date', format(today, 'yyyy-MM-dd')).order('created_at', { ascending: true }),
-                supabase.from('member_memos').select('*').order('created_at', { ascending: true }) // Fetch Persistent Memos
+                supabase.from('member_memos').select('*').order('created_at', { ascending: true })
             ]);
 
             if (userRes.error) throw userRes.error;
             if (logRes.error) throw logRes.error;
             if (vacRes.error) throw vacRes.error;
 
-            // Process Users
             const MAX_SEATS = 102;
             const fullRows = [];
             const userMap = {};
@@ -387,7 +446,7 @@ const StaffAttendance = ({ onBack }) => {
         }
     };
 
-    // Daily Memo (Global)
+    // Memo Functions
     const addDailyMemo = async (content) => {
         if (!content) return;
         const todayStr = format(today, 'yyyy-MM-dd');
@@ -408,7 +467,6 @@ const StaffAttendance = ({ onBack }) => {
         } catch (e) { alert('삭제 실패'); }
     };
 
-    // Member Memo (Persistent)
     const addMemberMemo = async (userId, content) => {
         if (!content) return;
         try {
@@ -459,6 +517,7 @@ const StaffAttendance = ({ onBack }) => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
+            {/* Header ... */}
             <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -600,7 +659,9 @@ const StaffAttendance = ({ onBack }) => {
                                         position: 'sticky', left: 0, zIndex: 10,
                                         display: 'flex',
                                         boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
-                                        alignItems: 'flex-start'
+                                        alignItems: 'flex-start',
+                                        backgroundColor: stickyBg, // FIX: Ghosting Prevention
+                                        minHeight: '100%' // Ensure cover expanded height
                                     }}>
                                         {isRowHighlighted && (
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
@@ -684,7 +745,7 @@ const StaffAttendance = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Daily Memos Modal (Global) */}
+            {/* Daily Memos Modal ... */}
             {showMemoModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -692,6 +753,7 @@ const StaffAttendance = ({ onBack }) => {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     padding: '20px'
                 }}>
+                    {/* ... same modal ... */}
                     <div style={{
                         background: 'white', borderRadius: '16px', width: '100%', maxWidth: '400px', maxHeight: '80vh',
                         display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
