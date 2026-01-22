@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, RotateCcw, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, getDate, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
-// Memoized Cell to prevent unnecessary re-renders (Critical for performance)
-const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, attendanceData, vacationData, toggleAttendance, width, height, scale }) => {
+// Memoized Cell
+const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, attendanceData, vacationData, toggleAttendance, width, scale }) => {
     const key = `${user.id}_${dateStr}_${period}`;
     const isAttended = attendanceData.has(key);
     const vac = vacationData[`${user.id}_${dateStr}`];
@@ -15,6 +15,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
     let content = null;
     let color = '#2d3748';
 
+    // Base State
     if (isDeactivated) {
         bg = '#f7fafc';
         color = '#cbd5e0';
@@ -22,6 +23,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         bg = '#ebf8ff';
     }
 
+    // Vacation Logic
     if (vac) {
         if (vac.type === 'full') {
             bg = '#c6f6d5';
@@ -41,6 +43,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         }
     }
 
+    // Attendance Logic (Overrides if needed, or overlay?) Usually attendance O overwrites empty.
     if (isAttended) {
         bg = '#c6f6d5';
         color = '#22543d';
@@ -59,7 +62,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         <div
             onClick={() => !isDeactivated && toggleAttendance(user, dateStr, period)}
             style={{
-                width: width, height: '100%',
+                width: width, flexShrink: 0, height: '30px', // Fixed height for the cell part (top)
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: bg, color, fontSize: `${0.8 * scale}rem`, fontWeight: 'bold',
                 borderRight: '1px solid #e2e8f0',
@@ -72,45 +75,117 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         </div>
     );
 }, (prev, next) => {
-    // Custom comparison for performance
     return (
         prev.scale === next.scale &&
         prev.width === next.width &&
         prev.isRowHighlighted === next.isRowHighlighted &&
-        prev.attendanceData === next.attendanceData && // Reference check (Set is immutable-ish in parent update)
-        prev.vacationData === next.vacationData // Reference check
+        prev.attendanceData === next.attendanceData &&
+        prev.vacationData === next.vacationData
     );
 });
+
+// Inline Memo Component
+const UserMemoBlock = ({ user, memos, onAdd, onDelete, scale, width }) => {
+    const [text, setText] = useState('');
+    // Filter memos for this user (simple includes check)
+    const userMemos = memos.filter(m => m.content.includes(user.name));
+
+    const handleAdd = () => {
+        if (!text.trim()) return;
+        onAdd(user.name + ' ' + text.trim());
+        setText('');
+    };
+
+    return (
+        <div style={{
+            width: width,
+            padding: '10px',
+            background: 'white',
+            borderRight: '1px solid #e2e8f0',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex', flexDirection: 'column', gap: '8px'
+        }}>
+            {/* List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {userMemos.map(m => (
+                    <div key={m.id} style={{
+                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                        padding: '6px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}>
+                        <span style={{ fontSize: `${0.75 * scale}rem`, color: '#2d3748', flex: 1, wordBreak: 'break-all' }}>
+                            {m.content}
+                        </span>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDelete(m.id); }}
+                            style={{
+                                background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '4px',
+                                padding: '2px 6px', fontSize: `${0.7 * scale}rem`, cursor: 'pointer', marginLeft: '5px',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            삭제
+                        </button>
+                    </div>
+                ))}
+            </div>
+
+            {/* Input */}
+            <div style={{ display: 'flex', gap: '5px' }}>
+                <input
+                    type="text"
+                    value={text}
+                    onChange={e => setText(e.target.value)}
+                    onClick={e => e.stopPropagation()} // Prevent row toggle
+                    placeholder="참고사항 입력"
+                    style={{
+                        flex: 1, border: '1px solid #cbd5e0', borderRadius: '6px',
+                        padding: '4px 8px', fontSize: `${0.75 * scale}rem`, outline: 'none'
+                    }}
+                    onKeyPress={e => e.key === 'Enter' && handleAdd()}
+                />
+                <button
+                    onClick={(e) => { e.stopPropagation(); handleAdd(); }}
+                    style={{
+                        background: '#3182ce', color: 'white', border: 'none', borderRadius: '6px',
+                        padding: '4px 10px', fontSize: `${0.75 * scale}rem`, fontWeight: 'bold', cursor: 'pointer',
+                        whiteSpace: 'nowrap'
+                    }}
+                >
+                    등록
+                </button>
+            </div>
+        </div>
+    );
+};
 
 const StaffAttendance = ({ onBack }) => {
     const [today] = useState(new Date());
     const [currentViewDate, setCurrentViewDate] = useState(new Date());
-    const [scale, setScale] = useState(1.0); // Source of Truth Scale
+    const [scale, setScale] = useState(1.0);
     const [branch, setBranch] = useState('망미점');
 
-    // Data
     const [displayRows, setDisplayRows] = useState([]);
     const [attendanceData, setAttendanceData] = useState(new Set());
     const [vacationData, setVacationData] = useState({});
     const [memos, setMemos] = useState([]);
 
-    // UI State
     const [loading, setLoading] = useState(false);
     const [highlightedSeat, setHighlightedSeat] = useState(null);
     const [showMemoModal, setShowMemoModal] = useState(false);
     const [newMemo, setNewMemo] = useState('');
 
-    // Refs
     const scrollContainerRef = useRef(null);
-    const contentRef = useRef(null); // Inner content wrapper for transform
+    const contentRef = useRef(null);
     const touchStartDistRef = useRef(null);
     const startScaleRef = useRef(1.0);
+    const lastTempScaleRef = useRef(null);
 
     // Dynamic Constants
     const BASE_SEAT_WIDTH = 40;
     const BASE_NAME_WIDTH = 60;
     const BASE_PERIOD_WIDTH = 50;
-    const BASE_ROW_HEIGHT = 30;
+    const BASE_ROW_HEIGHT = 30; // Original single height
     const BASE_HEADER_DATE_HEIGHT = 35;
     const BASE_HEADER_PERIOD_HEIGHT = 30;
 
@@ -130,6 +205,11 @@ const StaffAttendance = ({ onBack }) => {
         end: endOfMonth(currentViewDate)
     }), [currentViewDate]);
 
+    // Check if Today is in the current view
+    const isTodayInView = useMemo(() => {
+        return isSameDay(startOfMonth(today), startOfMonth(currentViewDate));
+    }, [today, currentViewDate]);
+
     useEffect(() => {
         fetchData();
         if (scrollContainerRef.current) {
@@ -139,63 +219,22 @@ const StaffAttendance = ({ onBack }) => {
 
     useLayoutEffect(() => {
         if (isSameDay(startOfMonth(today), startOfMonth(currentViewDate))) {
-            fitAndScrollToToday(); // Initial load calls fit logic
+            fitAndScrollToToday();
         }
     }, [currentViewDate]);
 
-    // Pinch Zoom Handlers - Transform Based
+    // --- Pinch Zoom Logic (Same as before) ---
     const handleTouchStart = (e) => {
         if (e.touches.length === 2) {
             const dist = getDistance(e.touches[0], e.touches[1]);
             touchStartDistRef.current = dist;
             startScaleRef.current = scale;
-            // Disable transition during drag
             if (contentRef.current) {
                 contentRef.current.style.transition = 'none';
                 contentRef.current.style.transformOrigin = '0 0';
             }
         }
     };
-
-    const handleTouchMove = (e) => {
-        if (e.touches.length === 2 && touchStartDistRef.current !== null) {
-            e.preventDefault();
-            const dist = getDistance(e.touches[0], e.touches[1]);
-            const scaleFactor = dist / touchStartDistRef.current;
-            const tempScale = Math.min(Math.max(startScaleRef.current * scaleFactor, 0.3), 2.0); // Expanded range 0.3 - 2.0
-
-            // Apply visual transform ONLY (No React Render)
-            // Note: Since we are transforming the container, we simulate the zoom. 
-            // However, sticky headers relying on layout might look weird.
-            // But this is the only way to get 60fps on 20k elements.
-            // We use 'scale(ratio)' where ratio = tempScale / currentReactScale
-            if (contentRef.current) {
-                const ratio = tempScale / scale; // relative to current DOM size
-                contentRef.current.style.transform = `scale(${ratio})`;
-                // We also need to scale width to prevent clipping if zooming out? 
-                // Transforming scale visually shrinks/grows it.
-            }
-        }
-    };
-
-    const handleTouchEnd = (e) => {
-        if (touchStartDistRef.current !== null) {
-            // Need to retrieve the final scale from the gesture
-            // Wait, touch list might be empty now. calculate from last move?
-            // Actually re-calculating from the saved startScale and last known distance is hard without persisting lastDist.
-            // Simpler: Just rely on the visual transform logic? No, we need to commit to React state.
-            // Let's reset transform and update React state.
-            // But we need the 'final' tempScale. 
-            // Ideally we tracked it in a separate ref during move.
-        }
-        touchStartDistRef.current = null;
-        if (contentRef.current) {
-            contentRef.current.style.transform = 'none';
-        }
-    };
-
-    // Better Logic: We need to capture the *last* scale during move to commit it.
-    const lastTempScaleRef = useRef(null);
 
     const handleTouchMoveBetter = (e) => {
         if (e.touches.length === 2 && touchStartDistRef.current !== null) {
@@ -207,13 +246,8 @@ const StaffAttendance = ({ onBack }) => {
             lastTempScaleRef.current = tempScale;
 
             if (contentRef.current) {
-                // We are scaling the ALREADY RENDERED content.
-                // RENDERED is at 'scale'. We want it to look like 'tempScale'.
-                // ratio = tempScale / scale.
                 const ratio = tempScale / scale;
                 contentRef.current.style.transform = `scale(${ratio})`;
-                contentRef.current.style.width = `${(1 / ratio) * 100}%`; // Compensate width to keep flow? No.
-                // Transform scale affects layout size visually.
             }
         }
     };
@@ -240,40 +274,20 @@ const StaffAttendance = ({ onBack }) => {
             setScale(prev => Math.min(Math.max(prev + delta, 0.3), 2.0));
         }
     };
+    // ----------------------------------------
 
-    // Fit to Today Logic
     const fitAndScrollToToday = () => {
-        // 1. Switch month if needed
         if (!isSameDay(startOfMonth(today), startOfMonth(currentViewDate))) {
             setCurrentViewDate(today);
-            // Effect will trigger this again, but we return to let render happen
             return;
         }
-
-        // 2. Calculate Scale
         if (scrollContainerRef.current) {
             const containerWidth = scrollContainerRef.current.clientWidth;
-            // Target: Fixed Cols (Left) + Today's 7 Periods (Right) = containerWidth
-            // Fixed Cols Base Width = 40 + 60 = 100
-            // Today's 7 Periods Base Width = 50 * 7 = 350
-            // formula: scale * 100 + scale * 350 = containerWidth
-            // scale * 450 = containerWidth -> scale = containerWidth / 450
-
-            const totalBaseWidth = BASE_SEAT_WIDTH + BASE_NAME_WIDTH + (BASE_PERIOD_WIDTH * 7); // 450
+            const totalBaseWidth = BASE_SEAT_WIDTH + BASE_NAME_WIDTH + (BASE_PERIOD_WIDTH * 7);
             let newScale = containerWidth / totalBaseWidth;
-
-            // Clamp scale
             newScale = Math.min(Math.max(newScale, 0.3), 2.0);
-
-            // Set Scale
             setScale(newScale);
 
-            // 3. Scroll to Today (After render? or calculate directly)
-            // We need to wait for render to apply new scale for scroll to be accurate?
-            // Actually we can calculate required scrollLeft immediately based on newScale
-            // ScrollLeft = DayIndex * (7 * PeriodWidth * newScale)
-
-            // We prefer to use a timeout or effect to scroll after state update propagates
             setTimeout(() => {
                 if (scrollContainerRef.current) {
                     const dayIndex = getDate(today) - 1;
@@ -292,42 +306,31 @@ const StaffAttendance = ({ onBack }) => {
             const startDate = format(startOfMonth(currentViewDate), 'yyyy-MM-dd');
             const endDate = format(endOfMonth(currentViewDate), 'yyyy-MM-dd');
 
-            const { data: userData, error: userError } = await supabase
-                .from('authorized_users')
-                .select('*')
-                .eq('branch', branch)
-                .order('seat_number', { ascending: true, nullsLast: true });
-            if (userError) throw userError;
+            // Fetch Memos for the entire month to render them in expanded view? 
+            // Or just today? User said "Today's Column". Let's fetch for the month just in case, or stick to today.
+            // Actually, for the "Today's Memo Button" we only need today.
+            // For the INLINE MEMO, we need to show existing memos for that user. Are those memo's date-specific? 
+            // The table `attendance_memos` has a `date`. If we are putting it under "Today", we probably mean "Memos for Today".
+            // Yes, user said "Today's Notes".
 
-            const { data: logData, error: logError } = await supabase
-                .from('attendance_logs')
-                .select('user_id, date, period')
-                .gte('date', startDate)
-                .lte('date', endDate);
-            if (logError) throw logError;
+            const [userRes, logRes, vacRes, memoRes] = await Promise.all([
+                supabase.from('authorized_users').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
+                supabase.from('attendance_logs').select('user_id, date, period').gte('date', startDate).lte('date', endDate),
+                supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
+                supabase.from('attendance_memos').select('*').eq('date', format(today, 'yyyy-MM-dd')).order('created_at', { ascending: true })
+            ]);
 
-            const { data: vacData, error: vacError } = await supabase
-                .from('vacation_requests')
-                .select('*')
-                .gte('date', startDate)
-                .lte('date', endDate);
-            if (vacError) throw vacError;
+            if (userRes.error) throw userRes.error;
+            if (logRes.error) throw logRes.error;
+            if (vacRes.error) throw vacRes.error;
 
-            const todayStr = format(today, 'yyyy-MM-dd');
-            const { data: memoData, error: memoError } = await supabase
-                .from('attendance_memos')
-                .select('*')
-                .eq('date', todayStr)
-                .order('created_at', { ascending: true });
-
-            if (memoError) console.log('Memo error', memoError);
-
+            // Process Users
             const MAX_SEATS = 102;
             const fullRows = [];
             const userMap = {};
             const unassignedUsers = [];
 
-            (userData || []).forEach(u => {
+            (userRes.data || []).forEach(u => {
                 if (u.seat_number) userMap[u.seat_number] = u;
                 else unassignedUsers.push(u);
             });
@@ -344,18 +347,18 @@ const StaffAttendance = ({ onBack }) => {
             setDisplayRows(fullRows);
 
             const attSet = new Set();
-            (logData || []).forEach(l => {
+            (logRes.data || []).forEach(l => {
                 attSet.add(`${l.user_id}_${l.date}_${l.period}`);
             });
             setAttendanceData(attSet);
 
             const vacMap = {};
-            (vacData || []).forEach(v => {
+            (vacRes.data || []).forEach(v => {
                 vacMap[`${v.user_id}_${v.date}`] = v;
             });
             setVacationData(vacMap);
 
-            setMemos(memoData || []);
+            setMemos(memoRes.data || []);
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -367,42 +370,36 @@ const StaffAttendance = ({ onBack }) => {
 
     const toggleAttendance = async (user, dateStr, period) => {
         if (user.isEmpty) return;
-
         const key = `${user.id}_${dateStr}_${period}`;
         const isAttended = attendanceData.has(key);
-
         setAttendanceData(prev => {
             const next = new Set(prev);
             if (isAttended) next.delete(key);
             else next.add(key);
             return next;
         });
-
         try {
             if (isAttended) {
-                await supabase.from('attendance_logs').delete()
-                    .eq('user_id', user.id).eq('date', dateStr).eq('period', period);
+                await supabase.from('attendance_logs').delete().eq('user_id', user.id).eq('date', dateStr).eq('period', period);
             } else {
-                await supabase.from('attendance_logs').insert({
-                    user_id: user.id, date: dateStr, period: period
-                });
+                await supabase.from('attendance_logs').insert({ user_id: user.id, date: dateStr, period: period });
             }
         } catch (error) {
-            console.error('Toggle Error:', error);
+            console.error(error);
             fetchData();
         }
     };
 
-    const addMemo = async () => {
-        if (!newMemo.trim()) return;
+    // Memo Functions
+    const addMemoGlobal = async (content) => {
+        if (!content) return;
         const todayStr = format(today, 'yyyy-MM-dd');
         try {
             const { data, error } = await supabase.from('attendance_memos').insert({
-                date: todayStr, branch, content: newMemo.trim()
+                date: todayStr, branch, content
             }).select().single();
             if (error) throw error;
             setMemos(prev => [...prev, data]);
-            setNewMemo('');
         } catch (e) { alert('메모 등록 실패'); }
     };
 
@@ -445,12 +442,8 @@ const StaffAttendance = ({ onBack }) => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
-            {/* Top Area Refactored */}
             <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-
-                {/* Left Group */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {/* Title & Back */}
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', marginLeft: '-5px' }}>
                             <ChevronLeft size={24} color="#2d3748" />
@@ -458,7 +451,6 @@ const StaffAttendance = ({ onBack }) => {
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748' }}>출석부</h2>
                     </div>
 
-                    {/* Month Picker */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                         <button onClick={() => changeMonth(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px' }}>
                             <ChevronLeft size={20} color="#4a5568" />
@@ -472,9 +464,7 @@ const StaffAttendance = ({ onBack }) => {
                     </div>
                 </div>
 
-                {/* Right Group (Stacked Buttons) - Uniform Width */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', width: '160px' }}>
-                    {/* Memo Button */}
                     <button
                         onClick={() => setShowMemoModal(true)}
                         style={{
@@ -496,7 +486,6 @@ const StaffAttendance = ({ onBack }) => {
                         )}
                     </button>
 
-                    {/* Go to Today Button (Fit to Screen) */}
                     <button
                         onClick={fitAndScrollToToday}
                         style={{
@@ -512,24 +501,20 @@ const StaffAttendance = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Main Table Area (Gesture Pad) */}
             <div
                 ref={scrollContainerRef}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMoveBetter}
                 onTouchEnd={handleTouchEndBetter}
-                onWheel={handleWheel} // Trackpad zoom
+                onWheel={handleWheel}
                 style={{
                     flex: 1,
                     overflow: 'auto',
                     position: 'relative',
-                    touchAction: 'pan-x pan-y' // Allow scrolling
+                    touchAction: 'pan-x pan-y'
                 }}
             >
-                {/* TRANSFORM WRAPPER for performance */}
                 <div ref={contentRef} style={{ width: 'max-content', transformOrigin: '0 0' }}>
-
-                    {/* 1. Sticky Header Group */}
                     <div style={{
                         position: 'sticky', top: 0, zIndex: 30,
                         display: 'flex', width: 'max-content',
@@ -574,30 +559,42 @@ const StaffAttendance = ({ onBack }) => {
                         </div>
                     </div>
 
-                    {/* 2. Body Rows */}
                     <div style={{ width: 'max-content', paddingBottom: '20px' }}>
                         {displayRows.map(user => {
                             const isDeactivated = user.isEmpty || user.isUnassigned;
                             const isRowHighlighted = highlightedSeat === user.seat_number && !isDeactivated;
+                            const isAnyHighlighted = highlightedSeat !== null;
                             const { borderBottom, bgColor } = getSeatStyle(user.seat_number);
+
+                            // Opacity Login
+                            let rowOpacity = 1;
+                            if (isAnyHighlighted) {
+                                rowOpacity = isRowHighlighted ? 1 : 0.1;
+                            }
 
                             let stickyBg = bgColor;
                             if (isRowHighlighted) stickyBg = '#ebf8ff';
                             else if (isDeactivated) stickyBg = '#f7fafc';
 
+                            // Determine row height (dynamic if highlighted)
+                            // We use 'minHeight' or just 'height' auto if highlighted
+                            const currentRowHeight = isRowHighlighted ? 'auto' : ROW_HEIGHT;
+
                             return (
-                                <div key={user.id} style={{ display: 'flex', height: ROW_HEIGHT, borderBottom }}>
+                                <div key={user.id} style={{ display: 'flex', minHeight: currentRowHeight, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s' }}>
                                     <div style={{
                                         position: 'sticky', left: 0, zIndex: 10,
                                         display: 'flex',
-                                        boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
+                                        boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                                        alignItems: 'flex-start' // Changed from center to top for alignment during expansion
                                     }}>
                                         {isRowHighlighted && (
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
                                         )}
 
                                         <div style={{
-                                            width: SEAT_WIDTH, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            width: SEAT_WIDTH, height: ROW_HEIGHT, // Keep sticky cell height fixed
+                                            borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             background: stickyBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem`
                                         }}>
                                             {user.seat_number || '-'}
@@ -605,7 +602,8 @@ const StaffAttendance = ({ onBack }) => {
                                         <div
                                             onClick={() => handleNameClick(user.seat_number)}
                                             style={{
-                                                width: NAME_WIDTH, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                width: NAME_WIDTH, height: ROW_HEIGHT,
+                                                borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 background: stickyBg, color: '#2d3748', fontSize: `${0.9 * scale}rem`, fontWeight: isDeactivated ? 'normal' : 'bold',
                                                 cursor: isDeactivated ? 'default' : 'pointer'
                                             }}
@@ -621,8 +619,11 @@ const StaffAttendance = ({ onBack }) => {
 
                                         {daysInMonth.map(date => {
                                             const dateStr = format(date, 'yyyy-MM-dd');
-                                            return (
-                                                <div key={dateStr} style={{ display: 'flex' }}>
+                                            const isToday = isSameDay(date, today);
+
+                                            // Render periods (Horizontal)
+                                            const periodsRender = (
+                                                <div style={{ display: 'flex' }}>
                                                     {[1, 2, 3, 4, 5, 6, 7].map(p => (
                                                         <AttendanceCell
                                                             key={p}
@@ -637,6 +638,30 @@ const StaffAttendance = ({ onBack }) => {
                                                     ))}
                                                 </div>
                                             );
+
+                                            // If highlighted and Today, expand
+                                            if (isRowHighlighted && isToday) {
+                                                return (
+                                                    <div key={dateStr} style={{ display: 'flex', flexDirection: 'column' }}>
+                                                        {periodsRender}
+                                                        {/* Inline Memo Block */}
+                                                        <UserMemoBlock
+                                                            user={user}
+                                                            memos={memos}
+                                                            onAdd={addMemoGlobal}
+                                                            onDelete={deleteMemo}
+                                                            scale={scale}
+                                                            width={DAY_WIDTH}
+                                                        />
+                                                    </div>
+                                                );
+                                            }
+
+                                            return (
+                                                <div key={dateStr} style={{ display: 'flex' }}>
+                                                    {periodsRender}
+                                                </div>
+                                            );
                                         })}
                                     </div>
                                 </div>
@@ -646,7 +671,6 @@ const StaffAttendance = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Memo Modal (Unchanged) */}
             {showMemoModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -658,7 +682,6 @@ const StaffAttendance = ({ onBack }) => {
                         background: 'white', borderRadius: '16px', width: '100%', maxWidth: '400px', maxHeight: '80vh',
                         display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                     }}>
-                        {/* ... Modal content ... */}
                         <div style={{ padding: '15px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>{format(today, 'yyyy.MM.dd')} 참고사항</h3>
                             <button onClick={() => setShowMemoModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
@@ -680,8 +703,8 @@ const StaffAttendance = ({ onBack }) => {
                             </ul>
                         </div>
                         <div style={{ padding: '20px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', background: 'white', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px' }}>
-                            <input type="text" value={newMemo} onChange={(e) => setNewMemo(e.target.value)} placeholder="참고사항을 입력하세요" style={{ flex: 1, padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.95rem', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && addMemo()} />
-                            <button onClick={addMemo} style={{ background: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', padding: '0 20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><Plus size={18} />등록</button>
+                            <input type="text" value={newMemo} onChange={(e) => setNewMemo(e.target.value)} placeholder="참고사항을 입력하세요" style={{ flex: 1, padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.95rem', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && addMemoGlobal(newMemo.trim())} />
+                            <button onClick={() => { addMemoGlobal(newMemo.trim()); setNewMemo(''); }} style={{ background: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', padding: '0 20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><Plus size={18} />등록</button>
                         </div>
                     </div>
                 </div>
