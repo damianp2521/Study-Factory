@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react'; // Removed Calendar
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 const StaffAttendance = ({ onBack }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    // const [showCalendar, setShowCalendar] = useState(false); // Removed Date Picker
     const [branch, setBranch] = useState('망미점');
     const [users, setUsers] = useState([]);
     const [attendanceData, setAttendanceData] = useState({});
     const [vacationData, setVacationData] = useState({});
     const [loading, setLoading] = useState(false);
+
+    // Animation State
+    const [fade, setFade] = useState(false);
 
     // Swipe State
     const [touchStart, setTouchStart] = useState(null);
@@ -28,7 +30,12 @@ const StaffAttendance = ({ onBack }) => {
     }, []);
 
     useEffect(() => {
-        fetchData();
+        setFade(true); // Trigger fade out
+        const timer = setTimeout(() => {
+            fetchData();
+            setFade(false); // Trigger fade in after small delay to allow data fetch start
+        }, 150); // Small visual delay for transition effect
+        return () => clearTimeout(timer);
     }, [selectedDate, branch]);
 
     const fetchData = async () => {
@@ -114,7 +121,6 @@ const StaffAttendance = ({ onBack }) => {
         }
     };
 
-    // Date Navigation Logic
     const changeDate = (days) => {
         const date = new Date(selectedDate);
         date.setDate(date.getDate() + days);
@@ -126,7 +132,6 @@ const StaffAttendance = ({ onBack }) => {
         return format(date, 'yyyy.M.d(EEE)', { locale: ko });
     };
 
-    // Swipe Logic
     const onTouchStart = (e) => {
         setTouchEnd(null);
         setTouchStart(e.targetTouches[0].clientX);
@@ -142,10 +147,10 @@ const StaffAttendance = ({ onBack }) => {
         const isLeftSwipe = distance > minSwipeDistance;
         const isRightSwipe = distance < -minSwipeDistance;
         if (isLeftSwipe) {
-            changeDate(1); // Next Day
+            changeDate(1);
         }
         if (isRightSwipe) {
-            changeDate(-1); // Prev Day
+            changeDate(-1);
         }
     };
 
@@ -218,50 +223,49 @@ const StaffAttendance = ({ onBack }) => {
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
         >
-            {/* New Header Layout */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
+            {/* Header Area */}
+            <div style={{ padding: '0 0 10px 0' }}>
+                {/* Row 1: Back + Title */}
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
                     <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', marginLeft: '-8px' }}>
                         <ChevronLeft size={26} color="#2d3748" />
                     </button>
-                    {/* Title Removed as requested */}
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>출석부</h2>
                 </div>
 
-                {/* Center Date Navigation */}
+                {/* Row 2: Date Navigation (Centered) */}
                 <div style={{
-                    flex: 1,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '20px'
+                    gap: '10px' // Reduced gap as requested
                 }}>
                     <button
                         onClick={() => changeDate(-1)}
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '10px' }}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}
                     >
-                        <ChevronLeft size={28} color="#4a5568" strokeWidth={2.5} />
+                        <ChevronLeft size={24} color="#4a5568" strokeWidth={2.5} />
                     </button>
 
                     <span style={{
                         fontSize: '1.2rem',
                         fontWeight: 'bold',
                         color: '#2d3748',
-                        width: '140px', // Fixed width to prevent jumping
-                        textAlign: 'center'
+                        width: '140px',
+                        textAlign: 'center',
+                        transition: 'opacity 0.2s', // added transition for feedback
+                        opacity: fade ? 0.3 : 1
                     }}>
                         {formatDateDisplay(selectedDate)}
                     </span>
 
                     <button
                         onClick={() => changeDate(1)}
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '10px' }}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}
                     >
-                        <ChevronRight size={28} color="#4a5568" strokeWidth={2.5} />
+                        <ChevronRight size={24} color="#4a5568" strokeWidth={2.5} />
                     </button>
                 </div>
-
-                {/* Spacer to balance the Back button on the left (approx width of back button) */}
-                <div style={{ width: '42px' }}></div>
             </div>
 
             {/* Table Header */}
@@ -274,7 +278,13 @@ const StaffAttendance = ({ onBack }) => {
             </div>
 
             {/* Table Body */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out', // Smooth transition
+                opacity: fade ? 0.5 : 1, // Visual cue for loading/switching
+                transform: fade ? 'scale(0.99)' : 'scale(1)'
+            }}>
                 {users.map(user => {
                     return (
                         <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: '1px solid #edf2f7' }}>
