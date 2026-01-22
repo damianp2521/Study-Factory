@@ -491,7 +491,7 @@ const StaffAttendance = ({ onBack }) => {
                     }
 
                     return (
-                        <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: borderBottom, position: 'relative' }}>
+                        <div key={user.id} style={{ display: 'flex', height: '30px', borderBottom: borderBottom, position: 'relative' }}>
                             {isRowHighlighted && (
                                 <div style={{
                                     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
