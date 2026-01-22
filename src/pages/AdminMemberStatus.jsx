@@ -118,9 +118,15 @@ const AdminMemberStatus = ({ onBack }) => {
         : users.filter(user => user.branch === selectedBranch);
 
     return (
-        <div style={{ height: '100%', overflowY: 'auto' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: '20px',
+                flexShrink: 0 // Prevent header from shrinking
+            }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <button
                         onClick={onBack}
@@ -166,7 +172,13 @@ const AdminMemberStatus = ({ onBack }) => {
             </div>
 
             {/* List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '15px',
+                flex: 1, // Take remaining space
+                overflowY: 'auto' // Enable scrolling for list
+            }}>
                 {loading && <div style={{ textAlign: 'center', color: '#a0aec0' }}>로딩 중...</div>}
 
                 {!loading && filteredUsers.length === 0 && (
