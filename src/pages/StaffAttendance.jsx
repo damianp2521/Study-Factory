@@ -43,7 +43,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         }
     }
 
-    // Attendance Logic (Overrides if needed, or overlay?) Usually attendance O overwrites empty.
+    // Attendance Logic
     if (isAttended) {
         bg = '#c6f6d5';
         color = '#22543d';
@@ -62,7 +62,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         <div
             onClick={() => !isDeactivated && toggleAttendance(user, dateStr, period)}
             style={{
-                width: width, flexShrink: 0, height: '30px', // Fixed height for the cell part (top)
+                width: width, flexShrink: 0, height: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: bg, color, fontSize: `${0.8 * scale}rem`, fontWeight: 'bold',
                 borderRight: '1px solid #e2e8f0',
@@ -84,15 +84,15 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
     );
 });
 
-// Inline Memo Component
-const UserMemoBlock = ({ user, memos, onAdd, onDelete, scale, width }) => {
+// Inline Memo Component (Linked to member_memos)
+const UserMemoBlock = ({ user, memberMemos, onAdd, onDelete, scale, width }) => {
     const [text, setText] = useState('');
-    // Filter memos for this user (simple includes check)
-    const userMemos = memos.filter(m => m.content.includes(user.name));
+    // Filter persistent memos for this user ONLY
+    const userMemos = memberMemos.filter(m => m.user_id === user.id);
 
     const handleAdd = () => {
         if (!text.trim()) return;
-        onAdd(text.trim());
+        onAdd(user.id, text.trim());
         setText('');
     };
 
@@ -139,7 +139,7 @@ const UserMemoBlock = ({ user, memos, onAdd, onDelete, scale, width }) => {
                     onClick={e => e.stopPropagation()}
                     onMouseDown={e => e.stopPropagation()}
                     onTouchStart={e => e.stopPropagation()}
-                    placeholder="참고사항 입력"
+                    placeholder="회원 참고사항 입력"
                     style={{
                         flex: 1, border: '1px solid #cbd5e0', borderRadius: '6px',
                         padding: '4px 8px', fontSize: `${0.75 * scale}rem`, outline: 'none',
@@ -176,7 +176,9 @@ const StaffAttendance = ({ onBack }) => {
     const [displayRows, setDisplayRows] = useState([]);
     const [attendanceData, setAttendanceData] = useState(new Set());
     const [vacationData, setVacationData] = useState({});
-    const [memos, setMemos] = useState([]);
+    // Two separate memo states
+    const [dailyMemos, setDailyMemos] = useState([]); // attendance_memos (Global Daily)
+    const [memberMemos, setMemberMemos] = useState([]); // member_memos (Persistent User Specific)
 
     const [loading, setLoading] = useState(false);
     const [highlightedSeat, setHighlightedSeat] = useState(null);
@@ -193,7 +195,7 @@ const StaffAttendance = ({ onBack }) => {
     const BASE_SEAT_WIDTH = 40;
     const BASE_NAME_WIDTH = 60;
     const BASE_PERIOD_WIDTH = 50;
-    const BASE_ROW_HEIGHT = 30; // Original single height
+    const BASE_ROW_HEIGHT = 30;
     const BASE_HEADER_DATE_HEIGHT = 35;
     const BASE_HEADER_PERIOD_HEIGHT = 30;
 
@@ -213,11 +215,6 @@ const StaffAttendance = ({ onBack }) => {
         end: endOfMonth(currentViewDate)
     }), [currentViewDate]);
 
-    // Check if Today is in the current view
-    const isTodayInView = useMemo(() => {
-        return isSameDay(startOfMonth(today), startOfMonth(currentViewDate));
-    }, [today, currentViewDate]);
-
     useEffect(() => {
         fetchData();
         if (scrollContainerRef.current) {
@@ -231,7 +228,7 @@ const StaffAttendance = ({ onBack }) => {
         }
     }, [currentViewDate]);
 
-    // --- Pinch Zoom Logic (Same as before) ---
+    // Zoom Logic
     const handleTouchStart = (e) => {
         if (e.touches.length === 2) {
             const dist = getDistance(e.touches[0], e.touches[1]);
@@ -250,9 +247,7 @@ const StaffAttendance = ({ onBack }) => {
             const dist = getDistance(e.touches[0], e.touches[1]);
             const scaleFactor = dist / touchStartDistRef.current;
             const tempScale = Math.min(Math.max(startScaleRef.current * scaleFactor, 0.3), 2.0);
-
             lastTempScaleRef.current = tempScale;
-
             if (contentRef.current) {
                 const ratio = tempScale / scale;
                 contentRef.current.style.transform = `scale(${ratio})`;
@@ -282,7 +277,6 @@ const StaffAttendance = ({ onBack }) => {
             setScale(prev => Math.min(Math.max(prev + delta, 0.3), 2.0));
         }
     };
-    // ----------------------------------------
 
     const fitAndScrollToToday = () => {
         if (!isSameDay(startOfMonth(today), startOfMonth(currentViewDate))) {
@@ -314,18 +308,12 @@ const StaffAttendance = ({ onBack }) => {
             const startDate = format(startOfMonth(currentViewDate), 'yyyy-MM-dd');
             const endDate = format(endOfMonth(currentViewDate), 'yyyy-MM-dd');
 
-            // Fetch Memos for the entire month to render them in expanded view? 
-            // Or just today? User said "Today's Column". Let's fetch for the month just in case, or stick to today.
-            // Actually, for the "Today's Memo Button" we only need today.
-            // For the INLINE MEMO, we need to show existing memos for that user. Are those memo's date-specific? 
-            // The table `attendance_memos` has a `date`. If we are putting it under "Today", we probably mean "Memos for Today".
-            // Yes, user said "Today's Notes".
-
-            const [userRes, logRes, vacRes, memoRes] = await Promise.all([
+            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes] = await Promise.all([
                 supabase.from('authorized_users').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('user_id, date, period').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
-                supabase.from('attendance_memos').select('*').eq('date', format(today, 'yyyy-MM-dd')).order('created_at', { ascending: true })
+                supabase.from('attendance_memos').select('*').eq('date', format(today, 'yyyy-MM-dd')).order('created_at', { ascending: true }),
+                supabase.from('member_memos').select('*').order('created_at', { ascending: true }) // Fetch Persistent Memos
             ]);
 
             if (userRes.error) throw userRes.error;
@@ -366,7 +354,8 @@ const StaffAttendance = ({ onBack }) => {
             });
             setVacationData(vacMap);
 
-            setMemos(memoRes.data || []);
+            setDailyMemos(dailyMemoRes.data || []);
+            setMemberMemos(memberMemoRes.data || []);
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -398,8 +387,8 @@ const StaffAttendance = ({ onBack }) => {
         }
     };
 
-    // Memo Functions
-    const addMemoGlobal = async (content) => {
+    // Daily Memo (Global)
+    const addDailyMemo = async (content) => {
         if (!content) return;
         const todayStr = format(today, 'yyyy-MM-dd');
         try {
@@ -407,15 +396,35 @@ const StaffAttendance = ({ onBack }) => {
                 date: todayStr, branch, content
             }).select().single();
             if (error) throw error;
-            setMemos(prev => [...prev, data]);
+            setDailyMemos(prev => [...prev, data]);
         } catch (e) { alert('메모 등록 실패'); }
     };
 
-    const deleteMemo = async (id) => {
+    const deleteDailyMemo = async (id) => {
         if (!confirm('삭제하시겠습니까?')) return;
         try {
             await supabase.from('attendance_memos').delete().eq('id', id);
-            setMemos(prev => prev.filter(m => m.id !== id));
+            setDailyMemos(prev => prev.filter(m => m.id !== id));
+        } catch (e) { alert('삭제 실패'); }
+    };
+
+    // Member Memo (Persistent)
+    const addMemberMemo = async (userId, content) => {
+        if (!content) return;
+        try {
+            const { data, error } = await supabase.from('member_memos').insert({
+                user_id: userId, content
+            }).select().single();
+            if (error) throw error;
+            setMemberMemos(prev => [...prev, data]);
+        } catch (e) { alert('메모 등록 실패'); }
+    };
+
+    const deleteMemberMemo = async (id) => {
+        if (!confirm('삭제하시겠습니까?')) return;
+        try {
+            await supabase.from('member_memos').delete().eq('id', id);
+            setMemberMemos(prev => prev.filter(m => m.id !== id));
         } catch (e) { alert('삭제 실패'); }
     };
 
@@ -483,13 +492,13 @@ const StaffAttendance = ({ onBack }) => {
                         }}
                     >
                         오늘 출석 참고사항
-                        {memos.length > 0 && (
+                        {dailyMemos.length > 0 && (
                             <span style={{
                                 color: '#38a169', background: 'white', width: '20px', height: '20px',
                                 borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                             }}>
-                                {memos.length}
+                                {dailyMemos.length}
                             </span>
                         )}
                     </button>
@@ -574,7 +583,6 @@ const StaffAttendance = ({ onBack }) => {
                             const isAnyHighlighted = highlightedSeat !== null;
                             const { borderBottom, bgColor } = getSeatStyle(user.seat_number);
 
-                            // Opacity Login
                             let rowOpacity = 1;
                             if (isAnyHighlighted) {
                                 rowOpacity = isRowHighlighted ? 1 : 0.1;
@@ -584,8 +592,6 @@ const StaffAttendance = ({ onBack }) => {
                             if (isRowHighlighted) stickyBg = '#ebf8ff';
                             else if (isDeactivated) stickyBg = '#f7fafc';
 
-                            // Determine row height (dynamic if highlighted)
-                            // We use 'minHeight' or just 'height' auto if highlighted
                             const currentRowHeight = isRowHighlighted ? 'auto' : ROW_HEIGHT;
 
                             return (
@@ -594,14 +600,14 @@ const StaffAttendance = ({ onBack }) => {
                                         position: 'sticky', left: 0, zIndex: 10,
                                         display: 'flex',
                                         boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
-                                        alignItems: 'flex-start' // Changed from center to top for alignment during expansion
+                                        alignItems: 'flex-start'
                                     }}>
                                         {isRowHighlighted && (
                                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
                                         )}
 
                                         <div style={{
-                                            width: SEAT_WIDTH, height: ROW_HEIGHT, // Keep sticky cell height fixed
+                                            width: SEAT_WIDTH, height: ROW_HEIGHT,
                                             borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             background: stickyBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem`
                                         }}>
@@ -629,7 +635,6 @@ const StaffAttendance = ({ onBack }) => {
                                             const dateStr = format(date, 'yyyy-MM-dd');
                                             const isToday = isSameDay(date, today);
 
-                                            // Render periods (Horizontal)
                                             const periodsRender = (
                                                 <div style={{ display: 'flex' }}>
                                                     {[1, 2, 3, 4, 5, 6, 7].map(p => (
@@ -652,12 +657,12 @@ const StaffAttendance = ({ onBack }) => {
                                                 return (
                                                     <div key={dateStr} style={{ display: 'flex', flexDirection: 'column' }}>
                                                         {periodsRender}
-                                                        {/* Inline Memo Block */}
+                                                        {/* Inline Memo Block (Persistent) */}
                                                         <UserMemoBlock
                                                             user={user}
-                                                            memos={memos}
-                                                            onAdd={addMemoGlobal}
-                                                            onDelete={deleteMemo}
+                                                            memberMemos={memberMemos}
+                                                            onAdd={addMemberMemo}
+                                                            onDelete={deleteMemberMemo}
                                                             scale={scale}
                                                             width={DAY_WIDTH}
                                                         />
@@ -679,6 +684,7 @@ const StaffAttendance = ({ onBack }) => {
                 </div>
             </div>
 
+            {/* Daily Memos Modal (Global) */}
             {showMemoModal && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -698,21 +704,21 @@ const StaffAttendance = ({ onBack }) => {
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#f7fafc' }}>
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                {memos.length === 0 && <li style={{ color: '#a0aec0', textAlign: 'center' }}>등록된 참고사항이 없습니다.</li>}
-                                {memos.map((memo, idx) => (
+                                {dailyMemos.length === 0 && <li style={{ color: '#a0aec0', textAlign: 'center' }}>등록된 참고사항이 없습니다.</li>}
+                                {dailyMemos.map((memo, idx) => (
                                     <li key={memo.id} style={{ background: 'white', padding: '12px', borderRadius: '12px', fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1 }}>
                                             <span style={{ fontWeight: 'bold', color: '#3182ce', minWidth: '20px' }}>{idx + 1}.</span>
                                             <span style={{ color: '#4a5568', wordBreak: 'break-all', lineHeight: 1.4 }}>{memo.content}</span>
                                         </div>
-                                        <button onClick={() => deleteMemo(memo.id)} style={{ background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px', fontWeight: 'bold' }}>삭제</button>
+                                        <button onClick={() => deleteDailyMemo(memo.id)} style={{ background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px', fontWeight: 'bold' }}>삭제</button>
                                     </li>
                                 ))}
                             </ul>
                         </div>
                         <div style={{ padding: '20px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', background: 'white', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px' }}>
-                            <input type="text" value={newMemo} onChange={(e) => setNewMemo(e.target.value)} placeholder="참고사항을 입력하세요" style={{ flex: 1, padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.95rem', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && addMemoGlobal(newMemo.trim())} />
-                            <button onClick={() => { addMemoGlobal(newMemo.trim()); setNewMemo(''); }} style={{ background: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', padding: '0 20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><Plus size={18} />등록</button>
+                            <input type="text" value={newMemo} onChange={(e) => setNewMemo(e.target.value)} placeholder="참고사항을 입력하세요" style={{ flex: 1, padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.95rem', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && addDailyMemo(newMemo.trim())} />
+                            <button onClick={() => { addDailyMemo(newMemo.trim()); setNewMemo(''); }} style={{ background: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', padding: '0 20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><Plus size={18} />등록</button>
                         </div>
                     </div>
                 </div>
