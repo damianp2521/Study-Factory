@@ -12,6 +12,9 @@ const StaffAttendance = ({ onBack }) => {
     const [vacationData, setVacationData] = useState({});
     const [loading, setLoading] = useState(false);
 
+    // Highlight State
+    const [highlightedSeat, setHighlightedSeat] = useState(null);
+
     // Animation State
     const [fade, setFade] = useState(false);
 
@@ -33,8 +36,8 @@ const StaffAttendance = ({ onBack }) => {
         setFade(true); // Trigger fade out
         const timer = setTimeout(() => {
             fetchData();
-            setFade(false); // Trigger fade in after small delay to allow data fetch start
-        }, 150); // Small visual delay for transition effect
+            setFade(false); // Trigger fade in after small delay
+        }, 150);
         return () => clearTimeout(timer);
     }, [selectedDate, branch]);
 
@@ -154,12 +157,26 @@ const StaffAttendance = ({ onBack }) => {
         }
     };
 
-    const renderCell = (user, period) => {
+    const handleNameClick = (seatNum) => {
+        if (highlightedSeat === seatNum) {
+            setHighlightedSeat(null);
+        } else {
+            setHighlightedSeat(seatNum);
+        }
+    };
+
+    const renderCell = (user, period, isRowHighlighted) => {
         const isAttended = attendanceData[user.id]?.has(period);
         const vac = vacationData[user.id];
+
         let bg = 'white';
         let content = null;
         let color = '#2d3748';
+
+        // Apply Highlight Blue if not set by other status
+        if (isRowHighlighted) {
+            bg = '#ebf8ff';
+        }
 
         if (vac) {
             if (vac.type === 'full') {
@@ -185,7 +202,7 @@ const StaffAttendance = ({ onBack }) => {
             color = '#22543d';
             content = 'O';
         } else {
-            if (bg === 'white') {
+            if (bg === 'white' || bg === '#ebf8ff') {
                 bg = '#fed7d7';
                 color = '#c53030';
                 content = 'X';
@@ -238,7 +255,7 @@ const StaffAttendance = ({ onBack }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '10px' // Reduced gap as requested
+                    gap: '10px'
                 }}>
                     <button
                         onClick={() => changeDate(-1)}
@@ -253,7 +270,7 @@ const StaffAttendance = ({ onBack }) => {
                         color: '#2d3748',
                         width: '140px',
                         textAlign: 'center',
-                        transition: 'opacity 0.2s', // added transition for feedback
+                        transition: 'opacity 0.2s',
                         opacity: fade ? 0.3 : 1
                     }}>
                         {formatDateDisplay(selectedDate)}
@@ -281,22 +298,48 @@ const StaffAttendance = ({ onBack }) => {
             <div style={{
                 flex: 1,
                 overflowY: 'auto',
-                transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out', // Smooth transition
-                opacity: fade ? 0.5 : 1, // Visual cue for loading/switching
+                transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
+                opacity: fade ? 0.5 : 1,
                 transform: fade ? 'scale(0.99)' : 'scale(1)'
             }}>
                 {users.map(user => {
+                    const isRowHighlighted = highlightedSeat === user.seat_number;
+
                     return (
-                        <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: '1px solid #edf2f7' }}>
-                            <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7', background: '#fafafa', fontSize: '0.8rem', color: '#a0aec0' }}>
+                        <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: '1px solid #edf2f7', position: 'relative' }}>
+                            {/* Outline for Highlight */}
+                            {isRowHighlighted && (
+                                <div style={{
+                                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                    border: '2px solid #3182ce',
+                                    pointerEvents: 'none',
+                                    zIndex: 10
+                                }} />
+                            )}
+
+                            <div style={{
+                                width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7',
+                                background: isRowHighlighted ? '#ebf8ff' : '#fafafa',
+                                fontSize: '0.8rem', color: '#a0aec0'
+                            }}>
                                 {user.seat_number || '-'}
                             </div>
-                            <div style={{ width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7', fontWeight: 'bold', fontSize: '0.9rem', color: '#2d3748' }}>
+
+                            <div
+                                onClick={() => handleNameClick(user.seat_number)}
+                                style={{
+                                    width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7',
+                                    fontWeight: 'bold', fontSize: '0.9rem', color: '#2d3748',
+                                    background: isRowHighlighted ? '#ebf8ff' : 'white',
+                                    cursor: 'pointer'
+                                }}
+                            >
                                 {user.name}
                             </div>
+
                             {[1, 2, 3, 4, 5, 6, 7].map(p => (
                                 <div key={p} style={{ flex: 1 }}>
-                                    {renderCell(user, p)}
+                                    {renderCell(user, p, isRowHighlighted)}
                                 </div>
                             ))}
                         </div>
