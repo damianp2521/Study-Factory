@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Calendar, Check, X } from 'lucide-react';
+import { ChevronLeft, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
-import { formatDateWithDay } from '../utils/dateUtils';
 
 const StaffAttendance = ({ onBack }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [showCalendar, setShowCalendar] = useState(false);
-    const [selectedPeriod, setSelectedPeriod] = useState(1); // 1-7
-    const [branch, setBranch] = useState('망미점'); // Fixed to Mangmi for seat list
-
+    const [branch, setBranch] = useState('망미점'); // Default Mangmi
     const [users, setUsers] = useState([]);
-    const [attendanceLogs, setAttendanceLogs] = useState(new Set()); // Set of user_ids who attended
-    const [vacations, setVacations] = useState({}); // Map user_id -> vacation info
+    const [attendanceData, setAttendanceData] = useState({}); // user_id -> set of periods
+    const [vacationData, setVacationData] = useState({}); // user_id -> vacation request
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -26,58 +23,74 @@ const StaffAttendance = ({ onBack }) => {
 
     useEffect(() => {
         fetchData();
-    }, [selectedDate, selectedPeriod]);
+    }, [selectedDate, branch]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Users (Mangmi)
+            // 1. Fetch Users
             const { data: userData, error: userError } = await supabase
                 .from('authorized_users')
                 .select('*')
                 .eq('branch', branch)
-                .order('seat_number', { ascending: true, nullsLast: true }); // Seat order
+                .order('seat_number', { ascending: true, nullsLast: true });
 
             if (userError) throw userError;
 
-            // 2. Fetch Attendance Logs for Date + Period
+            // 2. Fetch Attendance for ALL periods on date
             const { data: logData, error: logError } = await supabase
                 .from('attendance_logs')
-                .select('user_id')
-                .eq('date', selectedDate)
-                .eq('period', selectedPeriod);
+                .select('user_id, period')
+                .eq('date', selectedDate);
 
             if (logError) throw logError;
 
-            // 3. Fetch Vacation Requests for Date (Accepted only usually, but let's take all for now or approved ones?)
-            // Assuming we show all valid requests.
+            // 3. Fetch Vacations
             const { data: vacData, error: vacError } = await supabase
                 .from('vacation_requests')
-                .select('user_id, type, periods, reason')
+                .select('*')
                 .eq('date', selectedDate);
 
             if (vacError) throw vacError;
 
-            // Process Data
             setUsers(userData || []);
-            setAttendanceLogs(new Set((logData || []).map(l => l.user_id)));
 
+            // Process Logs
+            const attMap = {};
+            (logData || []).forEach(l => {
+                if (!attMap[l.user_id]) attMap[l.user_id] = new Set();
+                attMap[l.user_id].add(l.period);
+            });
+            setAttendanceData(attMap);
+
+            // Process Vacations
             const vacMap = {};
             (vacData || []).forEach(v => {
                 vacMap[v.user_id] = v;
             });
-            setVacations(vacMap);
+            setVacationData(vacMap);
 
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('Error fetching staff attendance:', error);
             alert('데이터를 불러오지 못했습니다.');
         } finally {
             setLoading(false);
         }
     };
 
-    const toggleAttendance = async (userId) => {
-        const isAttended = attendanceLogs.has(userId);
+    const toggleAttendance = async (userId, period) => {
+        const isAttended = attendanceData[userId]?.has(period);
+
+        // Optimistic Update
+        setAttendanceData(prev => {
+            const newSet = new Set(prev[userId] || []);
+            if (isAttended) {
+                newSet.delete(period);
+            } else {
+                newSet.add(period);
+            }
+            return { ...prev, [userId]: newSet };
+        });
 
         try {
             if (isAttended) {
@@ -87,14 +100,8 @@ const StaffAttendance = ({ onBack }) => {
                     .delete()
                     .eq('user_id', userId)
                     .eq('date', selectedDate)
-                    .eq('period', selectedPeriod);
-
+                    .eq('period', period);
                 if (error) throw error;
-                setAttendanceLogs(prev => {
-                    const next = new Set(prev);
-                    next.delete(userId);
-                    return next;
-                });
             } else {
                 // Add
                 const { error } = await supabase
@@ -102,47 +109,88 @@ const StaffAttendance = ({ onBack }) => {
                     .insert({
                         user_id: userId,
                         date: selectedDate,
-                        period: selectedPeriod
+                        period: period
                     });
-
                 if (error) throw error;
-                setAttendanceLogs(prev => new Set(prev).add(userId));
             }
         } catch (error) {
             console.error('Attendance toggle error:', error);
             alert('출석 처리에 실패했습니다.');
+            fetchData(); // Revert on error
         }
     };
 
-    // Helper to determine status text/color
-    const getStatus = (userId) => {
-        const vac = vacations[userId];
-        if (!vac) return null;
+    // Logic for Cell Color/Content
+    const renderCell = (user, period) => {
+        const isAttended = attendanceData[user.id]?.has(period);
+        const vac = vacationData[user.id];
 
-        if (vac.type === 'full') return { text: vac.reason ? `종일(${vac.reason})` : '월차', type: 'full' };
-        if (vac.type === 'half') {
-            // Assuming periods array [1,2,3,4] is AM? or user just said "AM is 1~4". 
-            // Logic: period <= 4 AM, >= 4 PM. Overlap at 4.
-            const isAm = (vac.periods || []).includes(1);
-            const isPm = (vac.periods || []).includes(7); // Heuristic
-            // Or based on user request: "AM: 1~4", "PM: 4~7"
-            // Let's rely on 'periods' array in DB if it exists, or just label.
-            const label = isAm ? '오전' : '오후';
-            return { text: vac.reason ? `${label}(${vac.reason})` : `${label}반차`, type: isAm ? 'half_am' : 'half_pm' };
+        // Default style
+        let bg = 'white';
+        let content = null;
+        let color = '#2d3748';
+
+        // Vacation Logic
+        if (vac) {
+            if (vac.type === 'full') {
+                // Full Day: Always Green background
+                bg = '#c6f6d5'; // Green-100
+                color = '#22543d';
+                content = vac.reason ? `월차\n(${vac.reason})` : '월차';
+            } else if (vac.type === 'half') {
+                // Half Day
+                const isAm = (vac.periods || []).includes(1);
+
+                if (isAm && period <= 4) {
+                    bg = '#c6f6d5';
+                    color = '#22543d';
+                    content = vac.reason ? `오전\n(${vac.reason})` : '오전';
+                } else if (!isAm && period >= 4) {
+                    bg = '#c6f6d5';
+                    color = '#22543d';
+                    content = vac.reason ? `오후\n(${vac.reason})` : '오후';
+                }
+            }
         }
-        return null;
-    };
 
-    // Map seat 1-102
-    const seatList = Array.from({ length: 102 }, (_, i) => i + 1);
-    const userMap = {};
-    users.forEach(u => {
-        if (u.seat_number) userMap[u.seat_number] = u;
-    });
+        if (isAttended) {
+            bg = '#c6f6d5';
+            color = '#22543d';
+            content = 'O';
+        } else {
+            if (bg === 'white') {
+                bg = '#fed7d7'; // Red-100
+                color = '#c53030';
+                content = 'X';
+            }
+        }
+
+        return (
+            <div
+                onClick={() => toggleAttendance(user.id, period)}
+                style={{
+                    flex: 1,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: bg,
+                    color: color,
+                    fontSize: '0.8rem',
+                    fontWeight: 'bold',
+                    borderRight: '1px solid #e2e8f0',
+                    height: '100%',
+                    whiteSpace: 'pre-line',
+                    textAlign: 'center',
+                    lineHeight: 1.1,
+                    cursor: 'pointer', // Add cursor pointer to indicate interactivity
+                    userSelect: 'none' // Prevent text selection on rapid clicks
+                }}
+            >
+                {content}
+            </div>
+        );
+    };
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', marginLeft: '-8px' }}>
@@ -150,7 +198,6 @@ const StaffAttendance = ({ onBack }) => {
                     </button>
                     <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>출석부</h2>
                 </div>
-
                 {/* Date Picker Button */}
                 <button
                     onClick={() => setShowCalendar(!showCalendar)}
@@ -164,11 +211,10 @@ const StaffAttendance = ({ onBack }) => {
                         cursor: 'pointer'
                     }}
                 >
-                    {formatDateWithDay(selectedDate)}
+                    {selectedDate}
                     <Calendar size={16} color="#718096" />
                 </button>
             </div>
-
             {showCalendar && (
                 <div style={{ position: 'absolute', top: '60px', right: '20px', zIndex: 100, background: 'white', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', padding: '10px' }}>
                     <EmbeddedCalendar
@@ -181,106 +227,32 @@ const StaffAttendance = ({ onBack }) => {
                 </div>
             )}
 
-            {/* Period Selector */}
-            <div style={{
-                display: 'flex', gap: '5px', overflowX: 'auto', paddingBottom: '10px',
-                marginBottom: '5px',
-                scrollbarWidth: 'none'
-            }}>
-                <style>{`div::-webkit-scrollbar { display: none; }`}</style>
+            {/* Table Header */}
+            <div style={{ display: 'flex', background: '#f7fafc', borderBottom: '1px solid #e2e8f0', height: '40px', fontWeight: 'bold', fontSize: '0.85rem', color: '#4a5568' }}>
+                <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #e2e8f0' }}>좌석</div>
+                <div style={{ width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #e2e8f0' }}>이름</div>
                 {[1, 2, 3, 4, 5, 6, 7].map(p => (
-                    <button
-                        key={p}
-                        onClick={() => setSelectedPeriod(p)}
-                        style={{
-                            flexShrink: 0,
-                            width: '40px', height: '40px',
-                            borderRadius: '50%',
-                            border: selectedPeriod === p ? 'none' : '1px solid #e2e8f0',
-                            background: selectedPeriod === p ? 'var(--color-primary)' : 'white',
-                            color: selectedPeriod === p ? 'white' : '#718096',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}
-                    >
-                        {p}
-                    </button>
+                    <div key={p} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #e2e8f0' }}>{p}</div>
                 ))}
             </div>
-            <div style={{ textAlign: 'center', fontSize: '0.85rem', color: '#718096', marginBottom: '15px' }}>
-                {selectedPeriod}교시 출석 체크
-            </div>
 
-            {/* List */}
+            {/* Table Body */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
-                {seatList.map(seatNum => {
-                    const user = userMap[seatNum];
-                    if (!user) {
-                        // Empty Seat
-                        return (
-                            <div key={seatNum} style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                padding: '10px 15px',
-                                borderBottom: '1px solid #f7fafc',
-                                background: '#fafafa'
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', opacity: 0.5 }}>
-                                    <div style={{ width: '28px', height: '28px', background: '#edf2f7', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#a0aec0' }}>{seatNum}</div>
-                                    <div style={{ color: '#a0aec0' }}>공석</div>
-                                </div>
-                            </div>
-                        );
-                    }
-
-                    const isAttended = attendanceLogs.has(user.id);
-                    const status = getStatus(user.id);
-
-                    // Logic for Status Display
-                    // User Request: "Between Name and Button, show status (Vacation/Half)"
-
+                {users.map(user => {
                     return (
-                        <div key={seatNum} style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            padding: '12px 15px',
-                            borderBottom: '1px solid #edf2f7',
-                            background: 'white'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <div style={{ width: '28px', height: '28px', background: '#ebf8ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#2b6cb0', fontSize: '1rem' }}>{seatNum}</div>
-                                <div style={{ fontWeight: 'bold', color: '#2d3748', fontSize: '1rem' }}>{user.name}</div>
-                                {status && (
-                                    <div style={{
-                                        fontSize: '1rem',
-                                        padding: '4px 12px',
-                                        borderRadius: '12px',
-                                        background: status.type === 'full' ? '#fff5f5' : '#ebf8ff',
-                                        color: status.type === 'full' ? '#c53030' : '#2c5282',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {status.text}
-                                    </div>
-                                )}
+                        <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: '1px solid #edf2f7' }}>
+                            <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7', background: '#fafafa', fontSize: '0.8rem', color: '#a0aec0' }}>
+                                {user.seat_number || '-'}
                             </div>
-
-                            {/* Spacer to push button to right (handled by justify-content: space-between on parent) */}
-
-                            {/* Check Button */}
-                            <button
-                                onClick={() => toggleAttendance(user.id)}
-                                style={{
-                                    width: '40px', height: '40px',
-                                    borderRadius: '12px',
-                                    border: 'none',
-                                    background: isAttended ? '#48bb78' : '#e2e8f0',
-                                    color: 'white',
-                                    cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                <Check size={24} />
-                            </button>
+                            <div style={{ width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7', fontWeight: 'bold', fontSize: '0.9rem', color: '#2d3748' }}>
+                                {user.name}
+                            </div>
+                            {/* Periods 1-7 */}
+                            {[1, 2, 3, 4, 5, 6, 7].map(p => (
+                                <div key={p} style={{ flex: 1 }}>
+                                    {renderCell(user, p)}
+                                </div>
+                            ))}
                         </div>
                     );
                 })}
