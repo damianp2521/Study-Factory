@@ -664,7 +664,7 @@ const StaffAttendance = ({ onBack }) => {
                                         minHeight: '100%' // Ensure cover expanded height
                                     }}>
                                         {isRowHighlighted && (
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
+                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
                                         )}
 
                                         <div style={{
@@ -689,7 +689,7 @@ const StaffAttendance = ({ onBack }) => {
 
                                     <div style={{ display: 'flex', position: 'relative' }}>
                                         {isRowHighlighted && (
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />
+                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />
                                         )}
 
                                         {daysInMonth.map(date => {
@@ -697,7 +697,7 @@ const StaffAttendance = ({ onBack }) => {
                                             const isToday = isSameDay(date, today);
 
                                             const periodsRender = (
-                                                <div style={{ display: 'flex' }}>
+                                                <div style={{ display: 'flex', height: ROW_HEIGHT }}>
                                                     {[1, 2, 3, 4, 5, 6, 7].map(p => (
                                                         <AttendanceCell
                                                             key={p}
