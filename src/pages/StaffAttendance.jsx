@@ -92,7 +92,7 @@ const UserMemoBlock = ({ user, memos, onAdd, onDelete, scale, width }) => {
 
     const handleAdd = () => {
         if (!text.trim()) return;
-        onAdd(user.name + ' ' + text.trim());
+        onAdd(text.trim());
         setText('');
     };
 
