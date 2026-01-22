@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react'; // Removed Calendar
 import { supabase } from '../lib/supabaseClient';
-import EmbeddedCalendar from '../components/EmbeddedCalendar';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 const StaffAttendance = ({ onBack }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [showCalendar, setShowCalendar] = useState(false);
-    const [branch, setBranch] = useState('망미점'); // Default Mangmi
+    // const [showCalendar, setShowCalendar] = useState(false); // Removed Date Picker
+    const [branch, setBranch] = useState('망미점');
     const [users, setUsers] = useState([]);
-    const [attendanceData, setAttendanceData] = useState({}); // user_id -> set of periods
-    const [vacationData, setVacationData] = useState({}); // user_id -> vacation request
+    const [attendanceData, setAttendanceData] = useState({});
+    const [vacationData, setVacationData] = useState({});
     const [loading, setLoading] = useState(false);
+
+    // Swipe State
+    const [touchStart, setTouchStart] = useState(null);
+    const [touchEnd, setTouchEnd] = useState(null);
+    const minSwipeDistance = 50;
 
     useEffect(() => {
         const updateDate = () => {
@@ -28,7 +34,6 @@ const StaffAttendance = ({ onBack }) => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Users
             const { data: userData, error: userError } = await supabase
                 .from('authorized_users')
                 .select('*')
@@ -37,7 +42,6 @@ const StaffAttendance = ({ onBack }) => {
 
             if (userError) throw userError;
 
-            // 2. Fetch Attendance for ALL periods on date
             const { data: logData, error: logError } = await supabase
                 .from('attendance_logs')
                 .select('user_id, period')
@@ -45,7 +49,6 @@ const StaffAttendance = ({ onBack }) => {
 
             if (logError) throw logError;
 
-            // 3. Fetch Vacations
             const { data: vacData, error: vacError } = await supabase
                 .from('vacation_requests')
                 .select('*')
@@ -55,7 +58,6 @@ const StaffAttendance = ({ onBack }) => {
 
             setUsers(userData || []);
 
-            // Process Logs
             const attMap = {};
             (logData || []).forEach(l => {
                 if (!attMap[l.user_id]) attMap[l.user_id] = new Set();
@@ -63,7 +65,6 @@ const StaffAttendance = ({ onBack }) => {
             });
             setAttendanceData(attMap);
 
-            // Process Vacations
             const vacMap = {};
             (vacData || []).forEach(v => {
                 vacMap[v.user_id] = v;
@@ -81,7 +82,6 @@ const StaffAttendance = ({ onBack }) => {
     const toggleAttendance = async (userId, period) => {
         const isAttended = attendanceData[userId]?.has(period);
 
-        // Optimistic Update
         setAttendanceData(prev => {
             const newSet = new Set(prev[userId] || []);
             if (isAttended) {
@@ -94,7 +94,6 @@ const StaffAttendance = ({ onBack }) => {
 
         try {
             if (isAttended) {
-                // Remove
                 const { error } = await supabase
                     .from('attendance_logs')
                     .delete()
@@ -103,44 +102,67 @@ const StaffAttendance = ({ onBack }) => {
                     .eq('period', period);
                 if (error) throw error;
             } else {
-                // Add
                 const { error } = await supabase
                     .from('attendance_logs')
-                    .insert({
-                        user_id: userId,
-                        date: selectedDate,
-                        period: period
-                    });
+                    .insert({ user_id: userId, date: selectedDate, period: period });
                 if (error) throw error;
             }
         } catch (error) {
             console.error('Attendance toggle error:', error);
             alert('출석 처리에 실패했습니다.');
-            fetchData(); // Revert on error
+            fetchData();
         }
     };
 
-    // Logic for Cell Color/Content
+    // Date Navigation Logic
+    const changeDate = (days) => {
+        const date = new Date(selectedDate);
+        date.setDate(date.getDate() + days);
+        setSelectedDate(date.toISOString().split('T')[0]);
+    };
+
+    const formatDateDisplay = (dateStr) => {
+        const date = new Date(dateStr);
+        return format(date, 'yyyy.M.d(EEE)', { locale: ko });
+    };
+
+    // Swipe Logic
+    const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+        if (isLeftSwipe) {
+            changeDate(1); // Next Day
+        }
+        if (isRightSwipe) {
+            changeDate(-1); // Prev Day
+        }
+    };
+
     const renderCell = (user, period) => {
         const isAttended = attendanceData[user.id]?.has(period);
         const vac = vacationData[user.id];
-
-        // Default style
         let bg = 'white';
         let content = null;
         let color = '#2d3748';
 
-        // Vacation Logic
         if (vac) {
             if (vac.type === 'full') {
-                // Full Day: Always Green background
-                bg = '#c6f6d5'; // Green-100
+                bg = '#c6f6d5';
                 color = '#22543d';
                 content = vac.reason ? `월차\n(${vac.reason})` : '월차';
             } else if (vac.type === 'half') {
-                // Half Day
                 const isAm = (vac.periods || []).includes(1);
-
                 if (isAm && period <= 4) {
                     bg = '#c6f6d5';
                     color = '#22543d';
@@ -159,7 +181,7 @@ const StaffAttendance = ({ onBack }) => {
             content = 'O';
         } else {
             if (bg === 'white') {
-                bg = '#fed7d7'; // Red-100
+                bg = '#fed7d7';
                 color = '#c53030';
                 content = 'X';
             }
@@ -180,8 +202,8 @@ const StaffAttendance = ({ onBack }) => {
                     whiteSpace: 'pre-line',
                     textAlign: 'center',
                     lineHeight: 1.1,
-                    cursor: 'pointer', // Add cursor pointer to indicate interactivity
-                    userSelect: 'none' // Prevent text selection on rapid clicks
+                    cursor: 'pointer',
+                    userSelect: 'none'
                 }}
             >
                 {content}
@@ -190,42 +212,57 @@ const StaffAttendance = ({ onBack }) => {
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div
+            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
+            {/* New Header Layout */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                     <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', marginLeft: '-8px' }}>
                         <ChevronLeft size={26} color="#2d3748" />
                     </button>
-                    <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>출석부</h2>
+                    {/* Title Removed as requested */}
                 </div>
-                {/* Date Picker Button */}
-                <button
-                    onClick={() => setShowCalendar(!showCalendar)}
-                    style={{
-                        padding: '6px 12px',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        background: 'white',
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        fontSize: '0.9rem', fontWeight: 'bold', color: '#2d3748',
-                        cursor: 'pointer'
-                    }}
-                >
-                    {selectedDate}
-                    <Calendar size={16} color="#718096" />
-                </button>
+
+                {/* Center Date Navigation */}
+                <div style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '20px'
+                }}>
+                    <button
+                        onClick={() => changeDate(-1)}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '10px' }}
+                    >
+                        <ChevronLeft size={28} color="#4a5568" strokeWidth={2.5} />
+                    </button>
+
+                    <span style={{
+                        fontSize: '1.2rem',
+                        fontWeight: 'bold',
+                        color: '#2d3748',
+                        width: '140px', // Fixed width to prevent jumping
+                        textAlign: 'center'
+                    }}>
+                        {formatDateDisplay(selectedDate)}
+                    </span>
+
+                    <button
+                        onClick={() => changeDate(1)}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '10px' }}
+                    >
+                        <ChevronRight size={28} color="#4a5568" strokeWidth={2.5} />
+                    </button>
+                </div>
+
+                {/* Spacer to balance the Back button on the left (approx width of back button) */}
+                <div style={{ width: '42px' }}></div>
             </div>
-            {showCalendar && (
-                <div style={{ position: 'absolute', top: '60px', right: '20px', zIndex: 100, background: 'white', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', padding: '10px' }}>
-                    <EmbeddedCalendar
-                        selectedDate={selectedDate}
-                        onSelectDate={(val) => {
-                            setSelectedDate(val);
-                            setShowCalendar(false);
-                        }}
-                    />
-                </div>
-            )}
 
             {/* Table Header */}
             <div style={{ display: 'flex', background: '#f7fafc', borderBottom: '1px solid #e2e8f0', height: '40px', fontWeight: 'bold', fontSize: '0.85rem', color: '#4a5568' }}>
@@ -247,7 +284,6 @@ const StaffAttendance = ({ onBack }) => {
                             <div style={{ width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7', fontWeight: 'bold', fontSize: '0.9rem', color: '#2d3748' }}>
                                 {user.name}
                             </div>
-                            {/* Periods 1-7 */}
                             {[1, 2, 3, 4, 5, 6, 7].map(p => (
                                 <div key={p} style={{ flex: 1 }}>
                                     {renderCell(user, p)}
