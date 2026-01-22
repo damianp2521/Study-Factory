@@ -473,7 +473,7 @@ const StaffAttendance = ({ onBack }) => {
                 </div>
 
                 {/* Right Group (Stacked Buttons) - Uniform Width */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', width: '200px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', width: '160px' }}>
                     {/* Memo Button */}
                     <button
                         onClick={() => setShowMemoModal(true)}
