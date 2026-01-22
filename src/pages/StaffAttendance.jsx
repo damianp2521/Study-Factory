@@ -165,7 +165,27 @@ const StaffAttendance = ({ onBack }) => {
         }
     };
 
-    const renderCell = (user, period, isRowHighlighted) => {
+    // Helper to determine row style based on seat number
+    const getSeatStyle = (seatNum) => {
+        let borderBottom = '1px solid #edf2f7'; // Default
+        let bgColor = 'white'; // Default
+
+        // Border Logic
+        const thickBorderSeats = [7, 17, 22, 27, 32, 37, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
+        const thinBorderSeats = [9, 11, 13, 15, 50];
+
+        if (thickBorderSeats.includes(seatNum)) borderBottom = '3px solid #718096'; // Stronger contrast
+        else if (thinBorderSeats.includes(seatNum)) borderBottom = '1px solid #718096'; // Distinct thin line
+
+        // Color Logic
+        if (seatNum >= 8 && seatNum <= 17) bgColor = '#edf2f7'; // Light Gray
+        else if (seatNum === 53 || seatNum === 54) bgColor = '#cbd5e0'; // Gray
+        else if (seatNum === 83) bgColor = '#fed7d7'; // Light Pink
+
+        return { borderBottom, bgColor };
+    };
+
+    const renderCell = (user, period, isRowHighlighted, seatBgColor) => {
         const isAttended = attendanceData[user.id]?.has(period);
         const vac = vacationData[user.id];
 
@@ -173,7 +193,14 @@ const StaffAttendance = ({ onBack }) => {
         let content = null;
         let color = '#2d3748';
 
-        // Apply Highlight Blue if not set by other status
+        // Apply Highlight Blue overrides seat specific color, but seat logic implies permanent background?
+        // User asked: "8~17은 연한회색으로 이름칸 칠해줘". 
+        // "색은 이름칸 색을 말하는거야". So ONLY the Name/Seat cells should have this color.
+        // The data cells/periods usually stay white/green/red.
+        // But if I highlight the row (Blue), it should probably override the permanent gray of the name cell?
+        // Or blend? 
+        // Logic: Highlight (Active) > Permanent (Static) > Default.
+
         if (isRowHighlighted) {
             bg = '#ebf8ff';
         }
@@ -304,9 +331,13 @@ const StaffAttendance = ({ onBack }) => {
             }}>
                 {users.map(user => {
                     const isRowHighlighted = highlightedSeat === user.seat_number;
+                    const { borderBottom, bgColor: seatBgColor } = getSeatStyle(user.seat_number);
+
+                    // Final background for Seat/Name: Highlight Blue takes precedence, otherwise seatBgColor
+                    const finalSeatNameBg = isRowHighlighted ? '#ebf8ff' : seatBgColor;
 
                     return (
-                        <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: '1px solid #edf2f7', position: 'relative' }}>
+                        <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: borderBottom, position: 'relative' }}>
                             {/* Outline for Highlight */}
                             {isRowHighlighted && (
                                 <div style={{
@@ -319,7 +350,7 @@ const StaffAttendance = ({ onBack }) => {
 
                             <div style={{
                                 width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7',
-                                background: isRowHighlighted ? '#ebf8ff' : '#fafafa',
+                                background: finalSeatNameBg, // Applied here
                                 fontSize: '0.8rem', color: '#a0aec0'
                             }}>
                                 {user.seat_number || '-'}
@@ -330,7 +361,7 @@ const StaffAttendance = ({ onBack }) => {
                                 style={{
                                     width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7',
                                     fontWeight: 'bold', fontSize: '0.9rem', color: '#2d3748',
-                                    background: isRowHighlighted ? '#ebf8ff' : 'white',
+                                    background: finalSeatNameBg, // Applied here
                                     cursor: 'pointer'
                                 }}
                             >
@@ -339,7 +370,7 @@ const StaffAttendance = ({ onBack }) => {
 
                             {[1, 2, 3, 4, 5, 6, 7].map(p => (
                                 <div key={p} style={{ flex: 1 }}>
-                                    {renderCell(user, p, isRowHighlighted)}
+                                    {renderCell(user, p, isRowHighlighted, finalSeatNameBg)}
                                 </div>
                             ))}
                         </div>
