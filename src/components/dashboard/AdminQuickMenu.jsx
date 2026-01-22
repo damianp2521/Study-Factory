@@ -78,7 +78,7 @@ const AdminQuickMenu = () => {
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '0.9rem',
+                            fontSize: '0.95rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
@@ -103,7 +103,7 @@ const AdminQuickMenu = () => {
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '0.9rem',
+                            fontSize: '0.95rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
@@ -163,7 +163,7 @@ const AdminQuickMenu = () => {
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '0.8rem',
+                            fontSize: '0.95rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
@@ -188,7 +188,7 @@ const AdminQuickMenu = () => {
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '0.8rem',
+                            fontSize: '0.95rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
@@ -213,7 +213,7 @@ const AdminQuickMenu = () => {
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '0.8rem',
+                            fontSize: '0.95rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
@@ -273,7 +273,7 @@ const AdminQuickMenu = () => {
                             border: 'none',
                             background: '#f7fafc',
                             color: '#2d3748',
-                            fontSize: '0.8rem',
+                            fontSize: '0.95rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             display: 'flex',
@@ -337,11 +337,11 @@ const AdminQuickMenu = () => {
                     }}
                 >
                     {num === 1 ? (
-                        <span style={{ fontSize: '0.9rem', color: '#2d3748', fontWeight: 'bold', textAlign: 'center', wordBreak: 'keep-all' }}>사원 관리</span>
+                        <span style={{ fontSize: '1.1rem', color: '#2d3748', fontWeight: 'bold', textAlign: 'center', wordBreak: 'keep-all' }}>사원 관리</span>
                     ) : num === 2 ? (
-                        <span style={{ fontSize: '0.9rem', color: '#2d3748', fontWeight: 'bold', textAlign: 'center', wordBreak: 'keep-all', lineHeight: 1.2 }}>출석·휴무<br />관리</span>
+                        <span style={{ fontSize: '1.1rem', color: '#2d3748', fontWeight: 'bold', textAlign: 'center', wordBreak: 'keep-all', lineHeight: 1.2 }}>출석·휴무<br />관리</span>
                     ) : num === 3 ? (
-                        <span style={{ fontSize: '1rem', color: '#2d3748', fontWeight: 'bold', textAlign: 'center', wordBreak: 'keep-all' }}>작업 관리</span>
+                        <span style={{ fontSize: '1.1rem', color: '#2d3748', fontWeight: 'bold', textAlign: 'center', wordBreak: 'keep-all' }}>작업 관리</span>
                     ) : (
                         <span style={{ fontSize: '1.5rem' }}>{num}</span>
                     )}

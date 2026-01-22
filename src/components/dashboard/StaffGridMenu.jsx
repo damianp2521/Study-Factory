@@ -109,7 +109,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#fff5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c53030', marginBottom: '5px' }}>
                     <Calendar size={20} />
                 </div>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>일별 사원<br />휴무 현황</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>일별 사원<br />휴무 현황</span>
             </button>
 
             {/* 2. Staff Work Status */}
@@ -129,7 +129,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#ebf8ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2b6cb0', marginBottom: '5px' }}>
                     <ClipboardList size={20} />
                 </div>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />업무 현황</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />업무 현황</span>
             </button>
 
             {/* 3. Leave Request */}
@@ -149,7 +149,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
                     <UserPlus size={20} />
                 </div>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
             </button>
 
             {/* 4. Attendance Book (출석부) */}
@@ -169,7 +169,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#e9d8fd', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b46c1', marginBottom: '5px' }}>
                     <UserCheck size={20} />
                 </div>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>출석부</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>출석부</span>
             </button>
 
             {/* 5. Employee Seat Management (사원 좌석 관리) */}
@@ -189,7 +189,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#faf5ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#805ad5', marginBottom: '5px' }}>
                     <MapPin size={20} />
                 </div>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />좌석 관리</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />좌석 관리</span>
             </button>
 
             {/* 6. Employee Beverage Management (사원 음료 관리) */}
@@ -209,7 +209,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
                     <Coffee size={20} />
                 </div>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />음료 관리</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />음료 관리</span>
             </button>
 
             {/* 7. Beverage Order List */}
@@ -229,7 +229,7 @@ const StaffGridMenu = () => {
                 <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#319795', marginBottom: '5px' }}>
                     <ClipboardList size={20} />
                 </div>
-                <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>음료<br />제조표</span>
+                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>음료<br />제조표</span>
             </button>
 
             {/* 8-9 Placeholders */}
