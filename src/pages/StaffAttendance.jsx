@@ -8,23 +8,16 @@ const StaffAttendance = ({ onBack }) => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [branch, setBranch] = useState('망미점');
 
-    // Derived state for display
     const [displayRows, setDisplayRows] = useState([]);
 
     const [attendanceData, setAttendanceData] = useState({});
     const [vacationData, setVacationData] = useState({});
     const [loading, setLoading] = useState(false);
 
-    // Highlight State
     const [highlightedSeat, setHighlightedSeat] = useState(null);
 
-    // Animation State
+    // Fade animation for data refresh only (not swipe)
     const [fade, setFade] = useState(false);
-
-    // Swipe State
-    const [touchStart, setTouchStart] = useState(null);
-    const [touchEnd, setTouchEnd] = useState(null);
-    const minSwipeDistance = 50;
 
     // Memo State
     const [memos, setMemos] = useState([]);
@@ -41,10 +34,10 @@ const StaffAttendance = ({ onBack }) => {
     }, []);
 
     useEffect(() => {
-        setFade(true); // Trigger fade out
+        setFade(true);
         const timer = setTimeout(() => {
             fetchData();
-            setFade(false); // Trigger fade in after small delay
+            setFade(false);
         }, 150);
         return () => clearTimeout(timer);
     }, [selectedDate, branch]);
@@ -52,7 +45,6 @@ const StaffAttendance = ({ onBack }) => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch Users
             const { data: userData, error: userError } = await supabase
                 .from('authorized_users')
                 .select('*')
@@ -61,7 +53,6 @@ const StaffAttendance = ({ onBack }) => {
 
             if (userError) throw userError;
 
-            // Fetch Attendance
             const { data: logData, error: logError } = await supabase
                 .from('attendance_logs')
                 .select('user_id, period')
@@ -69,7 +60,6 @@ const StaffAttendance = ({ onBack }) => {
 
             if (logError) throw logError;
 
-            // Fetch Vacations
             const { data: vacData, error: vacError } = await supabase
                 .from('vacation_requests')
                 .select('*')
@@ -77,18 +67,15 @@ const StaffAttendance = ({ onBack }) => {
 
             if (vacError) throw vacError;
 
-            // Fetch Memos
             const { data: memoData, error: memoError } = await supabase
                 .from('attendance_memos')
                 .select('*')
                 .eq('date', selectedDate)
                 .order('created_at', { ascending: true });
 
-            if (memoError) {
-                console.log('Memo fetch error (table might not exist yet):', memoError);
-            }
+            if (memoError) console.log('Memo fetch error:', memoError);
 
-            // Process Users into 102 rows + Unassigned
+            // Process Users (1-102 + Unassigned)
             const MAX_SEATS = 102;
             const fullRows = [];
             const userMap = {};
@@ -106,7 +93,6 @@ const StaffAttendance = ({ onBack }) => {
                 if (userMap[i]) {
                     fullRows.push(userMap[i]);
                 } else {
-                    // Stub for Empty Seat
                     fullRows.push({
                         id: `empty_${i}`,
                         seat_number: i,
@@ -116,8 +102,6 @@ const StaffAttendance = ({ onBack }) => {
                 }
             }
 
-            // Append Unassigned users at the end (or should they be separate? User said "below unassigned people...")
-            // Usually unassigned come after seated.
             unassignedUsers.forEach(u => {
                 fullRows.push({ ...u, isUnassigned: true, seat_number: null });
             });
@@ -148,7 +132,7 @@ const StaffAttendance = ({ onBack }) => {
     };
 
     const toggleAttendance = async (user, period) => {
-        if (user.isEmpty) return; // Disable toggle for empty seats
+        if (user.isEmpty) return;
 
         const userId = user.id;
         const isAttended = attendanceData[userId]?.has(period);
@@ -165,64 +149,38 @@ const StaffAttendance = ({ onBack }) => {
 
         try {
             if (isAttended) {
-                const { error } = await supabase
-                    .from('attendance_logs')
-                    .delete()
-                    .eq('user_id', userId)
-                    .eq('date', selectedDate)
-                    .eq('period', period);
-                if (error) throw error;
+                await supabase.from('attendance_logs').delete().eq('user_id', userId).eq('date', selectedDate).eq('period', period);
             } else {
-                const { error } = await supabase
-                    .from('attendance_logs')
-                    .insert({ user_id: userId, date: selectedDate, period: period });
-                if (error) throw error;
+                await supabase.from('attendance_logs').insert({ user_id: userId, date: selectedDate, period: period });
             }
         } catch (error) {
             console.error('Attendance toggle error:', error);
-            alert('출석 처리에 실패했습니다.');
             fetchData();
         }
     };
 
-    // Memo Logic
     const addMemo = async () => {
         if (!newMemo.trim()) return;
         try {
-            const { data, error } = await supabase
-                .from('attendance_memos')
-                .insert({
-                    date: selectedDate,
-                    branch: branch,
-                    content: newMemo.trim()
-                })
-                .select()
-                .single();
-
+            const { data, error } = await supabase.from('attendance_memos').insert({
+                date: selectedDate, branch: branch, content: newMemo.trim()
+            }).select().single();
             if (error) throw error;
-
             setMemos(prev => [...prev, data]);
             setNewMemo('');
         } catch (error) {
-            console.error('Error adding memo:', error);
-            alert('참고사항 등록에 실패했습니다. (테이블이 생성되었는지 확인해주세요)');
+            alert('참고사항 등록 실패');
         }
     };
 
     const deleteMemo = async (id) => {
         if (!window.confirm('삭제하시겠습니까?')) return;
         try {
-            const { error } = await supabase
-                .from('attendance_memos')
-                .delete()
-                .eq('id', id);
-
+            const { error } = await supabase.from('attendance_memos').delete().eq('id', id);
             if (error) throw error;
-
             setMemos(prev => prev.filter(m => m.id !== id));
         } catch (error) {
-            console.error('Error deleting memo:', error);
-            alert('삭제 실패했습니다.');
+            alert('삭제 실패');
         }
     };
 
@@ -237,58 +195,28 @@ const StaffAttendance = ({ onBack }) => {
         return format(date, 'yyyy.M.d(EEE)', { locale: ko });
     };
 
-    const onTouchStart = (e) => {
-        setTouchEnd(null);
-        setTouchStart(e.targetTouches[0].clientX);
-    };
-
-    const onTouchMove = (e) => {
-        setTouchEnd(e.targetTouches[0].clientX);
-    };
-
-    const onTouchEnd = () => {
-        if (!touchStart || !touchEnd) return;
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
-        if (isLeftSwipe) {
-            changeDate(1);
-        }
-        if (isRightSwipe) {
-            changeDate(-1);
-        }
-    };
-
     const handleNameClick = (seatNum) => {
-        if (!seatNum) return; // Prevent highlighting unassigned/null seats if needed, or allow?
-        if (highlightedSeat === seatNum) {
-            setHighlightedSeat(null);
-        } else {
-            setHighlightedSeat(seatNum);
-        }
+        if (!seatNum) return;
+        setHighlightedSeat(highlightedSeat === seatNum ? null : seatNum);
     };
 
-    // Helper to determine row style based on seat number
     const getSeatStyle = (seatNum) => {
-        let borderBottom = '1px solid #edf2f7'; // Default
-        let bgColor = 'white'; // Default
-
-        // Border Logic
+        let borderBottom = '1px solid #edf2f7';
+        let bgColor = 'white';
         const thickBorderSeats = [7, 17, 22, 27, 32, 37, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
         const thinBorderSeats = [9, 11, 13, 15, 50];
 
-        if (thickBorderSeats.includes(seatNum)) borderBottom = '3px solid #718096'; // Stronger contrast
-        else if (thinBorderSeats.includes(seatNum)) borderBottom = '1px solid #718096'; // Distinct thin line
+        if (thickBorderSeats.includes(seatNum)) borderBottom = '3px solid #718096';
+        else if (thinBorderSeats.includes(seatNum)) borderBottom = '1px solid #718096';
 
-        // Color Logic
-        if (seatNum >= 8 && seatNum <= 17) bgColor = '#edf2f7'; // Light Gray
-        else if (seatNum === 53 || seatNum === 54) bgColor = '#cbd5e0'; // Gray
-        else if (seatNum === 83) bgColor = '#fed7d7'; // Light Pink
+        if (seatNum >= 8 && seatNum <= 17) bgColor = '#edf2f7';
+        else if (seatNum === 53 || seatNum === 54) bgColor = '#cbd5e0';
+        else if (seatNum === 83) bgColor = '#fed7d7';
 
         return { borderBottom, bgColor };
     };
 
-    const renderCell = (user, period, isRowHighlighted, seatBgColor) => {
+    const renderCell = (user, period, isRowHighlighted) => {
         const isAttended = attendanceData[user.id]?.has(period);
         const vac = vacationData[user.id];
         const isDeactivated = user.isEmpty || user.isUnassigned;
@@ -297,10 +225,9 @@ const StaffAttendance = ({ onBack }) => {
         let content = null;
         let color = '#2d3748';
 
-        // Deactivated Style Overrides
         if (isDeactivated) {
-            bg = '#f7fafc'; // Matches "whole row gray" per user request (User: "전체 다 회색 칠해지도록 해줘")
-            color = '#cbd5e0'; // Faded text
+            bg = '#f7fafc';
+            color = '#cbd5e0';
         } else if (isRowHighlighted) {
             bg = '#ebf8ff';
         }
@@ -330,9 +257,6 @@ const StaffAttendance = ({ onBack }) => {
             content = 'O';
         } else {
             if (!content && (bg === 'white' || bg === '#ebf8ff' || bg === '#f7fafc')) {
-                // If deactivated, we still show 'X' but visually faded?
-                // User said: "비활성화 된듯이 글씨체도 연해지고 전체 다 회색 칠해지도록"
-                // So yes, "X" is fine but in the faded color.
                 if (!isDeactivated) {
                     bg = '#fed7d7';
                     color = '#c53030';
@@ -365,24 +289,27 @@ const StaffAttendance = ({ onBack }) => {
         );
     };
 
+    // Width constants
+    const SEAT_WIDTH = '40px';
+    const NAME_WIDTH = '60px';
+    const PERIOD_WIDTH = '60px'; // Wide enough for drag
+
+    // Header total height (Date + Period)
+    const HEADER_DATE_HEIGHT = '35px';
+    const HEADER_PERIOD_HEIGHT = '30px';
+    const HEADER_TOTAL_HEIGHT = '65px';
+
     return (
-        <div
-            style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-        >
-            {/* Header Area */}
-            <div style={{ padding: '0 0 10px 0' }}>
-                {/* Row 1: Back + Title + Memo Button */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
+            {/* Top Bar */}
+            <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
                         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', marginLeft: '-8px' }}>
                             <ChevronLeft size={26} color="#2d3748" />
                         </button>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>출석부</h2>
                     </div>
-
                     {/* Memo Button */}
                     <button
                         onClick={() => setShowMemoModal(true)}
@@ -394,141 +321,153 @@ const StaffAttendance = ({ onBack }) => {
                             fontSize: '0.85rem',
                             color: '#2b6cb0',
                             fontWeight: 'bold',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            cursor: 'pointer'
+                            display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer'
                         }}
                     >
                         오늘 출석 참고사항
                         {memos.length > 0 && (
                             <span style={{
-                                color: '#38a169',
-                                background: 'white',
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '0.8rem',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                color: '#38a169', background: 'white', width: '20px', height: '20px',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                             }}>
                                 {memos.length}
                             </span>
                         )}
                     </button>
                 </div>
-
-                {/* Row 2: Date Navigation (Centered) */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px'
-                }}>
-                    <button
-                        onClick={() => changeDate(-1)}
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}
-                    >
-                        <ChevronLeft size={24} color="#4a5568" strokeWidth={2.5} />
-                    </button>
-
-                    <span style={{
-                        fontSize: '1.2rem',
-                        fontWeight: 'bold',
-                        color: '#2d3748',
-                        width: '140px',
-                        textAlign: 'center',
-                        transition: 'opacity 0.2s',
-                        opacity: fade ? 0.3 : 1
-                    }}>
-                        {formatDateDisplay(selectedDate)}
-                    </span>
-
-                    <button
-                        onClick={() => changeDate(1)}
-                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}
-                    >
-                        <ChevronRight size={24} color="#4a5568" strokeWidth={2.5} />
-                    </button>
-                </div>
             </div>
 
-            {/* Table Header */}
-            <div style={{ display: 'flex', background: '#f7fafc', borderBottom: '1px solid #e2e8f0', height: '40px', fontWeight: 'bold', fontSize: '0.85rem', color: '#4a5568' }}>
-                <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #e2e8f0' }}>좌석</div>
-                <div style={{ width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #e2e8f0' }}>이름</div>
-                {[1, 2, 3, 4, 5, 6, 7].map(p => (
-                    <div key={p} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #e2e8f0' }}>{p}</div>
-                ))}
-            </div>
-
-            {/* Table Body */}
+            {/* Main Table Area (Scroll Container) */}
             <div style={{
                 flex: 1,
-                overflowY: 'auto',
-                transition: 'opacity 0.2s ease-in-out, transform 0.2s ease-in-out',
-                opacity: fade ? 0.5 : 1,
-                transform: fade ? 'scale(0.99)' : 'scale(1)'
+                overflow: 'auto', // Enables both vertical and horizontal scroll
+                position: 'relative'
             }}>
-                {displayRows.map(user => {
-                    const isDeactivated = user.isEmpty || user.isUnassigned;
-                    const isRowHighlighted = highlightedSeat === user.seat_number && !isDeactivated;
-                    const { borderBottom, bgColor: seatBgColor } = getSeatStyle(user.seat_number);
+                {/* 1. Header (Sticky Top) */}
+                <div style={{
+                    display: 'flex',
+                    position: 'sticky', top: 0, zIndex: 30,
+                    backgroundColor: '#f7fafc',
+                    width: 'max-content', // Allow content to determine width
+                    minWidth: '100%',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                }}>
+                    {/* 1-A. Sticky Columns (Left) */}
+                    <div style={{
+                        position: 'sticky', left: 0, zIndex: 40,
+                        display: 'flex', height: HEADER_TOTAL_HEIGHT,
+                        backgroundColor: '#f7fafc',
+                        boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)' // Shadow to show separation
+                    }}>
+                        <div style={{ width: SEAT_WIDTH, borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#4a5568' }}>좌석</div>
+                        <div style={{ width: NAME_WIDTH, borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#4a5568' }}>이름</div>
+                    </div>
 
-                    // Style logic for Name/Seat columns
-                    let finalSeatNameBg = seatBgColor;
-                    let fontColor = '#2d3748';
-                    let fontWeight = 'bold';
+                    {/* 1-B. Scrollable Header (Right) */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {/* Row 1: Date (Merged) */}
+                        <div style={{
+                            height: HEADER_DATE_HEIGHT,
+                            borderBottom: '1px solid #e2e8f0',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            backgroundColor: '#f7fafc',
+                            gap: '15px'
+                        }}>
+                            <button onClick={() => changeDate(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '0 5px' }}>
+                                <ChevronLeft size={20} color="#4a5568" strokeWidth={2.5} />
+                            </button>
+                            <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', minWidth: '120px', textAlign: 'center' }}>
+                                {formatDateDisplay(selectedDate)}
+                            </span>
+                            <button onClick={() => changeDate(1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '0 5px' }}>
+                                <ChevronRight size={20} color="#4a5568" strokeWidth={2.5} />
+                            </button>
+                        </div>
 
-                    if (isRowHighlighted) {
-                        finalSeatNameBg = '#ebf8ff';
-                    } else if (isDeactivated) {
-                        finalSeatNameBg = '#f7fafc'; // Matches deactivated cell background
-                        fontColor = '#cbd5e0';
-                        fontWeight = 'normal';
-                    }
-
-                    return (
-                        <div key={user.id} style={{ display: 'flex', height: '30px', borderBottom: borderBottom, position: 'relative' }}>
-                            {isRowHighlighted && (
-                                <div style={{
-                                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                                    border: '2px solid #3182ce',
-                                    pointerEvents: 'none',
-                                    zIndex: 10
-                                }} />
-                            )}
-
-                            <div style={{
-                                width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7',
-                                background: finalSeatNameBg,
-                                fontSize: '0.8rem', color: isDeactivated ? '#cbd5e0' : '#a0aec0'
-                            }}>
-                                {user.seat_number || (isDeactivated ? '-' : '-')}
-                            </div>
-
-                            <div
-                                onClick={() => handleNameClick(user.seat_number)}
-                                style={{
-                                    width: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7',
-                                    fontWeight: fontWeight, fontSize: '0.9rem', color: fontColor,
-                                    background: finalSeatNameBg,
-                                    cursor: isDeactivated ? 'default' : 'pointer'
-                                }}
-                            >
-                                {user.name}
-                            </div>
-
+                        {/* Row 2: Periods */}
+                        <div style={{ display: 'flex', height: HEADER_PERIOD_HEIGHT }}>
                             {[1, 2, 3, 4, 5, 6, 7].map(p => (
-                                <div key={p} style={{ flex: 1 }}>
-                                    {renderCell(user, p, isRowHighlighted, finalSeatNameBg)}
-                                </div>
+                                <div key={p} style={{ width: PERIOD_WIDTH, borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.85rem', color: '#4a5568' }}>{p}</div>
                             ))}
                         </div>
-                    );
-                })}
+                    </div>
+                </div>
+
+                {/* 2. Body (Rows) */}
+                <div style={{
+                    width: 'max-content', minWidth: '100%',
+                    opacity: fade ? 0.5 : 1, transition: 'opacity 0.2s',
+                    paddingBottom: '20px' // Extra space at bottom
+                }}>
+                    {displayRows.map(user => {
+                        const isDeactivated = user.isEmpty || user.isUnassigned;
+                        const isRowHighlighted = highlightedSeat === user.seat_number && !isDeactivated;
+                        const { borderBottom, bgColor } = getSeatStyle(user.seat_number);
+
+                        let finalSeatNameBg = bgColor;
+                        let fontColor = '#2d3748';
+                        let fontWeight = 'bold';
+
+                        if (isRowHighlighted) {
+                            finalSeatNameBg = '#ebf8ff';
+                        } else if (isDeactivated) {
+                            finalSeatNameBg = '#f7fafc';
+                            fontColor = '#cbd5e0';
+                            fontWeight = 'normal';
+                        }
+
+                        return (
+                            <div key={user.id} style={{ display: 'flex', height: '30px', borderBottom: borderBottom }}>
+                                {/* Sticky Left Columns */}
+                                <div style={{
+                                    position: 'sticky', left: 0, zIndex: 10,
+                                    display: 'flex',
+                                    boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)'
+                                }}>
+                                    {/* Highlight Border Overlay for sticky part */}
+                                    {isRowHighlighted && (
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
+                                    )}
+
+                                    <div style={{
+                                        width: SEAT_WIDTH, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        background: finalSeatNameBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: '0.8rem'
+                                    }}>
+                                        {user.seat_number || '-'}
+                                    </div>
+                                    <div
+                                        onClick={() => handleNameClick(user.seat_number)}
+                                        style={{
+                                            width: NAME_WIDTH, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            background: finalSeatNameBg, color: fontColor, fontSize: '0.9rem', fontWeight: fontWeight,
+                                            cursor: isDeactivated ? 'default' : 'pointer'
+                                        }}
+                                    >
+                                        {user.name}
+                                    </div>
+                                </div>
+
+                                {/* Scrollable Right Columns */}
+                                <div style={{ display: 'flex', position: 'relative' }}>
+                                    {/* Highlight Border Overlay for scrollable part */}
+                                    {isRowHighlighted && (
+                                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />
+                                        // Note: borderRight is missing to avoid closing the box on every cell, but actually we want a border around the whole row. 
+                                        // Since we split the row into Sticky vs Scrollable, drawing a contiguous border is hard.
+                                        // I'll stick to Top/Bottom borders for the row effect in the scrollable part.
+                                    )}
+
+                                    {[1, 2, 3, 4, 5, 6, 7].map(p => (
+                                        <div key={p} style={{ width: PERIOD_WIDTH }}>
+                                            {renderCell(user, p, isRowHighlighted)}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Memo Modal */}
@@ -537,13 +476,11 @@ const StaffAttendance = ({ onBack }) => {
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.5)', zIndex: 100,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '20px',
-                    animation: 'fadeIn 0.2s ease-out'
+                    padding: '20px'
                 }}>
                     <div style={{
                         background: 'white', borderRadius: '16px', width: '100%', maxWidth: '400px', maxHeight: '80vh',
-                        display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                        animation: 'slideUp 0.2s ease-out'
+                        display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
                     }}>
                         <div style={{ padding: '15px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>{selectedDate} 출석 참고사항</h3>
@@ -551,49 +488,23 @@ const StaffAttendance = ({ onBack }) => {
                                 <X size={24} color="#a0aec0" />
                             </button>
                         </div>
-
                         <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#f7fafc' }}>
-                            {memos.length === 0 ? (
-                                <div style={{ textAlign: 'center', color: '#a0aec0', padding: '40px 0' }}>
-                                    <div style={{ marginBottom: '10px' }}>📝</div>
-                                    등록된 참고사항이 없습니다.
-                                </div>
-                            ) : (
-                                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {memos.map((memo, idx) => (
-                                        <li key={memo.id} style={{ background: 'white', padding: '12px', borderRadius: '12px', fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1 }}>
-                                                <span style={{ fontWeight: 'bold', color: '#3182ce', minWidth: '20px' }}>{idx + 1}.</span>
-                                                <span style={{ color: '#4a5568', wordBreak: 'break-all', lineHeight: 1.4 }}>{memo.content}</span>
-                                            </div>
-                                            <button
-                                                onClick={() => deleteMemo(memo.id)}
-                                                style={{ background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px', fontWeight: 'bold' }}
-                                            >
-                                                삭제
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {memos.length === 0 && <li style={{ color: '#a0aec0', textAlign: 'center' }}>참고사항이 없습니다.</li>}
+                                {memos.map((memo, idx) => (
+                                    <li key={memo.id} style={{ background: 'white', padding: '12px', borderRadius: '12px', fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1 }}>
+                                            <span style={{ fontWeight: 'bold', color: '#3182ce', minWidth: '20px' }}>{idx + 1}.</span>
+                                            <span style={{ color: '#4a5568', wordBreak: 'break-all', lineHeight: 1.4 }}>{memo.content}</span>
+                                        </div>
+                                        <button onClick={() => deleteMemo(memo.id)} style={{ background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px', fontWeight: 'bold' }}>삭제</button>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
-
                         <div style={{ padding: '20px', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', background: 'white', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px' }}>
-                            <input
-                                type="text"
-                                value={newMemo}
-                                onChange={(e) => setNewMemo(e.target.value)}
-                                placeholder="참고사항을 입력하세요"
-                                style={{ flex: 1, padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.95rem', outline: 'none' }}
-                                onKeyPress={(e) => e.key === 'Enter' && addMemo()}
-                            />
-                            <button
-                                onClick={addMemo}
-                                style={{ background: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', padding: '0 20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
-                            >
-                                <Plus size={18} />
-                                등록
-                            </button>
+                            <input type="text" value={newMemo} onChange={(e) => setNewMemo(e.target.value)} placeholder="참고사항을 입력하세요" style={{ flex: 1, padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '0.95rem', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && addMemo()} />
+                            <button onClick={addMemo} style={{ background: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', padding: '0 20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><Plus size={18} />등록</button>
                         </div>
                     </div>
                 </div>
