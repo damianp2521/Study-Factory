@@ -276,14 +276,26 @@ const ManagerDashboard = () => {
                         >
                             <div style={{
                                 flex: 1,
-                                overflowY: 'auto',
-                                paddingBottom: '20px',
-                                marginBottom: '20px',
-                                scrollbarWidth: 'none',
-                                msOverflowStyle: 'none'
+                                height: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                backgroundColor: 'white',
+                                borderRadius: '24px',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                                border: '1px solid rgba(255,255,255,0.4)',
+                                overflow: 'hidden',
+                                position: 'relative'
                             }}>
-                                <style>{`div::-webkit-scrollbar { display: none; }`}</style>
-                                {item.component}
+                                <div style={{
+                                    flex: 1,
+                                    overflowY: 'auto',
+                                    paddingBottom: '20px', // Bottom padding for scrolling content
+                                    scrollbarWidth: 'none',
+                                    msOverflowStyle: 'none'
+                                }}>
+                                    <style>{`div::-webkit-scrollbar { display: none; }`}</style>
+                                    {item.component}
+                                </div>
                             </div>
                         </div>
                     ))}

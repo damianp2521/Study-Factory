@@ -399,7 +399,7 @@ const StaffDailyAttendance = ({ onBack }) => {
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
             {/* 2-Row Layout Header */}
             <div style={{ padding: '15px 10px 10px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
 
