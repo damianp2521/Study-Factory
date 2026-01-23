@@ -395,10 +395,19 @@ const StaffDailyAttendance = ({ onBack }) => {
     const getSeatStyle = (seatNum) => {
         let borderBottom = '1px solid #edf2f7';
         let bgColor = 'white';
-        const thickBorderSeats = [7, 17, 22, 27, 32, 37, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
+
+        // Separator Logic
+        const thickBorderSeats = [7, 17, 22, 27, 32, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
         const thinBorderSeats = [9, 11, 13, 15, 50];
-        if (thickBorderSeats.includes(seatNum)) borderBottom = '3px solid #718096';
-        else if (thinBorderSeats.includes(seatNum)) borderBottom = '1px solid #718096';
+
+        if (seatNum === 54) {
+            borderBottom = '4px solid #267E82'; // Separate Study Rooms (Very Thick Teal)
+        } else if (thickBorderSeats.includes(seatNum)) {
+            borderBottom = '3px solid #718096';
+        } else if (thinBorderSeats.includes(seatNum)) {
+            borderBottom = '1px solid #718096'; // Visible Thin Line
+        }
+
         if (seatNum >= 8 && seatNum <= 17) bgColor = '#edf2f7';
         else if (seatNum === 53 || seatNum === 54) bgColor = '#cbd5e0';
         else if (seatNum === 83) bgColor = '#fed7d7';
