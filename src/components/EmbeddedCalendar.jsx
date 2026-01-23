@@ -58,20 +58,17 @@ const EmbeddedCalendar = ({
 
         const days = [];
 
-        // Days of week header
-        const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
-
         // Add empty cells for padding before 1st day
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty-${i}`} style={{ height: '40px' }}></div>);
+            days.push(<div key={`empty-${i}`} style={{ minHeight: '48px' }}></div>);
         }
 
         // Render actual days
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-            // Find event for this day
-            const dayEvent = events.find(e => e.date === dateStr);
+            // Find all events for this day
+            const dayEvents = events.filter(e => e.date === dateStr);
 
             // Check selection (Single OR Multi)
             const isSelected = selectedDate === dateStr || selectedDates.includes(dateStr);
@@ -79,43 +76,33 @@ const EmbeddedCalendar = ({
             const disabled = isDateDisabled(dateStr);
             const isToday = dateStr === new Date().toISOString().split('T')[0];
 
-            // Determine styles
-            let bgColor = 'transparent';
-            let textColor = '#2d3748';
-            let borderColor = 'transparent';
+            // Determine cell base styles
+            let cellBgColor = 'transparent';
+            let cellTextColor = '#2d3748';
+            let cellBorderColor = 'transparent';
             let fontWeight = 'normal';
 
-            // 1. Base Styles for Events
-            if (dayEvent) {
-                if (dayEvent.type === 'full') {
-                    bgColor = '#fff5f5';
-                    textColor = '#c53030';
-                } else if (dayEvent.type === 'half') {
-                    bgColor = '#ebf8ff';
-                    textColor = '#2c5282';
-                } else if (dayEvent.type === 'special') {
-                    bgColor = '#faf5ff';
-                    textColor = '#553c9a';
-                    borderColor = '#d6bcfa';
-                }
-            }
-
-            // 2. Selection Overlay (Highest Priority)
+            // Selection Overlay (Highest Priority)
             if (isSelected) {
-                bgColor = 'var(--color-primary)';
-                textColor = 'white';
+                cellBgColor = 'var(--color-primary)';
+                cellTextColor = 'white';
                 fontWeight = 'bold';
-            } else if (isToday && !dayEvent) {
-                borderColor = 'var(--color-primary)';
+            } else if (isToday) {
+                cellBorderColor = 'var(--color-primary)';
             }
 
-            // 3. Disabled State
+            // Disabled State
             if (disabled) {
-                textColor = '#cbd5e0';
-                bgColor = '#f7fafc';
+                cellTextColor = '#cbd5e0';
+                cellBgColor = '#f7fafc';
                 if (isSelected) {
-                    bgColor = '#e2e8f0'; // Dimmed selected
+                    cellBgColor = '#e2e8f0'; // Dimmed selected
                 }
+            }
+
+            // Border for days with events (if not selected/disabled)
+            if (!isSelected && !disabled && !isToday && dayEvents.length > 0) {
+                cellBorderColor = '#cbd5e0';
             }
 
             days.push(
@@ -123,16 +110,17 @@ const EmbeddedCalendar = ({
                     key={dateStr}
                     onClick={() => !disabled && onSelectDate(dateStr)}
                     style={{
-                        minHeight: '64px',
+                        minHeight: '52px', // Reduced height but enough for date + 1 label
+                        height: 'auto', // Allow expansion
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '4px',
-                        padding: '4px 2px',
-                        background: bgColor,
-                        color: textColor,
-                        border: isSelected ? 'none' : (dayEvent ? `1px solid ${dayEvent.type === 'full' ? '#feb2b2' : dayEvent.type === 'special' ? '#d6bcfa' : '#bee3f8'}` : `1px solid ${borderColor}`),
+                        justifyContent: 'flex-start',
+                        gap: '2px', // Tight gap
+                        padding: '4px',
+                        background: cellBgColor,
+                        color: cellTextColor,
+                        border: isSelected ? 'none' : `1px solid ${cellBorderColor}`,
                         borderRadius: '8px',
                         fontWeight: fontWeight,
                         fontSize: '0.9rem',
@@ -141,75 +129,83 @@ const EmbeddedCalendar = ({
                         position: 'relative'
                     }}
                 >
-                    <span>{d}</span>
-                    {dayEvent && !isSelected && (() => {
-                        let label = '';
-                        let bgColor = 'transparent';
-                        let textColor = '#2d3748';
-                        let borderColor = 'transparent';
+                    <span style={{ marginBottom: '2px', lineHeight: 1 }}>{d}</span>
+                    {dayEvents.length > 0 && !isSelected && (
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '2px',
+                            width: '100%'
+                        }}>
+                            {dayEvents.map((event, idx) => {
+                                let label = '';
+                                let itemBgColor = 'transparent';
+                                let itemTextColor = '#2d3748';
+                                let itemBorderColor = 'transparent';
 
-                        const isAm = (dayEvent.periods || []).includes(1);
+                                const isAm = (event.periods || []).includes(1);
 
-                        // 1. Base Label
-                        if (dayEvent.type === 'full') {
-                            label = '월차';
-                            bgColor = '#fff5f5';
-                            textColor = '#c53030';
-                            borderColor = '#feb2b2';
-                        } else if (dayEvent.type === 'half') {
-                            if (isAm) {
-                                label = '오전';
-                                bgColor = '#fff5f5';
-                                textColor = '#c53030';
-                                borderColor = '#feb2b2';
-                            } else {
-                                label = '오후';
-                                bgColor = '#ebf8ff';
-                                textColor = '#2c5282';
-                                borderColor = '#90cdf4';
-                            }
-                        } else if (dayEvent.type === 'special') {
-                            label = '특휴';
-                            bgColor = '#faf5ff';
-                            textColor = '#553c9a';
-                            borderColor = '#d6bcfa';
-                        }
+                                // 1. Base Label
+                                if (event.type === 'full') {
+                                    label = '월차';
+                                    itemBgColor = '#fff5f5';
+                                    itemTextColor = '#c53030';
+                                    itemBorderColor = '#feb2b2';
+                                } else if (event.type === 'half') {
+                                    if (isAm) {
+                                        label = '오전';
+                                        itemBgColor = '#fff5f5';
+                                        itemTextColor = '#c53030';
+                                        itemBorderColor = '#feb2b2';
+                                    } else {
+                                        label = '오후';
+                                        itemBgColor = '#ebf8ff';
+                                        itemTextColor = '#2c5282';
+                                        itemBorderColor = '#90cdf4';
+                                    }
+                                } else if (event.type === 'special') {
+                                    label = '특휴';
+                                    itemBgColor = '#faf5ff';
+                                    itemTextColor = '#553c9a';
+                                    itemBorderColor = '#d6bcfa';
+                                }
 
-                        // 2. Reason Override
-                        if (dayEvent.reason) {
-                            const allowedReasons = ['알바', '스터디', '병원'];
-                            if (allowedReasons.includes(dayEvent.reason)) {
-                                label = dayEvent.reason;
-                            } else {
-                                label = '기타';
-                            }
-                            // Gray Style
-                            bgColor = '#F7FAFC';
-                            textColor = '#4A5568';
-                            borderColor = '#CBD5E0';
-                        }
+                                // 2. Reason Override
+                                if (event.reason) {
+                                    const allowedReasons = ['알바', '스터디', '병원'];
+                                    if (allowedReasons.includes(event.reason)) {
+                                        label = event.reason;
+                                    } else {
+                                        label = '기타';
+                                    }
+                                    // Gray Style
+                                    itemBgColor = '#F7FAFC';
+                                    itemTextColor = '#4A5568';
+                                    itemBorderColor = '#CBD5E0';
+                                }
 
-                        return (
-                            <div style={{
-                                fontSize: '0.7rem',
-                                fontWeight: 'bold',
-                                color: textColor,
-                                backgroundColor: bgColor,
-                                border: `1px solid ${borderColor}`,
-                                borderRadius: '6px',
-                                padding: '3px 0',
-                                width: '92%',
-                                textAlign: 'center',
-                                marginTop: '2px',
-                                lineHeight: 1,
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
-                            }}>
-                                {label}
-                            </div>
-                        );
-                    })()}
+                                return (
+                                    <div key={idx} style={{
+                                        fontSize: '0.7rem',
+                                        fontWeight: 'bold',
+                                        color: itemTextColor,
+                                        backgroundColor: itemBgColor,
+                                        border: `1px solid ${itemBorderColor}`,
+                                        borderRadius: '6px',
+                                        padding: '2px 0',
+                                        width: '100%',
+                                        textAlign: 'center',
+                                        lineHeight: 1.2,
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        {label}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             );
         }
