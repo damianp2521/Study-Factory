@@ -222,12 +222,22 @@ const StaffAttendance = ({ onBack }) => {
     useEffect(() => {
         if (highlightedSeat && rowRefs.current[highlightedSeat]) {
             const rowEl = rowRefs.current[highlightedSeat];
-            if (rowEl) {
-                // Scroll to center to avoid being hidden by sticky headers
-                rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (rowEl && scrollContainerRef.current) {
+                // Determine the scroll position to put the row at the top (under sticky header)
+                // HEADER_TOTAL_HEIGHT is the offset needed
+                const container = scrollContainerRef.current;
+
+                // rowEl.offsetTop is relative to the `contentRef` div which starts at top:0
+                // So we just need (rowTop - headerHeight)
+                const targetScrollTop = rowEl.offsetTop - HEADER_TOTAL_HEIGHT;
+
+                container.scrollTo({
+                    top: targetScrollTop,
+                    behavior: 'smooth'
+                });
             }
         }
-    }, [highlightedSeat]);
+    }, [highlightedSeat, HEADER_TOTAL_HEIGHT]);
 
     // Dynamic Constants
     const BASE_SEAT_WIDTH = 40;
