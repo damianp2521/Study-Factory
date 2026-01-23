@@ -62,7 +62,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
                 width: width, flexShrink: 0, height: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 background: bg, color, fontSize: `${0.8 * scale}rem`, fontWeight: 'bold',
-                borderRight: '1px solid #e2e8f0',
+                borderRight: period === 5 ? '3px solid #cbd5e0' : '1px solid #e2e8f0', // Thicker separator for lunch/break
                 whiteSpace: 'pre-line', textAlign: 'center', lineHeight: 1.1,
                 cursor: isDeactivated ? 'default' : 'pointer',
                 userSelect: 'none'
@@ -400,11 +400,10 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
-            {/* 2-Row Layout Header */}
-            <div style={{ padding: '15px 10px 10px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-
-                {/* Row 1: Centered Date Navigator */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
+            {/* Single Row Layout: Date Centered, Memo Right */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 10px 5px 10px', flexShrink: 0 }}>
+                {/* Centered Date Navigator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                     <button onClick={() => changeDate(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
                         <ChevronLeft size={24} color="#4a5568" />
                     </button>
@@ -416,8 +415,8 @@ const StaffDailyAttendance = ({ onBack }) => {
                     </button>
                 </div>
 
-                {/* Row 2: Right Aligned Memo Button */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                {/* Absolute Right Memo Button */}
+                <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
                     <button
                         onClick={() => setShowMemoModal(true)}
                         style={{
