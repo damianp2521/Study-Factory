@@ -69,7 +69,7 @@ const AdminQuickMenu = () => {
                 </div>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
                     gap: '15px',
                     alignContent: 'start'
                 }}>
@@ -154,7 +154,7 @@ const AdminQuickMenu = () => {
                 </div>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
                     gap: '15px',
                     alignContent: 'start'
                 }}>
@@ -289,7 +289,7 @@ const AdminQuickMenu = () => {
                 </div>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
                     gap: '15px',
                     alignContent: 'start'
                 }}>
@@ -339,7 +339,7 @@ const AdminQuickMenu = () => {
     return (
         <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(85px, 1fr))',
             gap: '15px',
             alignContent: 'start',
             height: '100%'

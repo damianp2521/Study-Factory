@@ -267,7 +267,7 @@ const ManagerDashboard = () => {
                             style={{
                                 width: `${100 / items.length}%`,
                                 height: '100%',
-                                padding: '10px 20px',
+                                padding: '0 20px 20px 20px', // Added padding
                                 boxSizing: 'border-box',
                                 overflow: 'hidden',
                                 display: 'flex',
@@ -281,8 +281,8 @@ const ManagerDashboard = () => {
                                 flexDirection: 'column',
                                 backgroundColor: 'white',
                                 borderRadius: '24px',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-                                border: '1px solid rgba(255,255,255,0.4)',
+                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', // Enhanced shadow
+                                border: '1px solid #e2e8f0',
                                 overflow: 'hidden',
                                 position: 'relative'
                             }}>
