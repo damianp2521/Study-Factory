@@ -588,30 +588,43 @@ const StaffAttendance = ({ onBack }) => {
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
             {/* Header ... */}
             {/* Header */}
-            <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '10px', flexShrink: 0 }}>
                 {/* Top Row: Title and Right Actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', marginLeft: '-5px' }}>
-                            <ChevronLeft size={24} color="#2d3748" />
-                        </button>
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748' }}>월별 출석 현황</h2>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', width: '120px' }}>
                         <button
-                            onClick={fitAndScrollToToday}
+                            onClick={onBack}
                             style={{
-                                background: 'white', border: '1px solid #cbd5e0', borderRadius: '16px',
-                                padding: '6px 12px', fontSize: '0.85rem', color: '#4a5568', fontWeight: 'bold',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px', width: '100%'
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                padding: '8px',
+                                marginLeft: '-8px', // Match AdminMemberRegister
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#2d3748'
                             }}
                         >
-                            <CalendarIcon size={16} />
-                            오늘로 이동
+                            <ChevronLeft size={26} />
                         </button>
+                        <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748' }}>월별 출석 현황</h2>
                     </div>
+
+                    <button
+                        onClick={fitAndScrollToToday}
+                        style={{
+                            background: 'white', border: '1px solid #cbd5e0', borderRadius: '16px',
+                            padding: '6px 12px', fontSize: '0.85rem', color: '#4a5568', fontWeight: 'bold',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px'
+                        }}
+                    >
+                        <CalendarIcon size={16} />
+                        오늘로 이동
+                    </button>
                 </div>
 
                 {/* Bottom Row: Month Navigator (Centered) */}
