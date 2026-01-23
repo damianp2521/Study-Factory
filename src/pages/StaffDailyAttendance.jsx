@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
-import { ChevronLeft, X, Plus, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
+import { ChevronLeft, X, Plus, Calendar as CalendarIcon, RotateCw } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, isSameDay, getDate } from 'date-fns';
 import { ko } from 'date-fns/locale';
