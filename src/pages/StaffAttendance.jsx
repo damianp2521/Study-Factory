@@ -732,7 +732,7 @@ const StaffAttendance = ({ onBack }) => {
                                     <div
                                         key={user.id}
                                         ref={el => rowRefs.current[user.seat_number] = el}
-                                        style={{ display: 'flex', height: currentRowHeight, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
+                                        style={{ display: 'flex', height: currentRowHeight, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
                                     >
                                         <div style={{
                                             position: 'sticky', left: 0, zIndex: 10,
@@ -742,6 +742,9 @@ const StaffAttendance = ({ onBack }) => {
                                             backgroundColor: stickyBg,
                                             height: '100%'
                                         }}>
+                                            {/* Border Overlay */}
+                                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 0, borderBottom: borderBottom, zIndex: 25, pointerEvents: 'none' }} />
+
                                             {isRowHighlighted && (
                                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
                                             )}
@@ -767,6 +770,9 @@ const StaffAttendance = ({ onBack }) => {
                                         </div>
 
                                         <div style={{ display: 'flex', position: 'relative' }}>
+                                            {/* Border Overlay */}
+                                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 0, borderBottom: borderBottom, zIndex: 25, pointerEvents: 'none' }} />
+
                                             {isRowHighlighted && (
                                                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />
                                             )}

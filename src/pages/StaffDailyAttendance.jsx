@@ -505,16 +505,22 @@ const StaffDailyAttendance = ({ onBack }) => {
                                 <div
                                     key={user.id}
                                     ref={el => rowRefs.current[user.seat_number] = el}
-                                    style={{ display: 'flex', height: ROW_HEIGHT, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
+                                    style={{ display: 'flex', height: ROW_HEIGHT, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
                                 >
                                     {/* Sticky Name/Seat */}
                                     <div style={{ position: 'sticky', left: 0, zIndex: 10, display: 'flex', boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)', alignItems: 'flex-start', backgroundColor: stickyBg, height: '100%' }}>
+                                        {/* Border Overlay */}
+                                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 0, borderBottom: borderBottom, zIndex: 25, pointerEvents: 'none' }} />
+
                                         {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />}
                                         <div style={{ width: SEAT_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem` }}>{user.seat_number || '-'}</div>
                                         <div onClick={() => handleNameClick(user.seat_number)} style={{ width: NAME_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: '#2d3748', fontSize: `${0.9 * scale}rem`, fontWeight: isDeactivated ? 'normal' : 'bold', cursor: isDeactivated ? 'default' : 'pointer' }}>{user.name}</div>
                                     </div>
                                     {/* Scrollable Day Data */}
                                     <div style={{ display: 'flex', position: 'relative' }}>
+                                        {/* Border Overlay */}
+                                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 0, borderBottom: borderBottom, zIndex: 25, pointerEvents: 'none' }} />
+
                                         {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />}
                                         {daysInView.map(date => (
                                             <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
