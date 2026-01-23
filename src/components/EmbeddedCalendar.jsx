@@ -123,11 +123,12 @@ const EmbeddedCalendar = ({
                     key={dateStr}
                     onClick={() => !disabled && onSelectDate(dateStr)}
                     style={{
-                        height: '40px',
+                        minHeight: '64px',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        justifyContent: 'space-between',
+                        padding: '4px 2px',
                         background: bgColor,
                         color: textColor,
                         border: isSelected ? 'none' : (dayEvent ? `1px solid ${dayEvent.type === 'full' ? '#feb2b2' : dayEvent.type === 'special' ? '#d6bcfa' : '#bee3f8'}` : `1px solid ${borderColor}`),
@@ -189,17 +190,18 @@ const EmbeddedCalendar = ({
 
                         return (
                             <div style={{
-                                fontSize: '0.6rem',
+                                fontSize: '0.7rem',
                                 fontWeight: 'bold',
                                 color: textColor,
                                 backgroundColor: bgColor,
                                 border: `1px solid ${borderColor}`,
-                                borderRadius: '4px',
-                                padding: '1px 3px',
+                                borderRadius: '6px',
+                                padding: '3px 0',
+                                width: '92%',
+                                textAlign: 'center',
                                 marginTop: '2px',
                                 lineHeight: 1,
                                 whiteSpace: 'nowrap',
-                                maxWidth: '100%',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis'
                             }}>
