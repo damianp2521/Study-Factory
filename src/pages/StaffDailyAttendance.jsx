@@ -400,10 +400,10 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
-            {/* Single Row Layout: Date Centered, Memo Right */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 10px 5px 10px', flexShrink: 0 }}>
-                {/* Centered Date Navigator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {/* Header: Row 1 Date (Top), Row 2 Memo (Bottom) */}
+            <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+                {/* Row 1: Centered Date Navigator (Top) - Minimal Padding */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', padding: '5px 10px 0 10px' }}>
                     <button onClick={() => changeDate(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
                         <ChevronLeft size={24} color="#4a5568" />
                     </button>
@@ -415,8 +415,8 @@ const StaffDailyAttendance = ({ onBack }) => {
                     </button>
                 </div>
 
-                {/* Absolute Right Memo Button */}
-                <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                {/* Row 2: Right Aligned Memo Button (Bottom) */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '5px 10px 10px 10px' }}>
                     <button
                         onClick={() => setShowMemoModal(true)}
                         style={{
