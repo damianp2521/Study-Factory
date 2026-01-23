@@ -161,6 +161,6 @@ const dividerStyle = {
     height: '1px',
     backgroundColor: '#e2e8f0',
     margin: '10px 0'
-};};
+};
 
 export default AdminQuickMenu;
