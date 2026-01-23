@@ -587,50 +587,28 @@ const StaffAttendance = ({ onBack }) => {
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
             {/* Header ... */}
-            <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', marginLeft: '-5px' }}>
-                            <ChevronLeft size={24} color="#2d3748" />
-                        </button>
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748' }}>출석부</h2>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <button onClick={() => changeMonth(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px' }}>
-                            <ChevronLeft size={20} color="#4a5568" />
-                        </button>
-                        <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', minWidth: '80px', textAlign: 'center' }}>
-                            {format(currentViewDate, 'yyyy.MM')}
-                        </span>
-                        <button onClick={() => changeMonth(1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px' }}>
-                            <ChevronRight size={20} color="#4a5568" />
-                        </button>
-                    </div>
+            {/* Header */}
+            <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0, display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', marginLeft: '-5px' }}>
+                        <ChevronLeft size={24} color="#2d3748" />
+                    </button>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748' }}>월별 출석 현황</h2>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', width: '160px' }}>
-                    <button
-                        onClick={() => setShowMemoModal(true)}
-                        style={{
-                            background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
-                            padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                            height: '32px', width: '100%'
-                        }}
-                    >
-                        오늘 출석 참고사항
-                        {dailyMemos.length > 0 && (
-                            <span style={{
-                                color: '#38a169', background: 'white', width: '20px', height: '20px',
-                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                            }}>
-                                {dailyMemos.length}
-                            </span>
-                        )}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                    <button onClick={() => changeMonth(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px' }}>
+                        <ChevronLeft size={20} color="#4a5568" />
                     </button>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', minWidth: '80px', textAlign: 'center' }}>
+                        {format(currentViewDate, 'yyyy.MM')}
+                    </span>
+                    <button onClick={() => changeMonth(1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px' }}>
+                        <ChevronRight size={20} color="#4a5568" />
+                    </button>
+                </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', width: '120px' }}>
                     <button
                         onClick={fitAndScrollToToday}
                         style={{
