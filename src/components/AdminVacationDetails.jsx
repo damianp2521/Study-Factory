@@ -183,12 +183,12 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                             borderColor = '#feb2b2';
                                         } else if (vacation.type === 'half') {
                                             if (isAm) {
-                                                label = '오전반차';
+                                                label = '오전';
                                                 bgColor = '#fff5f5'; // Red for AM
                                                 textColor = '#c53030';
                                                 borderColor = '#feb2b2';
                                             } else {
-                                                label = '오후반차';
+                                                label = '오후';
                                                 bgColor = '#ebf8ff'; // Blue for PM
                                                 textColor = '#2c5282';
                                                 borderColor = '#90cdf4';
@@ -197,7 +197,12 @@ const AdminVacationDetails = ({ user, onBack }) => {
 
                                         // 2. Override Label and Style if 'reason' exists (Other Leave)
                                         if (vacation.reason) {
-                                            label = vacation.reason;
+                                            const allowedReasons = ['알바', '스터디', '병원'];
+                                            if (allowedReasons.includes(vacation.reason)) {
+                                                label = vacation.reason;
+                                            } else {
+                                                label = '기타';
+                                            }
 
                                             // Gray Style for Other Leave
                                             bgColor = '#F7FAFC'; // Gray 50
