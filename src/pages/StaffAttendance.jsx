@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, RotateCcw, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, RotateCcw, Trash2, Maximize2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay, getDate, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -82,41 +82,75 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
 });
 
 // Inline Memo Component
-const UserMemoBlock = ({ user, memberMemos, onAdd, onDelete, scale, width }) => {
+// Memo Block for Popup (Full Width)
+const UserMemoPopup = ({ user, memberMemos, onAdd, onDelete, onClose }) => {
     const [text, setText] = useState('');
     const userMemos = memberMemos.filter(m => m.user_id === user.id);
+    const scrollRef = useRef(null);
 
     const handleAdd = () => {
         if (!text.trim()) return;
         onAdd(user.id, text.trim());
         setText('');
+        // Scroll to bottom after add
+        setTimeout(() => {
+            if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }, 100);
     };
 
     return (
         <div style={{
-            width: width,
-            padding: '10px',
-            background: 'white',
-            borderRight: '1px solid #e2e8f0',
-            borderTop: '1px solid #e2e8f0',
-            display: 'flex', flexDirection: 'column', gap: '8px'
+            height: '100%', display: 'flex', flexDirection: 'column',
+            backgroundColor: 'white', borderTop: '2px solid #e2e8f0',
+            boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1)'
         }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            {/* Popup Header */}
+            <div style={{
+                padding: '12px 20px', borderBottom: '1px solid #edf2f7',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                backgroundColor: '#f7fafc'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                        {user.name} <span style={{ fontSize: '0.9rem', color: '#718096', fontWeight: 'normal' }}>(좌석 {user.seat_number})</span>
+                    </span>
+                    <span style={{ fontSize: '0.9rem', color: '#4a5568', background: '#edf2f7', padding: '2px 8px', borderRadius: '4px' }}>
+                        참고사항 {userMemos.length}건
+                    </span>
+                </div>
+                <button
+                    onClick={onClose}
+                    style={{
+                        padding: '8px', borderRadius: '50%', border: 'none', background: 'white',
+                        cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                >
+                    <X size={20} color="#4a5568" />
+                </button>
+            </div>
+
+            {/* Memo List */}
+            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#f8fafc' }}>
+                {userMemos.length === 0 && (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a0aec0' }}>
+                        등록된 참고사항이 없습니다.
+                    </div>
+                )}
                 {userMemos.map(m => (
                     <div key={m.id} style={{
                         background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
-                        padding: '6px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                     }}>
-                        <span style={{ fontSize: `${0.75 * scale}rem`, color: '#2d3748', flex: 1, wordBreak: 'break-all' }}>
+                        <span style={{ fontSize: '0.95rem', color: '#2d3748', flex: 1, wordBreak: 'break-all', lineHeight: 1.5 }}>
                             {m.content}
                         </span>
                         <button
-                            onClick={(e) => { e.stopPropagation(); onDelete(m.id); }}
+                            onClick={() => onDelete(m.id)}
                             style={{
-                                background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '4px',
-                                padding: '2px 6px', fontSize: `${0.7 * scale}rem`, cursor: 'pointer', marginLeft: '5px',
-                                whiteSpace: 'nowrap'
+                                background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px',
+                                padding: '4px 8px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px',
+                                whiteSpace: 'nowrap', fontWeight: 'bold'
                             }}
                         >
                             삭제
@@ -125,36 +159,30 @@ const UserMemoBlock = ({ user, memberMemos, onAdd, onDelete, scale, width }) => 
                 ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '5px' }}>
+            {/* Input Area */}
+            <div style={{ padding: '15px 20px', borderTop: '1px solid #edf2f7', backgroundColor: 'white', display: 'flex', gap: '10px' }}>
                 <input
                     type="text"
                     value={text}
                     onChange={e => setText(e.target.value)}
-                    onClick={e => e.stopPropagation()}
-                    onMouseDown={e => e.stopPropagation()}
-                    onTouchStart={e => e.stopPropagation()}
-                    placeholder="회원 참고사항 입력"
+                    placeholder="새로운 참고사항을 입력하세요..."
                     style={{
-                        flex: 1, border: '1px solid #cbd5e0', borderRadius: '6px',
-                        padding: '4px 8px', fontSize: `${0.75 * scale}rem`, outline: 'none',
-                        userSelect: 'text', cursor: 'text'
+                        flex: 1, border: '1px solid #cbd5e0', borderRadius: '8px',
+                        padding: '10px 12px', fontSize: '0.95rem', outline: 'none'
                     }}
                     onKeyDown={e => {
-                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-                            e.stopPropagation();
-                            handleAdd();
-                        }
+                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAdd();
                     }}
                 />
                 <button
-                    onClick={(e) => { e.stopPropagation(); handleAdd(); }}
+                    onClick={handleAdd}
                     style={{
-                        background: '#3182ce', color: 'white', border: 'none', borderRadius: '6px',
-                        padding: '4px 10px', fontSize: `${0.75 * scale}rem`, fontWeight: 'bold', cursor: 'pointer',
-                        whiteSpace: 'nowrap'
+                        background: '#3182ce', color: 'white', border: 'none', borderRadius: '8px',
+                        padding: '0 20px', fontSize: '0.95rem', fontWeight: 'bold', cursor: 'pointer',
+                        whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '5px'
                     }}
                 >
-                    등록
+                    <Plus size={18} /> 등록
                 </button>
             </div>
         </div>
@@ -175,6 +203,7 @@ const StaffAttendance = ({ onBack }) => {
 
     const [loading, setLoading] = useState(false);
     const [highlightedSeat, setHighlightedSeat] = useState(null);
+    const [isPopupOpen, setIsPopupOpen] = useState(false); // New State for Popup
     const [showMemoModal, setShowMemoModal] = useState(false);
     const [newMemo, setNewMemo] = useState('');
 
@@ -210,6 +239,31 @@ const StaffAttendance = ({ onBack }) => {
         start: startOfMonth(currentViewDate),
         end: endOfMonth(currentViewDate)
     }), [currentViewDate]);
+
+    // Row Reordering Logic
+    const sortedRows = useMemo(() => {
+        if (!highlightedSeat) return displayRows;
+
+        // Clone to avoid mutation
+        const newRows = [...displayRows];
+        const targetIndex = newRows.findIndex(r => r.seat_number === highlightedSeat);
+
+        if (targetIndex === -1) return displayRows;
+
+        // Remove target
+        const [targetRow] = newRows.splice(targetIndex, 1);
+
+        // Insert at 3rd position (index 2), or end/appropriate index if fewer rows
+        const insertIndex = Math.min(2, newRows.length);
+        newRows.splice(insertIndex, 0, targetRow);
+
+        return newRows;
+    }, [displayRows, highlightedSeat]);
+
+    // Selected User Object (for Popup)
+    const selectedUser = useMemo(() => {
+        return displayRows.find(r => r.seat_number === highlightedSeat);
+    }, [displayRows, highlightedSeat]);
 
     useEffect(() => {
         fetchData();
@@ -492,7 +546,22 @@ const StaffAttendance = ({ onBack }) => {
 
     const handleNameClick = (seatNum) => {
         if (!seatNum) return;
-        setHighlightedSeat(highlightedSeat === seatNum ? null : seatNum);
+
+        if (highlightedSeat === seatNum) {
+            // Clicking the already highlighted user
+            if (isPopupOpen) {
+                // If popup is open, close it and DESELECT (toggle off)
+                setIsPopupOpen(false);
+                setHighlightedSeat(null);
+            } else {
+                // If popup is closed but highlighted, Open Popup
+                setIsPopupOpen(true);
+            }
+        } else {
+            // New user clicked
+            setHighlightedSeat(seatNum);
+            setIsPopupOpen(true);
+        }
     };
 
     const getSeatStyle = (seatNum) => {
@@ -636,114 +705,104 @@ const StaffAttendance = ({ onBack }) => {
                     </div>
 
                     <div style={{ width: 'max-content', paddingBottom: '20px' }}>
-                        {displayRows.map(user => {
-                            const isDeactivated = user.isEmpty || user.isUnassigned;
-                            const isRowHighlighted = highlightedSeat === user.seat_number && !isDeactivated;
-                            const isAnyHighlighted = highlightedSeat !== null;
-                            const { borderBottom, bgColor } = getSeatStyle(user.seat_number);
+                        <div style={{ width: 'max-content', paddingBottom: '20px' }}>
+                            {sortedRows.map(user => {
+                                const isDeactivated = user.isEmpty || user.isUnassigned;
+                                const isRowHighlighted = highlightedSeat === user.seat_number && !isDeactivated;
+                                const isAnyHighlighted = highlightedSeat !== null;
+                                const { borderBottom, bgColor } = getSeatStyle(user.seat_number);
 
-                            let rowOpacity = 1;
-                            if (isAnyHighlighted) {
-                                rowOpacity = isRowHighlighted ? 1 : 0.1;
-                            }
+                                let rowOpacity = 1;
+                                if (isAnyHighlighted) {
+                                    rowOpacity = isRowHighlighted ? 1 : 0.4;
+                                }
 
-                            let stickyBg = bgColor;
-                            if (isRowHighlighted) stickyBg = '#ebf8ff';
-                            else if (isDeactivated) stickyBg = '#f7fafc';
+                                let stickyBg = bgColor;
+                                if (isRowHighlighted) stickyBg = '#ebf8ff';
+                                else if (isDeactivated) stickyBg = '#f7fafc';
 
-                            const currentRowHeight = isRowHighlighted ? 'auto' : ROW_HEIGHT;
+                                const currentRowHeight = ROW_HEIGHT; // Always Fixed Height Now
 
-                            return (
-                                <div key={user.id} style={{ display: 'flex', minHeight: currentRowHeight, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s' }}>
-                                    <div style={{
-                                        position: 'sticky', left: 0, zIndex: 10,
-                                        display: 'flex',
-                                        boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
-                                        alignItems: 'flex-start',
-                                        backgroundColor: stickyBg, // FIX: Ghosting Prevention
-                                        minHeight: '100%' // Ensure cover expanded height
-                                    }}>
-                                        {isRowHighlighted && (
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
-                                        )}
-
+                                return (
+                                    <div key={user.id} style={{ display: 'flex', height: currentRowHeight, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}>
                                         <div style={{
-                                            width: SEAT_WIDTH, height: ROW_HEIGHT,
-                                            borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            background: stickyBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem`
+                                            position: 'sticky', left: 0, zIndex: 10,
+                                            display: 'flex',
+                                            boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)',
+                                            alignItems: 'flex-start',
+                                            backgroundColor: stickyBg,
+                                            height: '100%'
                                         }}>
-                                            {user.seat_number || '-'}
-                                        </div>
-                                        <div
-                                            onClick={() => handleNameClick(user.seat_number)}
-                                            style={{
-                                                width: NAME_WIDTH, height: ROW_HEIGHT,
+                                            {isRowHighlighted && (
+                                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />
+                                            )}
+
+                                            <div style={{
+                                                width: SEAT_WIDTH, height: ROW_HEIGHT,
                                                 borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                background: stickyBg, color: '#2d3748', fontSize: `${0.9 * scale}rem`, fontWeight: isDeactivated ? 'normal' : 'bold',
-                                                cursor: isDeactivated ? 'default' : 'pointer'
-                                            }}
-                                        >
-                                            {user.name}
+                                                background: stickyBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem`
+                                            }}>
+                                                {user.seat_number || '-'}
+                                            </div>
+                                            <div
+                                                onClick={() => handleNameClick(user.seat_number)}
+                                                style={{
+                                                    width: NAME_WIDTH, height: ROW_HEIGHT,
+                                                    borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    background: stickyBg, color: '#2d3748', fontSize: `${0.9 * scale}rem`, fontWeight: isDeactivated ? 'normal' : 'bold',
+                                                    cursor: isDeactivated ? 'default' : 'pointer'
+                                                }}
+                                            >
+                                                {user.name}
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div style={{ display: 'flex', position: 'relative' }}>
-                                        {isRowHighlighted && (
-                                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />
-                                        )}
+                                        <div style={{ display: 'flex', position: 'relative' }}>
+                                            {isRowHighlighted && (
+                                                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />
+                                            )}
 
-                                        {daysInMonth.map(date => {
-                                            const dateStr = format(date, 'yyyy-MM-dd');
-                                            const isToday = isSameDay(date, today);
+                                            {daysInMonth.map(date => {
+                                                const dateStr = format(date, 'yyyy-MM-dd');
 
-                                            const periodsRender = (
-                                                <div style={{ display: 'flex', height: ROW_HEIGHT }}>
-                                                    {[1, 2, 3, 4, 5, 6, 7].map(p => (
-                                                        <AttendanceCell
-                                                            key={p}
-                                                            user={user} dateStr={dateStr} period={p}
-                                                            isRowHighlighted={isRowHighlighted}
-                                                            attendanceData={attendanceData}
-                                                            vacationData={vacationData}
-                                                            toggleAttendance={toggleAttendance}
-                                                            width={PERIOD_WIDTH}
-                                                            scale={scale}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            );
-
-                                            // If highlighted and Today, expand
-                                            if (isRowHighlighted && isToday) {
                                                 return (
-                                                    <div key={dateStr} style={{ display: 'flex', flexDirection: 'column' }}>
-                                                        {periodsRender}
-                                                        {/* Inline Memo Block (Persistent) */}
-                                                        <UserMemoBlock
-                                                            user={user}
-                                                            memberMemos={memberMemos}
-                                                            onAdd={addMemberMemo}
-                                                            onDelete={deleteMemberMemo}
-                                                            scale={scale}
-                                                            width={DAY_WIDTH}
-                                                        />
+                                                    <div key={dateStr} style={{ display: 'flex', height: ROW_HEIGHT }}>
+                                                        {[1, 2, 3, 4, 5, 6, 7].map(p => (
+                                                            <AttendanceCell
+                                                                key={p}
+                                                                user={user} dateStr={dateStr} period={p}
+                                                                isRowHighlighted={isRowHighlighted}
+                                                                attendanceData={attendanceData}
+                                                                vacationData={vacationData}
+                                                                toggleAttendance={toggleAttendance}
+                                                                width={PERIOD_WIDTH}
+                                                                scale={scale}
+                                                            />
+                                                        ))}
                                                     </div>
                                                 );
-                                            }
-
-                                            return (
-                                                <div key={dateStr} style={{ display: 'flex' }}>
-                                                    {periodsRender}
-                                                </div>
-                                            );
-                                        })}
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Bottom Popup Section */}
+            {isPopupOpen && selectedUser && (
+                <div style={{ height: '50%', flexShrink: 0, zIndex: 50 }}>
+                    <UserMemoPopup
+                        user={selectedUser}
+                        memberMemos={memberMemos}
+                        onAdd={addMemberMemo}
+                        onDelete={deleteMemberMemo}
+                        onClose={() => setIsPopupOpen(false)} // Close only, keep highlight
+                    />
+                </div>
+            )}
 
             {/* Daily Memos Modal ... */}
             {showMemoModal && (
