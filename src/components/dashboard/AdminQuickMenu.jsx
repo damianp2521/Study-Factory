@@ -8,6 +8,7 @@ import AdminEmployeeVacationHistory from '../../pages/AdminEmployeeVacationHisto
 import AdminWorkReport from '../../pages/AdminWorkReport';
 import AdminOtherLeaveRequest from '../../pages/AdminOtherLeaveRequest';
 import AdminAttendanceStatus from '../../pages/AdminAttendanceStatus';
+import StaffAttendance from '../../pages/StaffAttendance';
 
 const AdminQuickMenu = () => {
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
@@ -29,6 +30,9 @@ const AdminQuickMenu = () => {
     }
     if (currentView === 'attendance_status') {
         return <AdminAttendanceStatus onBack={() => navigateTo('attendance_menu')} />;
+    }
+    if (currentView === 'monthly_attendance_log') {
+        return <StaffAttendance onBack={() => navigateTo('attendance_menu')} />;
     }
 
     // 3. Work Management Views (작업 관리 - Menu 3)
@@ -228,6 +232,31 @@ const AdminQuickMenu = () => {
                             <UserCheck size={20} />
                         </div>
                         <span style={{ textAlign: 'center', lineHeight: '1.2' }}>출석<br />현황</span>
+                    </button>
+                    {/* 2-4. Monthly Attendance Log (Moved from Staff) */}
+                    <button
+                        onClick={() => navigateTo('monthly_attendance_log')}
+                        style={{
+                            aspectRatio: '1',
+                            borderRadius: '16px',
+                            border: 'none',
+                            background: '#f7fafc',
+                            color: '#2d3748',
+                            fontSize: '0.95rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '5px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                        }}
+                    >
+                        <div style={{ width: '32px', height: '32px', background: '#e9d8fd', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b46c1', marginBottom: '5px' }}>
+                            <UserCheck size={20} />
+                        </div>
+                        <span style={{ textAlign: 'center', lineHeight: '1.2' }}>월별<br />출석 현황</span>
                     </button>
                 </div>
             </div>
