@@ -140,16 +140,73 @@ const EmbeddedCalendar = ({
                     }}
                 >
                     <span>{d}</span>
-                    {dayEvent && !isSelected && (
-                        <div style={{
-                            width: '4px',
-                            height: '4px',
-                            borderRadius: '50%',
-                            backgroundColor: dayEvent.type === 'full' ? '#c53030' : dayEvent.type === 'special' ? '#805ad5' : '#2c5282',
-                            position: 'absolute',
-                            bottom: '4px'
-                        }} />
-                    )}
+                    {dayEvent && !isSelected && (() => {
+                        let label = '';
+                        let bgColor = 'transparent';
+                        let textColor = '#2d3748';
+                        let borderColor = 'transparent';
+
+                        const isAm = (dayEvent.periods || []).includes(1);
+
+                        // 1. Base Label
+                        if (dayEvent.type === 'full') {
+                            label = '월차';
+                            bgColor = '#fff5f5';
+                            textColor = '#c53030';
+                            borderColor = '#feb2b2';
+                        } else if (dayEvent.type === 'half') {
+                            if (isAm) {
+                                label = '오전';
+                                bgColor = '#fff5f5';
+                                textColor = '#c53030';
+                                borderColor = '#feb2b2';
+                            } else {
+                                label = '오후';
+                                bgColor = '#ebf8ff';
+                                textColor = '#2c5282';
+                                borderColor = '#90cdf4';
+                            }
+                        } else if (dayEvent.type === 'special') {
+                            label = '특휴';
+                            bgColor = '#faf5ff';
+                            textColor = '#553c9a';
+                            borderColor = '#d6bcfa';
+                        }
+
+                        // 2. Reason Override
+                        if (dayEvent.reason) {
+                            const allowedReasons = ['알바', '스터디', '병원'];
+                            if (allowedReasons.includes(dayEvent.reason)) {
+                                label = dayEvent.reason;
+                            } else {
+                                label = '기타';
+                            }
+                            // Gray Style
+                            bgColor = '#F7FAFC';
+                            textColor = '#4A5568';
+                            borderColor = '#CBD5E0';
+                        }
+
+                        return (
+                            <div style={{
+                                fontSize: '0.6rem',
+                                fontWeight: 'bold',
+                                color: textColor,
+                                backgroundColor: bgColor,
+                                border: `1px solid ${borderColor}`,
+                                borderRadius: '4px',
+                                padding: '1px 3px',
+                                marginTop: '2px',
+                                lineHeight: 1,
+                                whiteSpace: 'nowrap',
+                                maxWidth: '100%',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis'
+                            }}>
+                                {label}
+                            </div>
+                        );
+                    })()}
                 </div>
             );
         }
