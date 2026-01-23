@@ -13,18 +13,25 @@ import StaffAttendance from '../../pages/StaffAttendance';
 const AdminQuickMenu = () => {
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
 
+    // Helper to wrap content with padding
+    const renderWithPadding = (component) => (
+        <div style={{ height: '100%', padding: '20px', overflowY: 'auto' }}>
+            {component}
+        </div>
+    );
+
     // 1. Employee Management Views
-    if (currentView === 'register') return <AdminMemberRegister onBack={() => navigateTo('grid')} />;
-    if (currentView === 'status') return <AdminMemberStatus onBack={() => navigateTo('grid')} />;
+    if (currentView === 'register') return renderWithPadding(<AdminMemberRegister onBack={() => navigateTo('grid')} />);
+    if (currentView === 'status') return renderWithPadding(<AdminMemberStatus onBack={() => navigateTo('grid')} />);
 
     // 2. Attendance & Leave Views
-    if (currentView === 'vacation_history') return <AdminEmployeeVacationHistory onBack={() => navigateTo('grid')} />;
-    if (currentView === 'other_leave_request') return <AdminOtherLeaveRequest onBack={() => navigateTo('grid')} />;
-    if (currentView === 'attendance_status') return <AdminAttendanceStatus onBack={() => navigateTo('grid')} />;
-    if (currentView === 'monthly_attendance_log') return <StaffAttendance onBack={() => navigateTo('grid')} />;
+    if (currentView === 'vacation_history') return renderWithPadding(<AdminEmployeeVacationHistory onBack={() => navigateTo('grid')} />);
+    if (currentView === 'other_leave_request') return renderWithPadding(<AdminOtherLeaveRequest onBack={() => navigateTo('grid')} />);
+    if (currentView === 'attendance_status') return renderWithPadding(<AdminAttendanceStatus onBack={() => navigateTo('grid')} />);
+    if (currentView === 'monthly_attendance_log') return renderWithPadding(<StaffAttendance onBack={() => navigateTo('grid')} />);
 
     // 3. Work Management Views
-    if (currentView === 'work_report') return <AdminWorkReport onBack={() => navigateTo('grid')} />;
+    if (currentView === 'work_report') return renderWithPadding(<AdminWorkReport onBack={() => navigateTo('grid')} />);
 
     // Main Grid Menu (Categorized Structure)
     return (
