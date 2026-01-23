@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
-import { ChevronLeft, X, Plus, Calendar as CalendarIcon, RotateCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { format, startOfMonth, endOfMonth, isSameDay, getDate } from 'date-fns';
+import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 // Memoized Cell (Dynamic Height Fixed)
@@ -186,8 +186,8 @@ const UserMemoPopup = ({ user, memberMemos, onAdd, onDelete, onClose }) => {
 
 const StaffDailyAttendance = ({ onBack }) => {
     const [today] = useState(new Date());
-    // Fixed: Current view is ALWAYS Today
-    const currentViewDate = today;
+    // Fixed: Initialize navigation with today, allow changes
+    const [currentViewDate, setCurrentViewDate] = useState(new Date());
     const [scale, setScale] = useState(1.0);
     const [branch, setBranch] = useState('망미점');
 
@@ -205,16 +205,14 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     const scrollContainerRef = useRef(null);
     const contentRef = useRef(null);
-    const touchStartDistRef = useRef(null);
-    const startScaleRef = useRef(1.0);
-    const lastTempScaleRef = useRef(null);
-    const zoomTargetRef = useRef(null);
+    const [touchStartDist, setTouchStartDist] = useState(null);
+    const [startScale, setStartScale] = useState(1.0);
 
-    // Dynamic Constants (Slightly larger for mobile readability if desired, but sticking to existing)
-    const BASE_SEAT_WIDTH = 50; // Wider for single day
-    const BASE_NAME_WIDTH = 80; // Wider for single day
-    const BASE_PERIOD_WIDTH = 45; // Wider for single day
-    const BASE_ROW_HEIGHT = 40; // Taller
+    // Dynamic Constants
+    const BASE_SEAT_WIDTH = 50;
+    const BASE_NAME_WIDTH = 80;
+    const BASE_PERIOD_WIDTH = 45;
+    const BASE_ROW_HEIGHT = 40;
     const BASE_HEADER_DATE_HEIGHT = 40;
     const BASE_HEADER_PERIOD_HEIGHT = 35;
 
@@ -228,8 +226,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     const DAY_WIDTH = PERIOD_WIDTH * 7;
 
-    // Derived: ONLY TODAY
-    const daysInMonth = useMemo(() => [today], [today]);
+    const daysInView = useMemo(() => [currentViewDate], [currentViewDate]);
 
     // Row Reordering Logic
     const sortedRows = useMemo(() => {
@@ -247,88 +244,44 @@ const StaffDailyAttendance = ({ onBack }) => {
         return displayRows.find(r => r.seat_number === highlightedSeat);
     }, [displayRows, highlightedSeat]);
 
+    // Fetch on Date Change
     useEffect(() => {
         fetchData();
-    }, [today, branch]);
+    }, [currentViewDate, branch]);
 
-    // Auto-fit Logic on Mount
-    useEffect(() => {
+    // Auto-fit Logic: Always Active
+    const fitScale = () => {
         if (scrollContainerRef.current) {
             const containerWidth = scrollContainerRef.current.clientWidth;
-            // Seat + Name + (Period * 7)
+            // Width of fixed headers + width of day data
             const contentRequiredWidth = BASE_SEAT_WIDTH + BASE_NAME_WIDTH + (BASE_PERIOD_WIDTH * 7);
-            // Default scale to fit width
-            const fitScale = containerWidth / contentRequiredWidth;
-            // Cap it reasonable (0.8 ~ 1.2)
-            setScale(Math.min(Math.max(fitScale, 0.7), 1.5));
+            const newScale = containerWidth / contentRequiredWidth;
+            // Allow scale to exactly fit, bounded reasonably
+            setScale(Math.max(newScale, 0.5));
         }
-    }, [today]);
+    };
 
-    useLayoutEffect(() => {
-        if (zoomTargetRef.current && scrollContainerRef.current) {
-            const { contentX, offsetX } = zoomTargetRef.current;
-            const newScrollLeft = (contentX * scale) - offsetX;
-            scrollContainerRef.current.scrollLeft = newScrollLeft;
-            zoomTargetRef.current = null;
-        }
-    }, [scale]);
-
-    const handleTouchStart = (e) => {
-        if (e.touches.length === 2 && scrollContainerRef.current) {
-            const dist = getDistance(e.touches[0], e.touches[1]);
-            touchStartDistRef.current = dist;
-            startScaleRef.current = scale;
-            const rect = scrollContainerRef.current.getBoundingClientRect();
-            const touch1 = e.touches[0];
-            const touch2 = e.touches[1];
-            const centerX = (touch1.clientX + touch2.clientX) / 2;
-            const centerY = (touch1.clientY + touch2.clientY) / 2;
-            const contentX = (scrollContainerRef.current.scrollLeft + (centerX - rect.left)) / scale;
-            const contentY = (scrollContainerRef.current.scrollTop + (centerY - rect.top)) / scale;
-            if (contentRef.current) {
-                contentRef.current.style.transition = 'none';
-                contentRef.current.style.transformOrigin = `${contentX * scale}px ${contentY * scale}px`;
-            }
-        }
-    };
-    const handleTouchMoveBetter = (e) => {
-        if (e.touches.length === 2 && touchStartDistRef.current !== null) {
-            e.preventDefault();
-            const dist = getDistance(e.touches[0], e.touches[1]);
-            const scaleFactor = dist / touchStartDistRef.current;
-            const tempScale = Math.min(Math.max(startScaleRef.current * scaleFactor, 0.5), 2.0);
-            lastTempScaleRef.current = tempScale;
-            if (contentRef.current) {
-                const ratio = tempScale / scale;
-                contentRef.current.style.transform = `scale(${ratio})`;
-            }
-        }
-    };
-    const handleTouchEndBetter = () => {
-        if (lastTempScaleRef.current !== null) {
-            setScale(lastTempScaleRef.current);
-            lastTempScaleRef.current = null;
-        }
-        touchStartDistRef.current = null;
-        if (contentRef.current) {
-            contentRef.current.style.transform = 'none';
-            contentRef.current.style.transformOrigin = '0 0';
-        }
-    };
-    const getDistance = (touch1, touch2) => Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+    // Initial Fit & Resize Listener
+    useEffect(() => {
+        fitScale();
+        window.addEventListener('resize', fitScale);
+        return () => window.removeEventListener('resize', fitScale);
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Fetch ONLY this month (safe buffer)
-            const startDate = format(startOfMonth(today), 'yyyy-MM-dd');
-            const endDate = format(endOfMonth(today), 'yyyy-MM-dd');
+            // Fetch ONLY current view date
+            const dateStr = format(currentViewDate, 'yyyy-MM-dd');
+            // Use same date for start/end to fetch only one day
+            const startDate = dateStr;
+            const endDate = dateStr;
 
             const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes] = await Promise.all([
                 supabase.from('authorized_users').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('user_id, date, period').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
-                supabase.from('attendance_memos').select('*').eq('date', format(today, 'yyyy-MM-dd')).order('created_at', { ascending: true }),
+                supabase.from('attendance_memos').select('*').eq('date', dateStr).order('created_at', { ascending: true }),
                 supabase.from('member_memos').select('*').order('created_at', { ascending: true })
             ]);
 
@@ -362,7 +315,6 @@ const StaffDailyAttendance = ({ onBack }) => {
             setMemberMemos(memberMemoRes.data || []);
         } catch (error) {
             console.error('Error fetching data:', error);
-            // alert('데이터 로딩 실패');
         } finally {
             setLoading(false);
         }
@@ -387,7 +339,7 @@ const StaffDailyAttendance = ({ onBack }) => {
     const addDailyMemo = async (content) => {
         if (!content) return;
         try {
-            const { data, error } = await supabase.from('attendance_memos').insert({ date: format(today, 'yyyy-MM-dd'), branch, content }).select().single();
+            const { data, error } = await supabase.from('attendance_memos').insert({ date: format(currentViewDate, 'yyyy-MM-dd'), branch, content }).select().single();
             if (error) throw error;
             setDailyMemos(prev => [...prev, data]);
         } catch (e) { alert('메모 등록 실패'); }
@@ -412,6 +364,10 @@ const StaffDailyAttendance = ({ onBack }) => {
             await supabase.from('member_memos').delete().eq('id', id);
             setMemberMemos(prev => prev.filter(m => m.id !== id));
         } catch (e) { alert('삭제 실패'); }
+    };
+
+    const changeDate = (days) => {
+        setCurrentViewDate(prev => addDays(prev, days));
     };
 
     const handleNameClick = (seatNum) => {
@@ -444,68 +400,61 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
-            {/* Simple Header */}
-            <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', marginLeft: '-5px' }}>
-                        <ChevronLeft size={24} color="#2d3748" />
-                    </button>
-                    <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748' }}>출석부</h2>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2b6cb0', padding: '0 10px' }}>
-                        {format(today, 'yyyy.MM.dd (EEE)', { locale: ko })}
+            {/* 2-Row Layout Header */}
+            <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                {/* Row 1: Left(Title) -- Right(MemoButton) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', marginLeft: '-5px', flexShrink: 0 }}>
+                            <ChevronLeft size={24} color="#2d3748" />
+                        </button>
+                        <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            출석부
+                        </h2>
                     </div>
-                    <button
-                        onClick={() => setShowMemoModal(true)}
-                        style={{
-                            background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
-                            padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                            height: '32px'
-                        }}
-                    >
-                        오늘 출석 참고사항
-                        {dailyMemos.length > 0 && (
-                            <span style={{
-                                color: '#38a169', background: 'white', width: '20px', height: '20px',
-                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                            }}>
-                                {dailyMemos.length}
-                            </span>
-                        )}
+
+                    <div>
+                        <button
+                            onClick={() => setShowMemoModal(true)}
+                            style={{
+                                background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
+                                padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                                height: '32px'
+                            }}
+                        >
+                            오늘 출석 참고사항
+                            {dailyMemos.length > 0 && (
+                                <span style={{
+                                    color: '#38a169', background: 'white', width: '20px', height: '20px',
+                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                }}>
+                                    {dailyMemos.length}
+                                </span>
+                            )}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Row 2: Centered Date Navigator */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', paddingBottom: '5px' }}>
+                    <button onClick={() => changeDate(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
+                        <ChevronLeft size={24} color="#4a5568" />
                     </button>
-                    <button
-                        onClick={() => {
-                            // Reset to today zoom logic? already at today. Maybe re-fit scale?
-                            if (scrollContainerRef.current) {
-                                const containerWidth = scrollContainerRef.current.clientWidth;
-                                const contentRequiredWidth = BASE_SEAT_WIDTH + BASE_NAME_WIDTH + (BASE_PERIOD_WIDTH * 7);
-                                const fitScale = containerWidth / contentRequiredWidth;
-                                setScale(Math.min(Math.max(fitScale, 0.7), 1.5));
-                            }
-                        }}
-                        style={{
-                            background: 'white', border: '1px solid #cbd5e0', borderRadius: '16px',
-                            padding: '6px 12px', fontSize: '0.85rem', color: '#4a5568', fontWeight: 'bold',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px'
-                        }}
-                    >
-                        <RotateCw size={16} /> 화면 맞춤
+                    <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#2d3748', minWidth: '150px', textAlign: 'center' }}>
+                        {format(currentViewDate, 'yyyy.MM.dd (EEE)', { locale: ko })}
+                    </span>
+                    <button onClick={() => changeDate(1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
+                        <ChevronRight size={24} color="#4a5568" />
                     </button>
                 </div>
             </div>
 
             <div
                 ref={scrollContainerRef}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMoveBetter}
-                onTouchEnd={handleTouchEndBetter}
                 style={{
                     flex: 1, overflow: 'auto', position: 'relative', touchAction: 'pan-x pan-y',
-                    // Center the content gracefully if it's smaller than viewport
                     display: 'flex', justifyContent: 'center'
                 }}
             >
@@ -517,9 +466,9 @@ const StaffDailyAttendance = ({ onBack }) => {
                             <div style={{ width: SEAT_WIDTH, borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: `${0.85 * scale}rem`, color: '#4a5568' }}>좌석</div>
                             <div style={{ width: NAME_WIDTH, borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: `${0.85 * scale}rem`, color: '#4a5568' }}>이름</div>
                         </div>
-                        {/* Day Header - ONLY 1 DAY */}
+                        {/* Day Header - Dynamic Day */}
                         <div style={{ display: 'flex' }}>
-                            {daysInMonth.map(date => (
+                            {daysInView.map(date => (
                                 <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', flexDirection: 'column' }}>
                                     <div style={{ height: HEADER_DATE_HEIGHT, width: DAY_WIDTH, borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ebf8ff', color: '#2b6cb0', fontWeight: 'bold', fontSize: `${0.9 * scale}rem` }}>
                                         {format(date, 'M.d(EEE)', { locale: ko })}
@@ -555,7 +504,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                                     {/* Scrollable Day Data */}
                                     <div style={{ display: 'flex', position: 'relative' }}>
                                         {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />}
-                                        {daysInMonth.map(date => (
+                                        {daysInView.map(date => (
                                             <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
                                                 {[1, 2, 3, 4, 5, 6, 7].map(p => (
                                                     <AttendanceCell key={p} user={user} dateStr={format(date, 'yyyy-MM-dd')} period={p} isRowHighlighted={isRowHighlighted} attendanceData={attendanceData} vacationData={vacationData} toggleAttendance={toggleAttendance} width={PERIOD_WIDTH} scale={scale} />
@@ -582,7 +531,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
                     <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '400px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
                         <div style={{ padding: '15px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>{format(today, 'yyyy.MM.dd')} 참고사항</h3>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>{format(currentViewDate, 'yyyy.MM.dd')} 참고사항</h3>
                             <button onClick={() => setShowMemoModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><X size={24} color="#a0aec0" /></button>
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#f7fafc' }}>
