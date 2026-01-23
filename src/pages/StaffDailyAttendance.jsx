@@ -402,8 +402,8 @@ const StaffDailyAttendance = ({ onBack }) => {
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
             {/* Header: Row 1 Date (Top), Row 2 Memo (Bottom) */}
             <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-                {/* Row 1: Centered Date Navigator (Top) - Minimal Padding */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', padding: '5px 10px 0 10px' }}>
+                {/* Row 1: Centered Date Navigator (Top) - Adjusted Padding */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', padding: '15px 10px 0 10px' }}>
                     <button onClick={() => changeDate(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
                         <ChevronLeft size={24} color="#4a5568" />
                     </button>
