@@ -267,7 +267,7 @@ const ManagerDashboard = () => {
                             style={{
                                 width: `${100 / items.length}%`,
                                 height: '100%',
-                                padding: '0 20px 20px 20px', // Added padding
+                                padding: '10px 20px 70px 20px', // Adjusted padding to match MemberDashboard (shorter card for dots)
                                 boxSizing: 'border-box',
                                 overflow: 'hidden',
                                 display: 'flex',
