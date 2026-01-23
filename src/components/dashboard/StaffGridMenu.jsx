@@ -14,9 +14,16 @@ import StaffDailyAttendance from '../../pages/StaffDailyAttendance';
 const StaffGridMenu = () => {
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
 
+    // Helper to wrap content with padding
+    const renderWithPadding = (component) => (
+        <div style={{ height: '100%', padding: '20px', overflowY: 'auto' }}>
+            {component}
+        </div>
+    );
+
     // Sub-views
     if (currentView === 'employee_vacation') {
-        return (
+        return renderWithPadding(
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                     <button onClick={goBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
@@ -31,7 +38,7 @@ const StaffGridMenu = () => {
         );
     }
     if (currentView === 'work_status') {
-        return (
+        return renderWithPadding(
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                     <button onClick={goBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
@@ -46,7 +53,7 @@ const StaffGridMenu = () => {
         );
     }
     if (currentView === 'vacation_request') {
-        return (
+        return renderWithPadding(
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                     <button onClick={goBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
@@ -60,162 +67,137 @@ const StaffGridMenu = () => {
             </div>
         );
     }
-    if (currentView === 'attendance') {
-        return <StaffDailyAttendance onBack={goBack} />;
-    }
-    if (currentView === 'seat_management') {
-        return <StaffSeatManagement onBack={goBack} />;
-    }
-    if (currentView === 'beverage_management') {
-        return <StaffBeverageManagement onBack={goBack} />;
-    }
-    if (currentView === 'beverage_order_list') {
-        return <StaffBeverageOrderList onBack={goBack} />;
-    }
+    if (currentView === 'attendance') return renderWithPadding(<StaffDailyAttendance onBack={goBack} />);
+    if (currentView === 'seat_management') return renderWithPadding(<StaffSeatManagement onBack={goBack} />);
+    if (currentView === 'beverage_management') return renderWithPadding(<StaffBeverageManagement onBack={goBack} />);
+    if (currentView === 'beverage_order_list') return renderWithPadding(<StaffBeverageOrderList onBack={goBack} />);
 
-    // Grid View
-    const handleMenuClick = (num) => {
-        if (num === 1) navigateTo('employee_vacation');
-        else if (num === 2) navigateTo('work_status');
-        else if (num === 3) navigateTo('vacation_request');
-        else if (num === 4) navigateTo('attendance');
-        else if (num === 5) navigateTo('seat_management');
-        else if (num === 6) navigateTo('beverage_management');
-        else if (num === 7) navigateTo('beverage_order_list');
-        else alert('준비 중인 기능입니다.');
-    };
-
+    // Grid View (Categorized Structure)
     return (
         <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
-            gap: '15px',
-            alignContent: 'start',
             height: '100%',
-            padding: '20px' // Restore padding locally
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            overflowY: 'auto'
         }}>
-            {/* 1. Employee Leave Status */}
-            <button
-                onClick={() => handleMenuClick(1)}
-                style={{
-                    aspectRatio: '1',
-                    borderRadius: '16px',
-                    border: 'none',
-                    background: '#f7fafc',
-                    color: '#2d3748',
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-            >
-                <div style={{ width: '32px', height: '32px', background: '#fff5f5', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c53030', marginBottom: '5px' }}>
-                    <Calendar size={20} />
-                </div>
-                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>일별 사원<br />휴무 현황</span>
-            </button>
+            {/* Section 1: Work Related */}
+            <div>
+                <h3 style={sectionHeaderStyle}>업무 관련 메뉴</h3>
+                <div style={sectionGridStyle}>
+                    {/* 1. 일별 사원 휴무 현황 */}
+                    <button onClick={() => navigateTo('employee_vacation')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#fff5f5', color: '#c53030' }}>
+                            <Calendar size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>일별 사원<br />휴무 현황</span>
+                    </button>
 
-            {/* 3. Leave Request */}
-            <button
-                onClick={() => handleMenuClick(3)}
-                style={{
-                    aspectRatio: '1',
-                    borderRadius: '16px',
-                    border: 'none',
-                    background: '#f7fafc',
-                    color: '#2d3748',
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-            >
-                <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
-                    <UserPlus size={20} />
+                    {/* 2. 음료 제조표 */}
+                    <button onClick={() => navigateTo('beverage_order_list')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#e6fffa', color: '#319795' }}>
+                            <ClipboardList size={24} />
+                        </div>
+                        <span style={labelStyle}>음료 제조표</span>
+                    </button>
                 </div>
-                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
-            </button>
+            </div>
 
-            {/* 5. Employee Seat Management (사원 좌석 관리) */}
-            <button
-                onClick={() => handleMenuClick(5)}
-                style={{
-                    aspectRatio: '1',
-                    borderRadius: '16px',
-                    border: 'none',
-                    background: '#f7fafc',
-                    color: '#2d3748',
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-            >
-                <div style={{ width: '32px', height: '32px', background: '#faf5ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#805ad5', marginBottom: '5px' }}>
-                    <MapPin size={20} />
+            <div style={dividerStyle} />
+
+            {/* Section 2: Member Info Related */}
+            <div>
+                <h3 style={sectionHeaderStyle}>사원 정보 관련 메뉴</h3>
+                <div style={sectionGridStyle}>
+                    {/* 1. 사원 좌석 관리 */}
+                    <button onClick={() => navigateTo('seat_management')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#faf5ff', color: '#805ad5' }}>
+                            <MapPin size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>사원<br />좌석 관리</span>
+                    </button>
+
+                    {/* 2. 사원 음료 관리 */}
+                    <button onClick={() => navigateTo('beverage_management')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#e6fffa', color: '#2c7a7b' }}>
+                            <Coffee size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>사원<br />음료 관리</span>
+                    </button>
                 </div>
-                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />좌석 관리</span>
-            </button>
+            </div>
 
-            {/* 6. Employee Beverage Management (사원 음료 관리) */}
-            <button
-                onClick={() => handleMenuClick(6)}
-                style={{
-                    aspectRatio: '1',
-                    borderRadius: '16px',
-                    border: 'none',
-                    background: '#f7fafc',
-                    color: '#2d3748',
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-            >
-                <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2c7a7b', marginBottom: '5px' }}>
-                    <Coffee size={20} />
+            <div style={dividerStyle} />
+
+            {/* Section 3: Staff Personal */}
+            <div>
+                <h3 style={sectionHeaderStyle}>스탭 개인 메뉴</h3>
+                <div style={sectionGridStyle}>
+                    {/* 1. 스탭 휴무 신청 */}
+                    <button onClick={() => navigateTo('vacation_request')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#e6fffa', color: '#2c7a7b' }}>
+                            <UserPlus size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
+                    </button>
                 </div>
-                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>사원<br />음료 관리</span>
-            </button>
-
-            {/* 7. Beverage Order List */}
-            <button
-                onClick={() => handleMenuClick(7)}
-                style={{
-                    aspectRatio: '1',
-                    borderRadius: '16px',
-                    border: 'none',
-                    background: '#f7fafc',
-                    color: '#2d3748',
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-            >
-                <div style={{ width: '32px', height: '32px', background: '#e6fffa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#319795', marginBottom: '5px' }}>
-                    <ClipboardList size={20} />
-                </div>
-                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>음료<br />제조표</span>
-            </button>
-
-            {/* 8-9 Placeholders */}
-            {[8, 9].map(num => (
-                <button
-                    key={num}
-                    onClick={() => handleMenuClick(num)}
-                    style={{
-                        aspectRatio: '1',
-                        borderRadius: '16px',
-                        border: 'none',
-                        background: '#f7fafc',
-                        color: '#a0aec0',
-                        fontSize: '1.5rem',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                    }}
-                >
-                    {num}
-                </button>
-            ))}
+            </div>
         </div>
     );
+};
+
+const menuButtonStyle = {
+    aspectRatio: '1',
+    borderRadius: '16px',
+    border: 'none',
+    background: '#f7fafc',
+    color: '#2d3748',
+    fontSize: '0.95rem',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '5px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+};
+
+const iconContainerStyle = {
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '5px'
+};
+
+const labelStyle = {
+    textAlign: 'center',
+    wordBreak: 'keep-all',
+    fontSize: '0.9rem'
+};
+
+const sectionHeaderStyle = {
+    fontSize: '1.1rem',
+    fontWeight: 'bold',
+    color: '#2c7a7b', // Teal color
+    marginBottom: '15px',
+    paddingLeft: '5px'
+};
+
+const sectionGridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
+    gap: '15px',
+    alignContent: 'start'
+};
+
+const dividerStyle = {
+    height: '1px',
+    backgroundColor: '#e2e8f0',
+    margin: '10px 0'
 };
 export default StaffGridMenu;
