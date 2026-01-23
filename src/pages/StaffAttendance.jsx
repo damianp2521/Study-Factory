@@ -209,12 +209,25 @@ const StaffAttendance = ({ onBack }) => {
 
     const scrollContainerRef = useRef(null);
     const contentRef = useRef(null);
+    const rowRefs = useRef({}); // Refs for scrolling to rows
     const touchStartDistRef = useRef(null);
     const startScaleRef = useRef(1.0);
     const lastTempScaleRef = useRef(null);
 
     // Zoom Anchor Ref for Smart Scaling
     const zoomTargetRef = useRef(null);
+
+    // Auto Scroll to Highlighted Row
+    // Auto Scroll to Highlighted Row
+    useEffect(() => {
+        if (highlightedSeat && rowRefs.current[highlightedSeat]) {
+            const rowEl = rowRefs.current[highlightedSeat];
+            if (rowEl) {
+                // Scroll to center to avoid being hidden by sticky headers
+                rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [highlightedSeat]);
 
     // Dynamic Constants
     const BASE_SEAT_WIDTH = 40;
@@ -240,24 +253,8 @@ const StaffAttendance = ({ onBack }) => {
         end: endOfMonth(currentViewDate)
     }), [currentViewDate]);
 
-    // Row Reordering Logic
-    const sortedRows = useMemo(() => {
-        if (!highlightedSeat) return displayRows;
-
-        // Clone to avoid mutation
-        const newRows = [...displayRows];
-        const targetIndex = newRows.findIndex(r => r.seat_number === highlightedSeat);
-
-        if (targetIndex === -1) return displayRows;
-
-        // Remove target
-        const [targetRow] = newRows.splice(targetIndex, 1);
-
-        // Insert at the very top (index 0)
-        newRows.unshift(targetRow);
-
-        return newRows;
-    }, [displayRows, highlightedSeat]);
+    // Sorting removed - just use displayRows directly
+    const sortedRows = displayRows;
 
     // Selected User Object (for Popup)
     const selectedUser = useMemo(() => {
@@ -547,15 +544,9 @@ const StaffAttendance = ({ onBack }) => {
         if (!seatNum) return;
 
         if (highlightedSeat === seatNum) {
-            // Clicking the already highlighted user
-            if (isPopupOpen) {
-                // If popup is open, close it and DESELECT (toggle off)
-                setIsPopupOpen(false);
-                setHighlightedSeat(null);
-            } else {
-                // If popup is closed but highlighted, Open Popup
-                setIsPopupOpen(true);
-            }
+            // Clicking the already highlighted user -> Always Toggle OFF
+            setHighlightedSeat(null);
+            setIsPopupOpen(false);
         } else {
             // New user clicked
             setHighlightedSeat(seatNum);
@@ -718,7 +709,11 @@ const StaffAttendance = ({ onBack }) => {
                                 const currentRowHeight = ROW_HEIGHT; // Always Fixed Height Now
 
                                 return (
-                                    <div key={user.id} style={{ display: 'flex', height: currentRowHeight, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}>
+                                    <div
+                                        key={user.id}
+                                        ref={el => rowRefs.current[user.seat_number] = el}
+                                        style={{ display: 'flex', height: currentRowHeight, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
+                                    >
                                         <div style={{
                                             position: 'sticky', left: 0, zIndex: 10,
                                             display: 'flex',
