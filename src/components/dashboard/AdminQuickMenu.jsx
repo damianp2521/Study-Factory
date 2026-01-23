@@ -26,92 +26,85 @@ const AdminQuickMenu = () => {
     // 3. Work Management Views
     if (currentView === 'work_report') return <AdminWorkReport onBack={() => navigateTo('grid')} />;
 
-    // Main Grid Menu (Flat Structure)
+    // Main Grid Menu (Categorized Structure)
     return (
         <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
-            gap: '15px',
-            alignContent: 'start',
             height: '100%',
-            padding: '20px'
+            padding: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            overflowY: 'auto'
         }}>
-            {/* 1. 사원 등록 */}
-            <button
-                onClick={() => navigateTo('register')}
-                style={menuButtonStyle}
-            >
-                <div style={{ ...iconContainerStyle, background: '#ebf4ff', color: '#4299e1' }}>
-                    <UserPlus size={24} />
-                </div>
-                <span style={labelStyle}>사원 등록</span>
-            </button>
+            {/* Section 1: Employee Management */}
+            <div>
+                <h3 style={sectionHeaderStyle}>사원 관리</h3>
+                <div style={sectionGridStyle}>
+                    {/* 1. 사원 등록 */}
+                    <button onClick={() => navigateTo('register')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#ebf4ff', color: '#4299e1' }}>
+                            <UserPlus size={24} />
+                        </div>
+                        <span style={labelStyle}>사원 등록</span>
+                    </button>
 
-            {/* 2. 사원 현황 */}
-            <button
-                onClick={() => navigateTo('status')}
-                style={menuButtonStyle}
-            >
-                <div style={{ ...iconContainerStyle, background: '#edf2f7', color: '#718096' }}>
-                    <UserCheck size={24} />
+                    {/* 2. 사원 현황 */}
+                    <button onClick={() => navigateTo('status')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#edf2f7', color: '#718096' }}>
+                            <UserCheck size={24} />
+                        </div>
+                        <span style={labelStyle}>사원 현황</span>
+                    </button>
                 </div>
-                <span style={labelStyle}>사원 현황</span>
-            </button>
+            </div>
 
-            {/* 3. 월별 사원 휴무 현황 */}
-            <button
-                onClick={() => navigateTo('vacation_history')}
-                style={menuButtonStyle}
-            >
-                <div style={{ ...iconContainerStyle, background: '#fff5f5', color: '#c53030' }}>
-                    <Calendar size={24} />
-                </div>
-                <span style={{ ...labelStyle, lineHeight: '1.2' }}>월별 사원<br />휴무 현황</span>
-            </button>
+            <div style={dividerStyle} />
 
-            {/* 4. 사원 기타 휴무 신청 */}
-            <button
-                onClick={() => navigateTo('other_leave_request')}
-                style={menuButtonStyle}
-            >
-                <div style={{ ...iconContainerStyle, background: '#e6fffa', color: '#2c7a7b' }}>
-                    <UserPlus size={24} />
-                </div>
-                <span style={{ ...labelStyle, lineHeight: '1.2' }}>사원 기타<br />휴무 신청</span>
-            </button>
+            {/* Section 2: Attendance & Leave Management */}
+            <div>
+                <h3 style={sectionHeaderStyle}>출석 및 휴무 관리</h3>
+                <div style={sectionGridStyle}>
+                    {/* 1. 월별 사원 휴무 현황 */}
+                    <button onClick={() => navigateTo('vacation_history')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#fff5f5', color: '#c53030' }}>
+                            <Calendar size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>월별 사원<br />휴무 현황</span>
+                    </button>
 
-            {/* 5. 출석 현황 */}
-            <button
-                onClick={() => navigateTo('attendance_status')}
-                style={menuButtonStyle}
-            >
-                <div style={{ ...iconContainerStyle, background: '#f0fff4', color: '#2f855a' }}>
-                    <UserCheck size={24} />
-                </div>
-                <span style={{ ...labelStyle, lineHeight: '1.2' }}>출석<br />현황</span>
-            </button>
+                    {/* 2. 월별 출석 현황 (Old StaffAttendance) */}
+                    <button onClick={() => navigateTo('monthly_attendance_log')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#e9d8fd', color: '#6b46c1' }}>
+                            <UserCheck size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>월별<br />출석 현황</span>
+                    </button>
 
-            {/* 6. 월별 출석 현황 */}
-            <button
-                onClick={() => navigateTo('monthly_attendance_log')}
-                style={menuButtonStyle}
-            >
-                <div style={{ ...iconContainerStyle, background: '#e9d8fd', color: '#6b46c1' }}>
-                    <UserCheck size={24} />
+                    {/* 3. 사원 기타 휴무 신청 */}
+                    <button onClick={() => navigateTo('other_leave_request')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#e6fffa', color: '#2c7a7b' }}>
+                            <UserPlus size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>사원 기타<br />휴무 신청</span>
+                    </button>
                 </div>
-                <span style={{ ...labelStyle, lineHeight: '1.2' }}>월별<br />출석 현황</span>
-            </button>
+            </div>
 
-            {/* 7. 작업 계획 및 결과 */}
-            <button
-                onClick={() => navigateTo('work_report')}
-                style={menuButtonStyle}
-            >
-                <div style={{ ...iconContainerStyle, background: '#ebf8ff', color: '#2b6cb0' }}>
-                    <ClipboardList size={24} />
+            <div style={dividerStyle} />
+
+            {/* Section 3: Work Management */}
+            <div>
+                <h3 style={sectionHeaderStyle}>작업 관리</h3>
+                <div style={sectionGridStyle}>
+                    {/* 1. 작업 계획 및 결과 */}
+                    <button onClick={() => navigateTo('work_report')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#ebf8ff', color: '#2b6cb0' }}>
+                            <ClipboardList size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>작업 계획<br />및 결과</span>
+                    </button>
                 </div>
-                <span style={{ ...labelStyle, lineHeight: '1.2' }}>작업 계획<br />및 결과</span>
-            </button>
+            </div>
         </div>
     );
 };
@@ -145,7 +138,29 @@ const iconContainerStyle = {
 
 const labelStyle = {
     textAlign: 'center',
-    wordBreak: 'keep-all'
+    wordBreak: 'keep-all',
+    fontSize: '0.9rem'
 };
+
+const sectionHeaderStyle = {
+    fontSize: '1.1rem',
+    fontWeight: 'bold',
+    color: '#2c7a7b', // Teal color
+    marginBottom: '15px',
+    paddingLeft: '5px'
+};
+
+const sectionGridStyle = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
+    gap: '15px',
+    alignContent: 'start'
+};
+
+const dividerStyle = {
+    height: '1px',
+    backgroundColor: '#e2e8f0',
+    margin: '10px 0'
+};};
 
 export default AdminQuickMenu;
