@@ -399,46 +399,12 @@ const StaffDailyAttendance = ({ onBack }) => {
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white', borderRadius: '20px', overflow: 'hidden' }}>
             {/* 2-Row Layout Header */}
-            <div style={{ padding: '10px 10px 5px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                {/* Row 1: Left(Title) -- Right(MemoButton) */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
-                        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', marginLeft: '-5px', flexShrink: 0 }}>
-                            <ChevronLeft size={24} color="#2d3748" />
-                        </button>
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            출석부
-                        </h2>
-                    </div>
+            <div style={{ padding: '15px 10px 10px 10px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '5px' }}>
 
-                    <div>
-                        <button
-                            onClick={() => setShowMemoModal(true)}
-                            style={{
-                                background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
-                                padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                                height: '32px'
-                            }}
-                        >
-                            오늘 출석 참고사항
-                            {dailyMemos.length > 0 && (
-                                <span style={{
-                                    color: '#38a169', background: 'white', width: '20px', height: '20px',
-                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                                }}>
-                                    {dailyMemos.length}
-                                </span>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Row 2: Centered Date Navigator */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', paddingBottom: '5px' }}>
+                {/* Row 1: Centered Date Navigator */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
                     <button onClick={() => changeDate(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
                         <ChevronLeft size={24} color="#4a5568" />
                     </button>
@@ -447,6 +413,30 @@ const StaffDailyAttendance = ({ onBack }) => {
                     </span>
                     <button onClick={() => changeDate(1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
                         <ChevronRight size={24} color="#4a5568" />
+                    </button>
+                </div>
+
+                {/* Row 2: Right Aligned Memo Button */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                    <button
+                        onClick={() => setShowMemoModal(true)}
+                        style={{
+                            background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
+                            padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                            height: '32px'
+                        }}
+                    >
+                        오늘 출석 참고사항
+                        {dailyMemos.length > 0 && (
+                            <span style={{
+                                color: '#38a169', background: 'white', width: '20px', height: '20px',
+                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                            }}>
+                                {dailyMemos.length}
+                            </span>
+                        )}
                     </button>
                 </div>
             </div>
