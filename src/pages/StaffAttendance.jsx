@@ -217,7 +217,23 @@ const StaffAttendance = ({ onBack }) => {
     // Zoom Anchor Ref for Smart Scaling
     const zoomTargetRef = useRef(null);
 
-    // Auto Scroll to Highlighted Row
+
+    // Dynamic Constants
+    const BASE_SEAT_WIDTH = 40;
+    const BASE_NAME_WIDTH = 60;
+    const BASE_PERIOD_WIDTH = 50;
+    const BASE_ROW_HEIGHT = 30;
+    const BASE_HEADER_DATE_HEIGHT = 35;
+    const BASE_HEADER_PERIOD_HEIGHT = 30;
+
+    const SEAT_WIDTH = BASE_SEAT_WIDTH * scale;
+    const NAME_WIDTH = BASE_NAME_WIDTH * scale;
+    const PERIOD_WIDTH = BASE_PERIOD_WIDTH * scale;
+    const ROW_HEIGHT = BASE_ROW_HEIGHT * scale;
+    const HEADER_DATE_HEIGHT = BASE_HEADER_DATE_HEIGHT * scale;
+    const HEADER_PERIOD_HEIGHT = BASE_HEADER_PERIOD_HEIGHT * scale;
+    const HEADER_TOTAL_HEIGHT = HEADER_DATE_HEIGHT + HEADER_PERIOD_HEIGHT;
+
     // Auto Scroll to Highlighted Row
     useEffect(() => {
         if (highlightedSeat && rowRefs.current[highlightedSeat]) {
@@ -238,22 +254,6 @@ const StaffAttendance = ({ onBack }) => {
             }
         }
     }, [highlightedSeat, HEADER_TOTAL_HEIGHT]);
-
-    // Dynamic Constants
-    const BASE_SEAT_WIDTH = 40;
-    const BASE_NAME_WIDTH = 60;
-    const BASE_PERIOD_WIDTH = 50;
-    const BASE_ROW_HEIGHT = 30;
-    const BASE_HEADER_DATE_HEIGHT = 35;
-    const BASE_HEADER_PERIOD_HEIGHT = 30;
-
-    const SEAT_WIDTH = BASE_SEAT_WIDTH * scale;
-    const NAME_WIDTH = BASE_NAME_WIDTH * scale;
-    const PERIOD_WIDTH = BASE_PERIOD_WIDTH * scale;
-    const ROW_HEIGHT = BASE_ROW_HEIGHT * scale;
-    const HEADER_DATE_HEIGHT = BASE_HEADER_DATE_HEIGHT * scale;
-    const HEADER_PERIOD_HEIGHT = BASE_HEADER_PERIOD_HEIGHT * scale;
-    const HEADER_TOTAL_HEIGHT = HEADER_DATE_HEIGHT + HEADER_PERIOD_HEIGHT;
 
     const DAY_WIDTH = PERIOD_WIDTH * 7;
 
