@@ -269,7 +269,7 @@ const StaffTaskBoard = () => {
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
             {/* Branch Filter (Horizontal Scroll) */}
             <div style={{
                 display: 'flex',

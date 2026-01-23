@@ -91,7 +91,8 @@ const StaffGridMenu = () => {
             gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
             gap: '15px',
             alignContent: 'start',
-            height: '100%'
+            height: '100%',
+            padding: '20px' // Restore padding locally
         }}>
             {/* 1. Employee Leave Status */}
             <button

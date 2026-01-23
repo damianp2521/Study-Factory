@@ -289,8 +289,8 @@ const ManagerDashboard = () => {
                                 <div style={{
                                     flex: 1,
                                     overflowY: 'auto',
-                                    padding: '20px', // Add internal padding
-                                    paddingBottom: '20px', // Bottom padding for scrolling content
+                                    padding: '0', // Removed global padding
+                                    paddingBottom: '20px', // Keep bottom padding for scrolling content
                                     scrollbarWidth: 'none',
                                     msOverflowStyle: 'none'
                                 }}>

@@ -342,7 +342,8 @@ const AdminQuickMenu = () => {
             gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
             gap: '15px',
             alignContent: 'start',
-            height: '100%'
+            height: '100%',
+            padding: '20px' // Restore padding locally
         }}>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
                 <button
