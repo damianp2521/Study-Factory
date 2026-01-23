@@ -610,7 +610,7 @@ const StaffAttendance = ({ onBack }) => {
                         >
                             <ChevronLeft size={26} />
                         </button>
-                        <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748' }}>월별 출석 현황 (v2)</h2>
+                        <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1, color: '#2d3748' }}>월별 출석 현황</h2>
                     </div>
 
                     <button

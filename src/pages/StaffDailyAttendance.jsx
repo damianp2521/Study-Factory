@@ -205,6 +205,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     const scrollContainerRef = useRef(null);
     const contentRef = useRef(null);
+    const rowRefs = useRef({}); // Refs for scrolling to rows
     const [touchStartDist, setTouchStartDist] = useState(null);
     const [startScale, setStartScale] = useState(1.0);
 
@@ -228,17 +229,25 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     const daysInView = useMemo(() => [currentViewDate], [currentViewDate]);
 
-    // Row Reordering Logic
-    const sortedRows = useMemo(() => {
-        if (!highlightedSeat) return displayRows;
-        const newRows = [...displayRows];
-        const targetIndex = newRows.findIndex(r => r.seat_number === highlightedSeat);
-        if (targetIndex === -1) return displayRows;
-        const [targetRow] = newRows.splice(targetIndex, 1);
-        const insertIndex = Math.min(2, newRows.length);
-        newRows.splice(insertIndex, 0, targetRow);
-        return newRows;
-    }, [displayRows, highlightedSeat]);
+    // Row Reordering REMOVED - just use displayRows
+    const sortedRows = displayRows;
+
+    // Auto Scroll to Highlighted Row
+    useEffect(() => {
+        if (highlightedSeat && rowRefs.current[highlightedSeat]) {
+            const rowEl = rowRefs.current[highlightedSeat];
+            if (rowEl && scrollContainerRef.current) {
+                // Scroll to top (under header)
+                const container = scrollContainerRef.current;
+                const targetScrollTop = rowEl.offsetTop - HEADER_TOTAL_HEIGHT;
+
+                container.scrollTo({
+                    top: targetScrollTop,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    }, [highlightedSeat, HEADER_TOTAL_HEIGHT]);
 
     const selectedUser = useMemo(() => {
         return displayRows.find(r => r.seat_number === highlightedSeat);
@@ -373,13 +382,11 @@ const StaffDailyAttendance = ({ onBack }) => {
     const handleNameClick = (seatNum) => {
         if (!seatNum) return;
         if (highlightedSeat === seatNum) {
-            if (isPopupOpen) {
-                setIsPopupOpen(false);
-                setHighlightedSeat(null);
-            } else {
-                setIsPopupOpen(true);
-            }
+            // Toggle OFF
+            setHighlightedSeat(null);
+            setIsPopupOpen(false);
         } else {
+            // Select New
             setHighlightedSeat(seatNum);
             setIsPopupOpen(true);
         }
@@ -483,7 +490,11 @@ const StaffDailyAttendance = ({ onBack }) => {
                             let stickyBg = isRowHighlighted ? '#ebf8ff' : (isDeactivated ? '#f7fafc' : bgColor);
 
                             return (
-                                <div key={user.id} style={{ display: 'flex', height: ROW_HEIGHT, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}>
+                                <div
+                                    key={user.id}
+                                    ref={el => rowRefs.current[user.seat_number] = el}
+                                    style={{ display: 'flex', height: ROW_HEIGHT, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
+                                >
                                     {/* Sticky Name/Seat */}
                                     <div style={{ position: 'sticky', left: 0, zIndex: 10, display: 'flex', boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)', alignItems: 'flex-start', backgroundColor: stickyBg, height: '100%' }}>
                                         {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />}
