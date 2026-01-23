@@ -129,7 +129,7 @@ const AdminVacationDetails = ({ user, onBack }) => {
                 </div>
 
                 {/* Days */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', autoRows: 'minmax(80px, 1fr)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', autoRows: 'minmax(52px, auto)' }}>
                     {days.map((date, i) => {
                         if (!date) return <div key={`empty-${i}`} />;
 
@@ -144,6 +144,7 @@ const AdminVacationDetails = ({ user, onBack }) => {
 
                         return (
                             <div key={i} style={{
+                                minHeight: '52px',
                                 background: cellBg,
                                 borderRadius: '8px',
                                 border: `1px solid ${cellBorder}`,
@@ -154,7 +155,8 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                 justifyContent: 'flex-start',
                                 position: 'relative',
                                 opacity: loading ? 0.5 : 1,
-                                overflow: 'hidden'
+                                height: 'auto',
+                                overflow: 'visible'
                             }}>
                                 <span style={{
                                     fontSize: '0.8rem',
