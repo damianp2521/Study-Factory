@@ -568,21 +568,24 @@ const StaffAttendance = ({ onBack }) => {
         let borderBottom = '1px solid #edf2f7';
         let bgColor = 'white';
 
+        // Ensure seatNum is a number for comparison
+        const numericSeat = Number(seatNum);
+
         // Separator Logic
         const thickBorderSeats = [7, 17, 22, 27, 32, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
         const thinBorderSeats = [9, 11, 13, 15, 50];
 
-        if (seatNum === 54) {
+        if (numericSeat === 54) {
             borderBottom = '4px solid #267E82'; // Separate Study Rooms (Very Thick Teal)
-        } else if (thickBorderSeats.includes(seatNum)) {
+        } else if (thickBorderSeats.includes(numericSeat)) {
             borderBottom = '3px solid #718096';
-        } else if (thinBorderSeats.includes(seatNum)) {
+        } else if (thinBorderSeats.includes(numericSeat)) {
             borderBottom = '1px solid #718096'; // Visible Thin Line
         }
 
-        if (seatNum >= 8 && seatNum <= 17) bgColor = '#edf2f7';
-        else if (seatNum === 53 || seatNum === 54) bgColor = '#cbd5e0';
-        else if (seatNum === 83) bgColor = '#fed7d7';
+        if (numericSeat >= 8 && numericSeat <= 17) bgColor = '#edf2f7';
+        else if (numericSeat === 53 || numericSeat === 54) bgColor = '#cbd5e0';
+        else if (numericSeat === 83) bgColor = '#fed7d7';
 
         return { borderBottom, bgColor };
     };
