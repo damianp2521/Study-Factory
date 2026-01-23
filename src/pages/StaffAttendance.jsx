@@ -253,9 +253,8 @@ const StaffAttendance = ({ onBack }) => {
         // Remove target
         const [targetRow] = newRows.splice(targetIndex, 1);
 
-        // Insert at 3rd position (index 2), or end/appropriate index if fewer rows
-        const insertIndex = Math.min(2, newRows.length);
-        newRows.splice(insertIndex, 0, targetRow);
+        // Insert at the very top (index 0)
+        newRows.unshift(targetRow);
 
         return newRows;
     }, [displayRows, highlightedSeat]);
