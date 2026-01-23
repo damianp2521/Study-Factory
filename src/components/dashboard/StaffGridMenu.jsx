@@ -9,6 +9,7 @@ import StaffAttendance from '../../pages/StaffAttendance';
 import StaffSeatManagement from '../../pages/StaffSeatManagement';
 import StaffBeverageManagement from '../../pages/StaffBeverageManagement';
 import StaffBeverageOrderList from '../../pages/StaffBeverageOrderList';
+import StaffDailyAttendance from '../../pages/StaffDailyAttendance';
 
 const StaffGridMenu = () => {
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
@@ -60,21 +61,7 @@ const StaffGridMenu = () => {
         );
     }
     if (currentView === 'attendance') {
-        return (
-            <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
-                    <button onClick={goBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
-                        <ChevronLeft size={24} color="#2d3748" />
-                    </button>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>출석부</h3>
-                </div>
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a0aec0', fontSize: '0.95rem', flexDirection: 'column', gap: '10px' }}>
-                    <span>이 기능은 관리자 메뉴의</span>
-                    <span style={{ fontWeight: 'bold', color: '#2d3748' }}>'출석·휴무 관리' &gt; '월별 출석 현황'</span>
-                    <span>으로 이동되었습니다.</span>
-                </div>
-            </div>
-        );
+        return <StaffDailyAttendance onBack={goBack} />;
     }
     if (currentView === 'seat_management') {
         return <StaffSeatManagement onBack={goBack} />;
