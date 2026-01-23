@@ -113,26 +113,6 @@ const StaffGridMenu = () => {
                 <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>일별 사원<br />휴무 현황</span>
             </button>
 
-            {/* 2. Staff Work Status */}
-            <button
-                onClick={() => handleMenuClick(2)}
-                style={{
-                    aspectRatio: '1',
-                    borderRadius: '16px',
-                    border: 'none',
-                    background: '#f7fafc',
-                    color: '#2d3748',
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-            >
-                <div style={{ width: '32px', height: '32px', background: '#ebf8ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2b6cb0', marginBottom: '5px' }}>
-                    <ClipboardList size={20} />
-                </div>
-                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />업무 현황</span>
-            </button>
-
             {/* 3. Leave Request */}
             <button
                 onClick={() => handleMenuClick(3)}
@@ -151,26 +131,6 @@ const StaffGridMenu = () => {
                     <UserPlus size={20} />
                 </div>
                 <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>스탭<br />휴무 신청</span>
-            </button>
-
-            {/* 4. Attendance Book (출석부) */}
-            <button
-                onClick={() => handleMenuClick(4)}
-                style={{
-                    aspectRatio: '1',
-                    borderRadius: '16px',
-                    border: 'none',
-                    background: '#f7fafc',
-                    color: '#2d3748',
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-            >
-                <div style={{ width: '32px', height: '32px', background: '#e9d8fd', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b46c1', marginBottom: '5px' }}>
-                    <UserCheck size={20} />
-                </div>
-                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2' }}>출석부</span>
             </button>
 
             {/* 5. Employee Seat Management (사원 좌석 관리) */}
