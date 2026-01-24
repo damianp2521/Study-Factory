@@ -9,8 +9,7 @@ import { ko } from 'date-fns/locale';
 const InlineVacationRequest = () => {
     const { user } = useAuth();
 
-    // View Mode: 'create' | 'history'
-    const [viewMode, setViewMode] = useState('create');
+    // View Mode removed - always show both
 
     const [date, setDate] = useState('');
     const [type, setType] = useState('full'); // 'full' | 'half_am' | 'half_pm'
@@ -21,16 +20,13 @@ const InlineVacationRequest = () => {
     const [selectedMonth, setSelectedMonth] = useState(new Date());
     const [dbError, setDbError] = useState(false);
 
-    // Fetch requests when user is available or viewMode changes to history
+    // Fetch all data
     useEffect(() => {
         if (user) {
-            // Always fetch requests for calendar events
             fetchRequests();
-            if (viewMode === 'history') {
-                fetchSpecialAttendance();
-            }
+            fetchSpecialAttendance();
         }
-    }, [user, viewMode]);
+    }, [user]);
 
     const fetchRequests = async () => {
         try {
@@ -108,7 +104,8 @@ const InlineVacationRequest = () => {
             alert('휴가 신청이 완료되었습니다.');
             setDate(''); // Reset
             fetchRequests(); // Refresh list
-            setViewMode('history'); // Switch to history view
+            fetchRequests(); // Refresh list
+            // setViewMode('history'); - Removed
         } catch (err) {
             console.error('Error submitting vacation request:', err);
             alert('신청에 실패했습니다.');
