@@ -185,14 +185,17 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
             onTouchStart={handleStart}
             onTouchEnd={handleEnd}
             onClick={handleClick}
+            onContextMenu={(e) => e.preventDefault()}
             style={{
                 width: width, flexShrink: 0, height: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: bg, color, fontSize: `${0.7 * scale}rem`, fontWeight: 'bold',
+                background: bg, color, fontSize: `${0.8 * scale}rem`, fontWeight: 'bold',
                 borderRight: '1px solid #e2e8f0',
                 whiteSpace: 'pre-line', textAlign: 'center', lineHeight: 1.1,
                 cursor: isDeactivated ? 'default' : 'pointer',
-                userSelect: 'none'
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                WebkitTouchCallout: 'none'
             }}
         >
             {content}
