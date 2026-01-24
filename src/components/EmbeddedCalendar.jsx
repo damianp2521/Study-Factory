@@ -188,13 +188,8 @@ const EmbeddedCalendar = ({
 
                                 // 2. Reason Override
                                 if (event.reason) {
-                                    const allowedReasons = ['알바', '스터디', '병원'];
-                                    if (allowedReasons.includes(event.reason)) {
-                                        label = event.reason;
-                                    } else {
-                                        label = '기타';
-                                    }
-                                    // Gray Style
+                                    label = event.reason;
+                                    // Default Gray Style for other reasons
                                     itemBgColor = '#F7FAFC';
                                     itemTextColor = '#4A5568';
                                     itemBorderColor = '#CBD5E0';

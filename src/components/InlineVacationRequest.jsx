@@ -186,7 +186,14 @@ const InlineVacationRequest = () => {
                         }
                         setDate(val);
                     }}
-                    events={myRequests}
+                    events={useMemo(() => [
+                        ...myRequests,
+                        ...specialAttendance.map(a => ({
+                            ...a,
+                            type: 'special',
+                            reason: a.status
+                        }))
+                    ], [myRequests, specialAttendance])}
                     minDate={todayStr}
                     maxDate={maxDateStr}
                     // Sync Month State

@@ -21,15 +21,37 @@ const AdminVacationDetails = ({ user, onBack }) => {
             const lastDay = new Date(y, Number(m), 0).getDate();
             const queryDateEnd = `${y}-${m}-${lastDay}`;
 
-            const { data, error } = await supabase
-                .from('vacation_requests')
-                .select('*')
-                .eq('user_id', user.id)
-                .gte('date', queryDateStart)
-                .lte('date', queryDateEnd);
+            // Parallel fetch vacations and attendance logs
+            const [vacationRes, attendanceRes] = await Promise.all([
+                supabase
+                    .from('vacation_requests')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .gte('date', queryDateStart)
+                    .lte('date', queryDateEnd),
+                supabase
+                    .from('attendance_logs')
+                    .select('date, period, status')
+                    .eq('user_id', user.id)
+                    .not('status', 'is', null)
+                    .gte('date', queryDateStart)
+                    .lte('date', queryDateEnd)
+            ]);
 
-            if (error) throw error;
-            setUserVacations(data || []);
+            if (vacationRes.error) throw vacationRes.error;
+            if (attendanceRes.error) throw attendanceRes.error;
+
+            // Merge them
+            const merged = [
+                ...(vacationRes.data || []),
+                ...(attendanceRes.data || []).map(a => ({
+                    ...a,
+                    type: 'special',
+                    reason: a.status
+                }))
+            ];
+
+            setUserVacations(merged);
         } catch (error) {
             console.error('Error fetching vacations:', error);
         } finally {
@@ -195,16 +217,16 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                                 textColor = '#2c5282';
                                                 borderColor = '#90cdf4';
                                             }
+                                        } else if (vacation.type === 'special') {
+                                            label = '특휴';
+                                            bgColor = '#faf5ff';
+                                            textColor = '#553c9a';
+                                            borderColor = '#d6bcfa';
                                         }
 
                                         // 2. Override Label and Style if 'reason' exists (Other Leave)
                                         if (vacation.reason) {
-                                            const allowedReasons = ['알바', '스터디', '병원'];
-                                            if (allowedReasons.includes(vacation.reason)) {
-                                                label = vacation.reason;
-                                            } else {
-                                                label = '기타';
-                                            }
+                                            label = vacation.reason;
 
                                             // Gray Style for Other Leave
                                             bgColor = '#F7FAFC'; // Gray 50
