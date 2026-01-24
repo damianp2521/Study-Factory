@@ -76,7 +76,7 @@ export const useVacationStatus = () => {
                     .order('created_at', { ascending: false }),
                 supabase
                     .from('attendance_logs')
-                    .select('user_id, status, profiles:user_id(name, branch)')
+                    .select('user_id, status, created_at, profiles:user_id(name, branch)')
                     .eq('date', selectedDate)
                     .eq('period', 1)
                     .not('status', 'is', null)
@@ -96,7 +96,7 @@ export const useVacationStatus = () => {
                 periods: [1],
                 reason: log.status,
                 profiles: log.profiles,
-                created_at: null // Logs don't typically have created_at for this view
+                created_at: log.created_at // Use actual created_at
             }));
 
             // Merge (Unique by user_id preference?)
