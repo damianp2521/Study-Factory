@@ -355,6 +355,32 @@ const StaffTaskBoard = () => {
 
                 {/* Main Action Group (Right Aligned) */}
                 <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                    {/* Assignment Mode Toggle - Only shown in schedule view for admins */}
+                    {view === 'schedule' && (user.role === 'admin' || user.role === 'manager') && (
+                        <button
+                            onClick={() => setIsAssignmentMode(!isAssignmentMode)}
+                            style={{
+                                width: '105px', // Fixed width for consistency
+                                height: '34px',
+                                borderRadius: '10px',
+                                border: '1px solid #e2e8f0',
+                                backgroundColor: isAssignmentMode ? 'var(--color-primary)' : 'white',
+                                color: isAssignmentMode ? 'white' : '#4a5568',
+                                fontSize: '0.85rem',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            <Edit2 size={14} />
+                            {isAssignmentMode ? '배정 완료' : '근무 배정'}
+                        </button>
+                    )}
+
                     {/* View Toggle Button */}
                     <button
                         onClick={() => {
@@ -381,32 +407,6 @@ const StaffTaskBoard = () => {
                         {view === 'schedule' ? <MessageCircle size={16} /> : <Calendar size={16} />}
                         {view === 'schedule' ? '업무 보기' : '근무표 보기'}
                     </button>
-
-                    {/* Assignment Mode Toggle - Only shown in schedule view for admins */}
-                    {view === 'schedule' && (user.role === 'admin' || user.role === 'manager') && (
-                        <button
-                            onClick={() => setIsAssignmentMode(!isAssignmentMode)}
-                            style={{
-                                width: '105px', // Fixed width for consistency
-                                height: '34px',
-                                borderRadius: '10px',
-                                border: '1px solid #e2e8f0',
-                                backgroundColor: isAssignmentMode ? 'var(--color-primary)' : 'white',
-                                color: isAssignmentMode ? 'white' : '#4a5568',
-                                fontSize: '0.85rem',
-                                fontWeight: '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            <Edit2 size={14} />
-                            {isAssignmentMode ? '배정 완료' : '근무 배정'}
-                        </button>
-                    )}
                 </div>
             </div>
 
