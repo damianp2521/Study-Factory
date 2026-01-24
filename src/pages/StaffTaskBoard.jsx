@@ -306,64 +306,62 @@ const StaffTaskBoard = () => {
             {/* Header Controls: Branch + View Toggle */}
             <div style={{
                 display: 'flex',
-                alignItems: 'flex-end',
+                alignItems: 'center',
+                justifyContent: 'space-between', // Align button to far right
                 gap: '15px',
-                marginBottom: '15px',
-                flexWrap: 'wrap'
+                marginBottom: '15px'
             }}>
-                {/* Compact Branch Filter Dropdown */}
+                {/* Compact Branch Filter Dropdown (No Label) */}
                 <div style={{ position: 'relative', width: 'fit-content' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#718096', marginBottom: '4px', paddingLeft: '4px' }}>지점</div>
-                    <div style={{ position: 'relative' }}>
-                        <select
-                            value={selectedBranch}
-                            onChange={(e) => setSelectedBranch(e.target.value)}
-                            style={{
-                                width: 'auto',
-                                minWidth: '130px',
-                                padding: '6px 32px 6px 16px',
-                                borderRadius: '12px',
-                                border: '1px solid #e2e8f0',
-                                backgroundColor: 'white',
-                                color: '#4a5568',
-                                fontSize: '0.95rem',
-                                fontWeight: '500',
-                                appearance: 'none',
-                                cursor: 'pointer',
-                                outline: 'none',
-                            }}
-                        >
-                            {branches.map(branch => (
-                                <option key={branch} value={branch}>
-                                    {branch === '전체' ? '전체 지점' : branch}
-                                </option>
-                            ))}
-                        </select>
-                        <div style={{
-                            position: 'absolute',
-                            right: '10px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            pointerEvents: 'none',
-                            color: '#718096',
-                            display: 'flex',
-                            alignItems: 'center'
-                        }}>
-                            <ChevronDown size={16} />
-                        </div>
+                    <select
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
+                        style={{
+                            width: 'auto',
+                            minWidth: '130px',
+                            height: '38px', // Exact height match
+                            padding: '0 32px 0 16px',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            backgroundColor: 'white',
+                            color: '#4a5568',
+                            fontSize: '0.95rem',
+                            fontWeight: '600', // Matches button weight
+                            appearance: 'none',
+                            cursor: 'pointer',
+                            outline: 'none',
+                        }}
+                    >
+                        {branches.map(branch => (
+                            <option key={branch} value={branch}>
+                                {branch === '전체' ? '전체 지점' : branch}
+                            </option>
+                        ))}
+                    </select>
+                    <div style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        pointerEvents: 'none',
+                        color: '#718096',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }}>
+                        <ChevronDown size={16} />
                     </div>
                 </div>
 
-                {/* View Toggle Button */}
+                {/* View Toggle Button (Right Aligned) */}
                 <button
                     onClick={() => setView(view === 'tasks' ? 'schedule' : 'tasks')}
                     style={{
-                        padding: '6px 16px',
-                        height: '38px', // Match dropdown height roughly
+                        padding: '0 16px',
+                        height: '38px', // Exact height match
                         borderRadius: '12px',
                         border: '1px solid #e2e8f0',
-                        backgroundColor: view === 'schedule' ? 'var(--color-primary)' : 'white',
-                        color: view === 'schedule' ? 'white' : '#4a5568',
+                        backgroundColor: 'white', // Neutral white background like dropdown
+                        color: '#4a5568',
                         fontSize: '0.95rem',
                         fontWeight: '600',
                         display: 'flex',
@@ -371,7 +369,6 @@ const StaffTaskBoard = () => {
                         gap: '8px',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        boxShadow: view === 'schedule' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
                     }}
                 >
                     {view === 'schedule' ? <MessageCircle size={18} /> : <Calendar size={18} />}
