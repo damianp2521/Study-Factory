@@ -154,6 +154,13 @@ export const useVacationStatus = () => {
                 return filters[typeKey];
             });
 
+            // Sort by created_at descending (newest first)
+            filtered.sort((a, b) => {
+                const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+                const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+                return dateB - dateA;
+            });
+
             setVacations(filtered);
         } catch (err) {
             console.error('Error fetching vacations:', err);
