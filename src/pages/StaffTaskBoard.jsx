@@ -616,12 +616,13 @@ const StaffWorkSchedule = ({ branch, isAdmin }) => {
     const [staffList, setStaffList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isAssignmentMode, setIsAssignmentMode] = useState(false); // Toggle for editing assignments
 
     const fetchData = async () => {
         if (branch === '전체') return;
         setLoading(true);
         try {
-            // 1. Fetch Staff List for this branch
+            // 1. Fetch Staff List
             const { data: staffData, error: staffError } = await supabase
                 .from('branch_staff_names')
                 .select('staff_name')
@@ -683,37 +684,73 @@ const StaffWorkSchedule = ({ branch, isAdmin }) => {
     }
 
     return (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                    onClick={() => setIsSettingsOpen(true)}
-                    style={{
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        background: '#edf2f7',
-                        border: 'none',
-                        color: '#4a5568',
-                        fontSize: '0.9rem',
-                        fontWeight: '600',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        cursor: 'pointer'
-                    }}
-                >
-                    <Settings size={16} />
-                    근무표 설정
-                </button>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Schedule Controls */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                {isAdmin && (
+                    <>
+                        <button
+                            onClick={() => setIsAssignmentMode(!isAssignmentMode)}
+                            style={{
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                background: isAssignmentMode ? 'var(--color-primary)' : '#edf2f7',
+                                border: 'none',
+                                color: isAssignmentMode ? 'white' : '#4a5568',
+                                fontSize: '0.85rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            }}
+                        >
+                            <Edit2 size={14} />
+                            {isAssignmentMode ? '수정 완료' : '근무 배정'}
+                        </button>
+                        <button
+                            onClick={() => setIsSettingsOpen(true)}
+                            style={{
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                background: '#edf2f7',
+                                border: 'none',
+                                color: '#4a5568',
+                                fontSize: '0.85rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            }}
+                        >
+                            <Settings size={14} />
+                            스탭 설정
+                        </button>
+                    </>
+                )}
             </div>
 
-            <div style={{ overflowX: 'auto', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '10px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            {/* Compact Table Container */}
+            <div style={{
+                overflowX: 'auto',
+                background: 'white',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0',
+                padding: '5px'
+            }}>
+                <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    fontSize: '0.75rem', // Reduced font size to fit one screen
+                    tableLayout: 'fixed' // Ensure columns are constrained
+                }}>
                     <thead>
                         <tr>
-                            <th style={{ padding: '10px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7' }}>시작</th>
-                            <th style={{ padding: '10px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7' }}>업무</th>
+                            <th style={{ width: '40px', padding: '8px 4px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7' }}>시간</th>
+                            <th style={{ width: '50px', padding: '8px 4px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7' }}>업무</th>
                             {days.map(d => (
-                                <th key={d} style={{ padding: '10px', borderBottom: '2px solid #edf2f7', minWidth: '100px', backgroundColor: '#f8fafc' }}>{d}</th>
+                                <th key={d} style={{ padding: '8px 2px', borderBottom: '2px solid #edf2f7', backgroundColor: '#f8fafc' }}>{d}</th>
                             ))}
                         </tr>
                     </thead>
@@ -735,7 +772,7 @@ const StaffWorkSchedule = ({ branch, isAdmin }) => {
                                         )}
                                         <td style={{
                                             textAlign: 'center',
-                                            padding: '8px',
+                                            padding: '8px 4px',
                                             borderRight: '1px solid #edf2f7',
                                             color: '#718096',
                                             borderBottom: rIdx === 0 ? '1px solid #f7fafc' : (sIdx === 0 ? '2px solid #edf2f7' : 'none')
@@ -744,32 +781,49 @@ const StaffWorkSchedule = ({ branch, isAdmin }) => {
                                         </td>
                                         {days.map((_, dIdx) => {
                                             const assignment = schedules.find(as => as.day_of_week === dIdx && as.shift === s.key && as.role === r.key);
+                                            const hasName = assignment?.staff_name && assignment.staff_name !== '미지정';
+
                                             return (
                                                 <td key={dIdx} style={{
-                                                    padding: '5px',
-                                                    borderBottom: rIdx === 0 ? '1px solid #f7fafc' : (sIdx === 0 ? '2px solid #edf2f7' : 'none')
+                                                    padding: '2px',
+                                                    borderBottom: rIdx === 0 ? '1px solid #f7fafc' : (sIdx === 0 ? '2px solid #edf2f7' : 'none'),
+                                                    textAlign: 'center'
                                                 }}>
-                                                    <select
-                                                        disabled={!isAdmin}
-                                                        value={assignment?.staff_name || '미지정'}
-                                                        onChange={(e) => handleUpdateAssignment(dIdx, s.key, r.key, e.target.value)}
-                                                        style={{
-                                                            width: '100%',
-                                                            padding: '6px',
-                                                            borderRadius: '6px',
-                                                            border: '1px solid #e2e8f0',
-                                                            fontSize: '0.85rem',
-                                                            backgroundColor: assignment?.staff_name && assignment.staff_name !== '미지정' ? '#ebf8ff' : '#f8fafc',
-                                                            color: assignment?.staff_name && assignment.staff_name !== '미지정' ? '#2b6cb0' : '#a0aec0',
-                                                            cursor: isAdmin ? 'pointer' : 'default',
-                                                            outline: 'none'
-                                                        }}
-                                                    >
-                                                        <option value="미지정">미지정</option>
-                                                        {staffList.map(name => (
-                                                            <option key={name} value={name}>{name}</option>
-                                                        ))}
-                                                    </select>
+                                                    {isAssignmentMode ? (
+                                                        <select
+                                                            value={assignment?.staff_name || '미지정'}
+                                                            onChange={(e) => handleUpdateAssignment(dIdx, s.key, r.key, e.target.value)}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '4px 2px',
+                                                                borderRadius: '4px',
+                                                                border: '1px solid #e2e8f0',
+                                                                fontSize: '0.7rem',
+                                                                backgroundColor: hasName ? '#ebf8ff' : '#f8fafc',
+                                                                color: hasName ? '#2b6cb0' : '#a0aec0',
+                                                                cursor: 'pointer',
+                                                                outline: 'none'
+                                                            }}
+                                                        >
+                                                            <option value="미지정">-</option>
+                                                            {staffList.map(name => (
+                                                                <option key={name} value={name}>{name}</option>
+                                                            ))}
+                                                        </select>
+                                                    ) : (
+                                                        <div style={{
+                                                            padding: '6px 2px',
+                                                            borderRadius: '4px',
+                                                            backgroundColor: hasName ? '#ebf8ff' : 'transparent',
+                                                            color: hasName ? '#2b6cb0' : '#cbd5e0',
+                                                            fontWeight: hasName ? '600' : '400',
+                                                            whiteSpace: 'nowrap',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis'
+                                                        }}>
+                                                            {hasName ? assignment.staff_name : '-'}
+                                                        </div>
+                                                    )}
                                                 </td>
                                             );
                                         })}
@@ -854,42 +908,43 @@ const ScheduleSettings = ({ branch, onClose }) => {
         <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000, padding: '20px'
+            zIndex: 1000, padding: '15px'
         }}>
             <div style={{
-                backgroundColor: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px',
-                display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+                backgroundColor: 'white', borderRadius: '16px', padding: '20px', width: '90%', maxWidth: '360px',
+                display: 'flex', flexDirection: 'column', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                maxHeight: '80vh', overflowY: 'auto'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>근무표 스탭 설정</h3>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a0aec0' }}>✕</button>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold' }}>스탭 명단 설정</h3>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a0aec0', fontSize: '1.2rem' }}>✕</button>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', gap: '6px' }}>
                     <input
                         type="text"
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
                         placeholder="스탭 이름"
-                        style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem' }}
                     />
                     <button
                         onClick={handleAdd}
-                        style={{ padding: '10px 16px', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 'bold' }}
+                        style={{ padding: '8px 14px', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '0.85rem' }}
                     >추가</button>
                 </div>
 
-                <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {loading ? (
-                        <div style={{ textAlign: 'center', color: '#a0aec0' }}>로딩중...</div>
+                        <div style={{ textAlign: 'center', color: '#a0aec0', padding: '10px' }}>로딩중...</div>
                     ) : staffList.length === 0 ? (
                         <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>등록된 스탭이 없습니다.</div>
                     ) : (
                         staffList.map(s => (
-                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
-                                <span style={{ fontWeight: '500' }}>{s.staff_name}</span>
+                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                                <span style={{ fontWeight: '500', fontSize: '0.9rem' }}>{s.staff_name}</span>
                                 <button onClick={() => handleDelete(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e53e3e' }}>
-                                    <Trash2 size={16} />
+                                    <Trash2 size={14} />
                                 </button>
                             </div>
                         ))
@@ -898,7 +953,7 @@ const ScheduleSettings = ({ branch, onClose }) => {
 
                 <button
                     onClick={onClose}
-                    style={{ padding: '12px', borderRadius: '12px', background: '#f7fafc', color: '#4a5568', border: '1px solid #e2e8f0', fontWeight: 'bold', cursor: 'pointer' }}
+                    style={{ padding: '10px', borderRadius: '10px', background: '#f7fafc', color: '#4a5568', border: '1px solid #e2e8f0', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', marginTop: '5px' }}
                 >닫기</button>
             </div>
         </div>
