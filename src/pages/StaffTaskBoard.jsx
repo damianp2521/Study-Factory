@@ -356,7 +356,7 @@ const StaffTaskBoard = () => {
                 {/* Main Action Group (Right Aligned) */}
                 <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
                     {/* Assignment Mode Toggle - Only shown in schedule view for admins */}
-                    {view === 'schedule' && (user.role === 'admin' || user.role === 'manager') && (
+                    {view === 'schedule' && user.role === 'admin' && (
                         <button
                             onClick={() => setIsAssignmentMode(!isAssignmentMode)}
                             style={{
@@ -636,7 +636,7 @@ const StaffTaskBoard = () => {
             ) : (
                 <StaffWorkSchedule
                     branch={selectedBranch}
-                    isAdmin={user.role === 'admin' || user.role === 'manager'}
+                    isAdmin={user.role === 'admin'}
                     isAssignmentMode={isAssignmentMode}
                     setIsAssignmentMode={setIsAssignmentMode}
                 />
