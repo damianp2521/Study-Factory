@@ -13,6 +13,7 @@ const VacationRequest = () => {
     // View Mode: 'create' | 'history'
     const [viewMode, setViewMode] = useState('create');
     const [myRequests, setMyRequests] = useState([]);
+    const [specialAttendance, setSpecialAttendance] = useState([]); // 특별 출석 상태 내역
 
     // Type: 'full' | 'half' | 'special'
     const [type, setType] = useState('full');
@@ -28,6 +29,7 @@ const VacationRequest = () => {
     useEffect(() => {
         if (viewMode === 'history' && user) {
             fetchMyRequests();
+            fetchSpecialAttendance();
         }
     }, [viewMode, user]);
 
@@ -47,6 +49,24 @@ const VacationRequest = () => {
             alert('내역을 불러오는데 실패했습니다.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // Fetch special attendance statuses for this user
+    const fetchSpecialAttendance = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('attendance_logs')
+                .select('date, period, status')
+                .eq('user_id', user.id)
+                .not('status', 'is', null)
+                .order('date', { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+            setSpecialAttendance(data || []);
+        } catch (err) {
+            console.error('Error fetching special attendance:', err);
         }
     };
 
@@ -541,6 +561,38 @@ const VacationRequest = () => {
                             </div>
                         ))
                     )}
+
+                    {/* Special Attendance Status Section */}
+                    {specialAttendance.length > 0 && (
+                        <div style={{ marginTop: '20px' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#4a5568', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Clock size={18} />
+                                출석 특이사항
+                            </h3>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {specialAttendance.map((item, idx) => {
+                                    const dateObj = new Date(item.date);
+                                    const days = ['일', '월', '화', '수', '목', '금', '토'];
+                                    const dateLabel = `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}(${days[dateObj.getDay()]})`;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            style={{
+                                                background: '#c6f6d5',
+                                                color: '#c53030',
+                                                padding: '8px 12px',
+                                                borderRadius: '8px',
+                                                fontSize: '0.85rem',
+                                                fontWeight: 'bold'
+                                            }}
+                                        >
+                                            {dateLabel} {item.period}교시 {item.status}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -548,3 +600,4 @@ const VacationRequest = () => {
 };
 
 export default VacationRequest;
+

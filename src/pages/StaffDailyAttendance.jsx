@@ -4,12 +4,93 @@ import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
-// Memoized Cell (Dynamic Height Fixed)
-const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, attendanceData, vacationData, toggleAttendance, width, scale }) => {
+// Special attendance statuses
+const SPECIAL_STATUSES = ['지각', '병원', '외출', '쉼', '운동', '알바', '스터디', '집공', '개인'];
+
+// Status Selection Popup
+const StatusPopup = ({ onSelect, onClose, position }) => {
+    return (
+        <div
+            style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+            onClick={onClose}
+        >
+            <div
+                onClick={e => e.stopPropagation()}
+                style={{
+                    background: 'white', borderRadius: '16px', padding: '20px',
+                    width: '90%', maxWidth: '320px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                }}
+            >
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '15px', textAlign: 'center' }}>
+                    출석 상태 선택
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    {SPECIAL_STATUSES.map(status => (
+                        <button
+                            key={status}
+                            onClick={() => onSelect(status)}
+                            style={{
+                                padding: '12px 8px', borderRadius: '10px',
+                                border: '1px solid #e2e8f0', background: '#c6f6d5',
+                                color: '#c53030', fontWeight: 'bold', fontSize: '0.9rem',
+                                cursor: 'pointer', transition: 'transform 0.1s'
+                            }}
+                        >
+                            {status}
+                        </button>
+                    ))}
+                </div>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                    <button
+                        onClick={() => onSelect(null)}
+                        style={{
+                            flex: 1, padding: '12px', borderRadius: '10px',
+                            border: '1px solid #e2e8f0', background: '#c6f6d5',
+                            color: '#22543d', fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer'
+                        }}
+                    >
+                        출석 (O)
+                    </button>
+                    <button
+                        onClick={() => onSelect('absent')}
+                        style={{
+                            flex: 1, padding: '12px', borderRadius: '10px',
+                            border: '1px solid #e2e8f0', background: '#fed7d7',
+                            color: '#c53030', fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer'
+                        }}
+                    >
+                        결석 (X)
+                    </button>
+                </div>
+                <button
+                    onClick={onClose}
+                    style={{
+                        width: '100%', marginTop: '10px', padding: '12px', borderRadius: '10px',
+                        border: 'none', background: '#edf2f7', color: '#718096',
+                        fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer'
+                    }}
+                >
+                    취소
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Memoized Cell with Long Press Support
+const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, attendanceData, statusData, vacationData, toggleAttendance, onLongPress, width, scale }) => {
     const key = `${user.id}_${dateStr}_${period}`;
     const isAttended = attendanceData.has(key);
+    const status = statusData[key] || null;
     const vac = vacationData[`${user.id}_${dateStr}`];
     const isDeactivated = user.isEmpty || user.isUnassigned;
+
+    const longPressTimer = useRef(null);
+    const isLongPress = useRef(false);
 
     let bg = 'white';
     let content = null;
@@ -41,7 +122,12 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         }
     }
 
-    if (isAttended) {
+    // Special status styling (green bg, red text)
+    if (isAttended && status) {
+        bg = '#c6f6d5';
+        color = '#c53030';
+        content = status;
+    } else if (isAttended) {
         bg = '#c6f6d5';
         color = '#22543d';
         content = 'O';
@@ -55,13 +141,42 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         }
     }
 
+    const handleStart = (e) => {
+        if (isDeactivated) return;
+        isLongPress.current = false;
+        longPressTimer.current = setTimeout(() => {
+            isLongPress.current = true;
+            onLongPress(user, dateStr, period);
+        }, 500);
+    };
+
+    const handleEnd = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
+
+    const handleClick = () => {
+        if (isDeactivated) return;
+        if (!isLongPress.current) {
+            toggleAttendance(user, dateStr, period);
+        }
+        isLongPress.current = false;
+    };
+
     return (
         <div
-            onClick={() => !isDeactivated && toggleAttendance(user, dateStr, period)}
+            onMouseDown={handleStart}
+            onMouseUp={handleEnd}
+            onMouseLeave={handleEnd}
+            onTouchStart={handleStart}
+            onTouchEnd={handleEnd}
+            onClick={handleClick}
             style={{
                 width: width, flexShrink: 0, height: '100%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: bg, color, fontSize: `${0.8 * scale}rem`, fontWeight: 'bold',
+                background: bg, color, fontSize: `${0.7 * scale}rem`, fontWeight: 'bold',
                 borderRight: '1px solid #e2e8f0',
                 whiteSpace: 'pre-line', textAlign: 'center', lineHeight: 1.1,
                 cursor: isDeactivated ? 'default' : 'pointer',
@@ -77,6 +192,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         prev.width === next.width &&
         prev.isRowHighlighted === next.isRowHighlighted &&
         prev.attendanceData === next.attendanceData &&
+        prev.statusData === next.statusData &&
         prev.vacationData === next.vacationData
     );
 });
@@ -193,6 +309,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     const [displayRows, setDisplayRows] = useState([]);
     const [attendanceData, setAttendanceData] = useState(new Set());
+    const [statusData, setStatusData] = useState({}); // {key: status}
     const [vacationData, setVacationData] = useState({});
     const [dailyMemos, setDailyMemos] = useState([]);
     const [memberMemos, setMemberMemos] = useState([]);
@@ -202,6 +319,9 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [showMemoModal, setShowMemoModal] = useState(false);
     const [newMemo, setNewMemo] = useState('');
+
+    // Status popup state
+    const [statusPopup, setStatusPopup] = useState({ open: false, user: null, dateStr: '', period: null });
 
     const scrollContainerRef = useRef(null);
     const contentRef = useRef(null);
@@ -288,7 +408,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes] = await Promise.all([
                 supabase.from('authorized_users').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
-                supabase.from('attendance_logs').select('user_id, date, period').gte('date', startDate).lte('date', endDate),
+                supabase.from('attendance_logs').select('user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
                 supabase.from('attendance_memos').select('*').eq('date', dateStr).order('created_at', { ascending: true }),
                 supabase.from('member_memos').select('*').order('created_at', { ascending: true })
@@ -313,8 +433,14 @@ const StaffDailyAttendance = ({ onBack }) => {
             setDisplayRows(fullRows);
 
             const attSet = new Set();
-            (logRes.data || []).forEach(l => attSet.add(`${l.user_id}_${l.date}_${l.period}`));
+            const statusMap = {};
+            (logRes.data || []).forEach(l => {
+                const key = `${l.user_id}_${l.date}_${l.period}`;
+                attSet.add(key);
+                if (l.status) statusMap[key] = l.status;
+            });
             setAttendanceData(attSet);
+            setStatusData(statusMap);
 
             const vacMap = {};
             (vacRes.data || []).forEach(v => vacMap[`${v.user_id}_${v.date}`] = v);
@@ -339,10 +465,91 @@ const StaffDailyAttendance = ({ onBack }) => {
             else next.add(key);
             return next;
         });
+        // Clear status when toggling
+        setStatusData(prev => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+        });
         try {
             if (isAttended) await supabase.from('attendance_logs').delete().eq('user_id', user.id).eq('date', dateStr).eq('period', period);
             else await supabase.from('attendance_logs').insert({ user_id: user.id, date: dateStr, period: period });
         } catch (e) { fetchData(); }
+    };
+
+    // Long press handler - opens status popup
+    const handleLongPress = (user, dateStr, period) => {
+        setStatusPopup({ open: true, user, dateStr, period });
+    };
+
+    // Status selection handler
+    const handleStatusSelect = async (status) => {
+        const { user, dateStr, period } = statusPopup;
+        if (!user) return;
+
+        const key = `${user.id}_${dateStr}_${period}`;
+
+        if (status === 'absent') {
+            // Delete attendance (make it X)
+            setAttendanceData(prev => {
+                const next = new Set(prev);
+                next.delete(key);
+                return next;
+            });
+            setStatusData(prev => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+            });
+            try {
+                await supabase.from('attendance_logs').delete().eq('user_id', user.id).eq('date', dateStr).eq('period', period);
+            } catch (e) { fetchData(); }
+        } else {
+            // Set attendance with status
+            setAttendanceData(prev => {
+                const next = new Set(prev);
+                next.add(key);
+                return next;
+            });
+            if (status) {
+                setStatusData(prev => ({ ...prev, [key]: status }));
+            } else {
+                setStatusData(prev => {
+                    const next = { ...prev };
+                    delete next[key];
+                    return next;
+                });
+            }
+            try {
+                // Check if record exists
+                const { data: existing } = await supabase.from('attendance_logs')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('date', dateStr)
+                    .eq('period', period)
+                    .single();
+
+                if (existing) {
+                    await supabase.from('attendance_logs')
+                        .update({ status: status || null })
+                        .eq('user_id', user.id)
+                        .eq('date', dateStr)
+                        .eq('period', period);
+                } else {
+                    await supabase.from('attendance_logs').insert({
+                        user_id: user.id,
+                        date: dateStr,
+                        period: period,
+                        status: status || null
+                    });
+                }
+            } catch (e) {
+                console.error(e);
+                fetchData();
+            }
+        }
+
+        setStatusPopup({ open: false, user: null, dateStr: '', period: null });
     };
 
     const addDailyMemo = async (content) => {
@@ -522,7 +729,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                                             {daysInView.map(date => (
                                                 <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
                                                     {[1, 2, 3, 4, 5, 6, 7].map(p => (
-                                                        <AttendanceCell key={p} user={user} dateStr={format(date, 'yyyy-MM-dd')} period={p} isRowHighlighted={isRowHighlighted} attendanceData={attendanceData} vacationData={vacationData} toggleAttendance={toggleAttendance} width={PERIOD_WIDTH} scale={scale} />
+                                                        <AttendanceCell key={p} user={user} dateStr={format(date, 'yyyy-MM-dd')} period={p} isRowHighlighted={isRowHighlighted} attendanceData={attendanceData} statusData={statusData} vacationData={vacationData} toggleAttendance={toggleAttendance} onLongPress={handleLongPress} width={PERIOD_WIDTH} scale={scale} />
                                                     ))}
                                                 </div>
                                             ))}
@@ -571,6 +778,14 @@ const StaffDailyAttendance = ({ onBack }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Status Selection Popup */}
+            {statusPopup.open && (
+                <StatusPopup
+                    onSelect={handleStatusSelect}
+                    onClose={() => setStatusPopup({ open: false, user: null, dateStr: '', period: null })}
+                />
             )}
         </div>
     );
