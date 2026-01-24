@@ -13,12 +13,15 @@ const StatusPopup = ({ onSelect, onClose }) => {
         <div
             style={{
                 position: 'fixed',
-                top: 0, left: 0,
-                width: '100vw', height: '100vh',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 background: 'rgba(0,0,0,0.5)',
                 zIndex: 9999,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                overflow: 'hidden'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
             }}
             onClick={onClose}
         >
@@ -28,9 +31,7 @@ const StatusPopup = ({ onSelect, onClose }) => {
                     background: 'white',
                     borderRadius: '16px',
                     padding: '20px',
-                    margin: '20px',
-                    width: 'calc(100% - 40px)',
-                    maxWidth: '280px',
+                    width: '280px',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
                 }}
             >
