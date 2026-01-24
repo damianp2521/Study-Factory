@@ -33,52 +33,93 @@ const TodayLeaves = () => {
     const fetchLeaves = async () => {
         setLoading(true);
         try {
-            // 1. Fetch leaves for the selected DATE
-            const { data: dailyData, error: dailyError } = await supabase
-                .from('vacation_requests')
-                .select(`
-                    id,
-                    type,
-                    periods,
-                    reason,
-                    user_id,
-                    profiles (name, id)
-                `)
-                .eq('date', date);
+            // 1. Parallel Fetch: Vacation Requests AND Attendance Logs (Period 1 with Status)
+            const [localVacRes, localLogRes] = await Promise.all([
+                supabase
+                    .from('vacation_requests')
+                    .select(`
+                        id, type, periods, reason, user_id,
+                        profiles (name, id)
+                    `)
+                    .eq('date', date),
+                supabase
+                    .from('attendance_logs')
+                    .select(`
+                        user_id, status, period,
+                        profiles (name, id)
+                    `)
+                    .eq('date', date)
+                    .eq('period', 1)
+                    .not('status', 'is', null) // Only with status
+            ]);
 
-            if (dailyError) throw dailyError;
+            if (localVacRes.error) throw localVacRes.error;
+            if (localLogRes.error) throw localLogRes.error;
 
-            if (!dailyData || dailyData.length === 0) {
-                setLeaves([]);
-                return;
-            }
+            const dailyData = localVacRes.data || [];
+            const dailyLogs = localLogRes.data || [];
 
-            // 2. For each user found, calculate their WEEKLY usage
-            // Filter unique user IDs to avoid double counting if multiple entries (unlikely for 1 day but safe)
-            const userIds = [...new Set(dailyData.map(item => item.user_id))];
-            const { start, end } = getWeekRange(date);
+            // 2. Weekly Usage Calculation (Only for Vacation Request Users)
+            // ... (Keeping existing logic for usage warning if needed, or maybe skip for simplicity)
+            // The existing logic calculates usage for ALL users found in dailyData.
+            // I should extend this to include users from dailyLogs if I want warnings for them too?
+            // "Special Leave" (attendance_log) might not count towards 1.5 day limit? Usually it doesn't.
+            // So I will only calculate usage for `dailyData` users.
 
-            const { data: weeklyData, error: weeklyError } = await supabase
-                .from('vacation_requests')
-                .select('user_id, type')
-                .in('user_id', userIds)
-                .gte('date', start)
-                .lte('date', end);
+            let results = [...dailyData];
 
-            if (weeklyError) throw weeklyError;
-
-            // Calculate usage per user
-            const usageMap = {};
-            weeklyData.forEach(r => {
-                const weight = r.type === 'full' ? 1.0 : 0.5;
-                usageMap[r.user_id] = (usageMap[r.user_id] || 0) + weight;
-            });
-
-            // Merge Data
-            const results = dailyData.map(item => ({
-                ...item,
-                weeklyUsage: usageMap[item.user_id] || 0
+            // 3. Transform Logs to Leaf Format and Merge
+            const logItems = dailyLogs.map(log => ({
+                id: `log_${log.user_id}_${log.period}`,
+                type: 'special_log', // Custom type
+                reason: log.status,
+                periods: [1], // It is period 1
+                user_id: log.user_id,
+                profiles: log.profiles,
+                weeklyUsage: 0 // Logs don't trigger warning usually
             }));
+
+            // Merge: avoid duplicates?
+            // If user has both (unlikely given logic), show both or prefer Vacation?
+            // Vacation Request Full Day overrides Log?
+            // I'll show both for now to be safe, or filter.
+            // Filter: If user is in dailyData (as Full/Half), don't show log?
+            // Actually, "Special" is now ONLY in logs.
+            // "Full/Half" is in requests.
+            // So they should be distinct sets mostly.
+
+            // Check for duplicates just in case
+            const existingUserIds = new Set(results.map(r => r.user_id));
+            const newLogItems = logItems.filter(item => !existingUserIds.has(item.user_id));
+
+            results = [...results, ...newLogItems];
+
+
+            // Calculate Weekly Usage for Vacation Requests Only
+            const userIds = [...new Set(dailyData.map(item => item.user_id))];
+            if (userIds.length > 0) {
+                const { start, end } = getWeekRange(date);
+                const { data: weeklyData } = await supabase
+                    .from('vacation_requests')
+                    .select('user_id, type')
+                    .in('user_id', userIds)
+                    .gte('date', start)
+                    .lte('date', end);
+
+                const usageMap = {};
+                (weeklyData || []).forEach(r => {
+                    const weight = r.type === 'full' ? 1.0 : 0.5;
+                    usageMap[r.user_id] = (usageMap[r.user_id] || 0) + weight;
+                });
+
+                results = results.map(item => {
+                    // Only update usage for vacation items
+                    if (item.type !== 'special_log') {
+                        return { ...item, weeklyUsage: usageMap[item.user_id] || 0 };
+                    }
+                    return item;
+                });
+            }
 
             setLeaves(results);
 
@@ -92,11 +133,11 @@ const TodayLeaves = () => {
 
     return (
         <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)' }}>
-            {/* Header */}
+            {/* ... Header and DatePicker unchanged ... */}
             <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: 'var(--spacing-xl)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button
-                        onClick={() => navigate('/staff-menu')}
+                        onClick={() => navigate('/manage-members')} // Change back link if needed
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                     >
                         <ArrowLeft size={24} color="var(--color-text-main)" />
@@ -155,7 +196,6 @@ const TodayLeaves = () => {
                                 setDate(val);
                                 setShowCalendar(false); // Auto close on select
                             }}
-                            events={[/* Potential future enhancement: show leaves dots here */]}
                         />
                     </div>
                 )}
@@ -170,70 +210,107 @@ const TodayLeaves = () => {
                         해당 날짜에 휴무 내역이 없습니다.
                     </div>
                 ) : (
-                    leaves.map((item) => (
-                        <div
-                            key={item.id}
-                            style={{
-                                background: 'white',
-                                borderRadius: '12px',
-                                padding: '20px',
-                                boxShadow: 'var(--shadow-sm)',
-                                borderLeft: `5px solid ${item.type === 'full' ? '#805ad5' : '#3182ce'}`
-                            }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <User size={20} color="var(--color-primary)" />
-                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
-                                        {item.profiles?.name || '알 수 없음'}
+                    leaves.map((item) => {
+                        // Determine Style
+                        // Full -> Purple
+                        // Low priority / Half -> Blue
+                        // Special Log -> Same as others? User said "Same as Month or Morning"
+                        // I'll make Special Log match Morning (Blue)
+
+                        let borderColor = '#3182ce'; // Blue
+                        let badgeBg = '#ebf8ff';
+                        let badgeColor = '#2c5282';
+                        let label = '반차';
+
+                        if (item.type === 'full') {
+                            borderColor = '#805ad5'; // Purple
+                            badgeBg = '#e9d8fd';
+                            badgeColor = '#553c9a';
+                            label = '월차';
+                        } else if (item.type === 'special') {
+                            // Legacy special
+                            borderColor = '#e53e3e';
+                            badgeBg = '#fed7d7';
+                            badgeColor = '#c53030';
+                            label = '특별휴가';
+                        } else if (item.type === 'special_log') {
+                            // New Attendance Log Special
+                            // User wants it to look like Month or Morning Leave.
+                            // Let's use Blue (Morning) style but custom label
+                            borderColor = '#3182ce';
+                            badgeBg = '#ebf8ff';
+                            badgeColor = '#2c5282';
+                            // "1교시 + 사유"
+                            label = `1교시 ${item.reason}`;
+                        }
+
+                        return (
+                            <div
+                                key={item.id}
+                                style={{
+                                    background: 'white',
+                                    borderRadius: '12px',
+                                    padding: '20px',
+                                    boxShadow: 'var(--shadow-sm)',
+                                    borderLeft: `5px solid ${borderColor}`
+                                }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <User size={20} color="var(--color-primary)" />
+                                        <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
+                                            {item.profiles?.name || '알 수 없음'}
+                                        </span>
+                                    </div>
+                                    <span style={{
+                                        background: badgeBg,
+                                        color: badgeColor,
+                                        padding: '4px 8px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 'bold'
+                                    }}>
+                                        {label}
                                     </span>
                                 </div>
-                                <span style={{
-                                    background: item.type === 'full' ? '#e9d8fd' : item.type === 'special' ? '#fed7d7' : '#ebf8ff',
-                                    color: item.type === 'full' ? '#553c9a' : item.type === 'special' ? '#c53030' : '#2c5282',
-                                    padding: '4px 8px',
-                                    borderRadius: '6px',
-                                    fontSize: '0.85rem',
-                                    fontWeight: 'bold'
-                                }}>
-                                    {item.type === 'full' ? '월차' : item.type === 'special' ? '특별휴가' : '반차'}
-                                </span>
+
+                                {item.type === 'half' && item.periods && (
+                                    <div style={{ marginLeft: '28px', color: '#4a5568', marginBottom: '10px' }}>
+                                        <span style={{ fontWeight: '600' }}>사용 교시:</span> {item.periods.join(', ')}교시
+                                    </div>
+                                )}
+
+                                {item.type === 'special' && item.reason && (
+                                    <div style={{ marginLeft: '28px', color: '#c53030', marginBottom: '10px' }}>
+                                        <span style={{ fontWeight: '600' }}>사유:</span> {item.reason}
+                                    </div>
+                                )}
+
+                                {/* No extra details needed for special_log as reason is in label */}
+
+                                {/* Warning if weekly limit exceeded */}
+                                {item.weeklyUsage > 1.5 && (
+                                    <div style={{
+                                        marginTop: '10px',
+                                        padding: '8px',
+                                        background: '#fff5f5',
+                                        borderRadius: '8px',
+                                        color: '#c53030',
+                                        fontSize: '0.9rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}>
+                                        <AlertTriangle size={16} />
+                                        <span>
+                                            월차 사용 현황을 확인하여 주세요.
+                                            <br />(이번 주 {item.weeklyUsage}일 사용)
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-
-                            {item.type === 'half' && item.periods && (
-                                <div style={{ marginLeft: '28px', color: '#4a5568', marginBottom: '10px' }}>
-                                    <span style={{ fontWeight: '600' }}>사용 교시:</span> {item.periods.join(', ')}교시
-                                </div>
-                            )}
-
-                            {item.type === 'special' && item.reason && (
-                                <div style={{ marginLeft: '28px', color: '#c53030', marginBottom: '10px' }}>
-                                    <span style={{ fontWeight: '600' }}>사유:</span> {item.reason}
-                                </div>
-                            )}
-
-                            {/* Warning if weekly limit exceeded */}
-                            {item.weeklyUsage > 1.5 && (
-                                <div style={{
-                                    marginTop: '10px',
-                                    padding: '8px',
-                                    background: '#fff5f5',
-                                    borderRadius: '8px',
-                                    color: '#c53030',
-                                    fontSize: '0.9rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                }}>
-                                    <AlertTriangle size={16} />
-                                    <span>
-                                        월차 사용 현황을 확인하여 주세요.
-                                        <br />(이번 주 {item.weeklyUsage}일 사용)
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </div>
