@@ -14,7 +14,8 @@ const StatusPopup = ({ onSelect, onClose, position }) => {
             style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                 background: 'rgba(0,0,0,0.5)', zIndex: 1000,
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '20px', boxSizing: 'border-box'
             }}
             onClick={onClose}
         >
@@ -22,7 +23,8 @@ const StatusPopup = ({ onSelect, onClose, position }) => {
                 onClick={e => e.stopPropagation()}
                 style={{
                     background: 'white', borderRadius: '16px', padding: '20px',
-                    width: '90%', maxWidth: '320px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                    width: '100%', maxWidth: '300px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                    boxSizing: 'border-box'
                 }}
             >
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '15px', textAlign: 'center' }}>
