@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2 } from 'lucide-react';
+import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2, ChevronDown } from 'lucide-react';
 
 const StaffTaskBoard = () => {
     const { user } = useAuth();
@@ -297,43 +297,52 @@ const StaffTaskBoard = () => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
-            {/* Branch Filter (Horizontal Scroll) */}
-            <div style={{
-                display: 'flex',
-                gap: '8px',
-                marginBottom: '15px',
-                overflowX: 'auto',
-                paddingBottom: '5px',
-                whiteSpace: 'nowrap',
-                scrollbarWidth: 'none', // Firefox
-                msOverflowStyle: 'none' // IE/Edge
-            }}>
-                <style>{`
-                    /* Hide scrollbar for Chrome/Safari/Opera */
-                    div::-webkit-scrollbar {
-                        display: none;
-                    }
-                `}</style>
-                {branches.map(branch => (
-                    <button
-                        key={branch}
-                        onClick={() => setSelectedBranch(branch)}
+            {/* Branch Filter Dropdown Style */}
+            <div style={{ marginBottom: '20px' }}>
+                <div style={{
+                    fontSize: '0.9rem',
+                    color: '#718096',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                    paddingLeft: '4px'
+                }}>지점</div>
+                <div style={{ position: 'relative', width: '100%', maxWidth: '200px' }}>
+                    <select
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
                         style={{
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            border: selectedBranch === branch ? 'none' : '1px solid #e2e8f0',
-                            background: selectedBranch === branch ? 'var(--color-primary)' : 'white',
-                            color: selectedBranch === branch ? 'white' : '#718096',
-                            fontWeight: 'bold',
-                            fontSize: '0.9rem',
+                            width: '100%',
+                            padding: '12px 16px',
+                            paddingRight: '40px',
+                            borderRadius: '16px',
+                            border: '1px solid #e2e8f0',
+                            backgroundColor: 'white',
+                            color: '#2d3748',
+                            fontSize: '1.1rem',
+                            fontWeight: '600',
+                            appearance: 'none',
                             cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            flexShrink: 0 // Prevent shrinking
+                            outline: 'none',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                         }}
                     >
-                        {branch}
-                    </button>
-                ))}
+                        {branches.map(branch => (
+                            <option key={branch} value={branch}>{branch}</option>
+                        ))}
+                    </select>
+                    <div style={{
+                        position: 'absolute',
+                        right: '15px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        pointerEvents: 'none',
+                        color: '#2d3748',
+                        display: 'flex',
+                        alignItems: 'center'
+                    }}>
+                        <ChevronDown size={20} />
+                    </div>
+                </div>
             </div>
 
             {/* Add Todo Input */}
