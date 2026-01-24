@@ -280,13 +280,13 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
             {/* Reason Selection */}
             <div style={{ marginBottom: '25px' }}>
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' }}>
-                    {['알바', '스터디', '병원', '개인'].map(r => (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    {['지각', '병원', '외출', '쉼', '운동', '알바', '스터디', '집공', '개인'].map(r => (
                         <button
                             key={r}
                             onClick={() => { setReasonType(r); setCustomReason(''); }}
                             style={{
-                                padding: '10px', borderRadius: '8px',
+                                padding: '12px', borderRadius: '8px',
                                 border: reasonType === r ? '2px solid #38a169' : '1px solid #e2e8f0',
                                 background: reasonType === r ? '#f0fff4' : 'white',
                                 color: reasonType === r ? '#276749' : '#a0aec0',
