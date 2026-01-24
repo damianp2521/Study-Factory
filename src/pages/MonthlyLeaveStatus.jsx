@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_LIST } from '../constants/branches';
 
 const MonthlyLeaveStatus = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [leaves, setLeaves] = useState([]);
     // const [loading, setLoading] = useState(true);
@@ -17,6 +18,14 @@ const MonthlyLeaveStatus = () => {
 
     // Grid State
     const [calendarDays, setCalendarDays] = useState([]);
+
+    // Handle URL parameter for user selection
+    useEffect(() => {
+        const userIdFromUrl = searchParams.get('userId');
+        if (userIdFromUrl) {
+            setSelectedUserId(userIdFromUrl);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         fetchMonthlyLeaves();

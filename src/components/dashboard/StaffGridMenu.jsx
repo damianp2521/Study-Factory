@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Calendar, ClipboardList, UserPlus, UserCheck, MapPin, Coffee } from 'lucide-react';
 import { useDashboardNavigation } from '../../hooks/useDashboardNavigation';
 
@@ -12,6 +13,7 @@ import StaffBeverageOrderList from '../../pages/StaffBeverageOrderList';
 import StaffDailyAttendance from '../../pages/StaffDailyAttendance';
 
 const StaffGridMenu = () => {
+    const navigate = useNavigate();
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
 
     // Helper to wrap content with padding
@@ -23,6 +25,10 @@ const StaffGridMenu = () => {
 
     // Sub-views
     if (currentView === 'employee_vacation') {
+        const handleUserClick = (user) => {
+            // Navigate to monthly vacation status page with selected user
+            navigate(`/monthly-leave-status?userId=${user.id}`);
+        };
         return renderWithPadding(
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
@@ -32,7 +38,7 @@ const StaffGridMenu = () => {
                     <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>일별 사원 휴무 현황</h3>
                 </div>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <EmployeeVacationStatus />
+                    <EmployeeVacationStatus onUserClick={handleUserClick} />
                 </div>
             </div>
         );
