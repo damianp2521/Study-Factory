@@ -12,19 +12,26 @@ const StatusPopup = ({ onSelect, onClose }) => {
     return (
         <div
             style={{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+                position: 'fixed',
+                top: 0, left: 0,
+                width: '100vw', height: '100vh',
+                background: 'rgba(0,0,0,0.5)',
+                zIndex: 9999,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '20px', boxSizing: 'border-box'
+                overflow: 'hidden'
             }}
             onClick={onClose}
         >
             <div
                 onClick={e => e.stopPropagation()}
                 style={{
-                    background: 'white', borderRadius: '16px', padding: '20px',
-                    width: '100%', maxWidth: '300px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                    boxSizing: 'border-box'
+                    background: 'white',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    margin: '20px',
+                    width: 'calc(100% - 40px)',
+                    maxWidth: '280px',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
                 }}
             >
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '15px', textAlign: 'center' }}>
