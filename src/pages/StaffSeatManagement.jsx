@@ -72,7 +72,7 @@ const StaffSeatManagement = ({ onBack }) => {
 
             alert('배정되었습니다.');
             setIsModalOpen(false);
-            fetchUsers(); // Refresh
+            await fetchUsers(); // Refresh
 
         } catch (error) {
             console.error('Assignment Error:', error);
@@ -105,7 +105,7 @@ const StaffSeatManagement = ({ onBack }) => {
     };
 
     const filteredUsersForSearch = users.filter(u =>
-        u.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (u.name || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -299,7 +299,7 @@ const StaffSeatManagement = ({ onBack }) => {
                                     disabled={!!u.seat_number} // Already seated elsewhere
                                 >
                                     <div>
-                                        <div style={{ fontWeight: 'bold', color: u.seat_number ? '#a0aec0' : '#2d3748' }}>{u.name}</div>
+                                        <div style={{ fontWeight: 'bold', color: u.seat_number ? '#a0aec0' : '#2d3748' }}>{u.name || '이름 없음'}</div>
                                         <div style={{ fontSize: '0.8rem', color: '#a0aec0' }}>{u.branch} | {u.role === 'member' ? '회원' : '스탭/관리자'}</div>
                                     </div>
                                     {u.seat_number ? (

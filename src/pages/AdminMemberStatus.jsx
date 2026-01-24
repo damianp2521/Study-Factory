@@ -87,8 +87,7 @@ const AdminMemberStatus = ({ onBack }) => {
             console.log('Update result:', data);
 
             setEditingId(null);
-            fetchUsers();
-
+            await fetchUsers();
             alert('수정되었습니다.');
         } catch (error) {
             console.error('Update error:', error);
