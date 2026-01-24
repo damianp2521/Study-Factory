@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
@@ -9,7 +10,7 @@ const SPECIAL_STATUSES = ['지각', '병원', '외출', '쉼', '운동', '알바
 
 // Status Selection Popup
 const StatusPopup = ({ onSelect, onClose }) => {
-    return (
+    return createPortal(
         <div
             style={{
                 position: 'fixed',
@@ -87,7 +88,8 @@ const StatusPopup = ({ onSelect, onClose }) => {
                     취소
                 </button>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
