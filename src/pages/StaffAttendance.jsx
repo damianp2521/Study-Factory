@@ -566,7 +566,7 @@ const StaffAttendance = ({ onBack }) => {
 
     // Separator row configuration
     const TEAL_SEPARATOR_SEATS = [54, 102]; // 청록색 두꺼운 구분선 (열람실 구분)
-    const THICK_SEPARATOR_SEATS = [7, 17, 22, 27, 32, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
+    const THICK_SEPARATOR_SEATS = [7, 17, 22, 27, 32, 37, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
     const THIN_SEPARATOR_SEATS = [9, 11, 13, 15, 50];
 
     const getSeparatorStyle = (seatNum) => {
