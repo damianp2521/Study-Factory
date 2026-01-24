@@ -1,23 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, CheckCircle, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import EmbeddedCalendar from './EmbeddedCalendar';
+import { format, addMonths, subMonths, parseISO } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 const InlineVacationRequest = () => {
     const { user } = useAuth();
+
+    // View Mode: 'create' | 'history'
+    const [viewMode, setViewMode] = useState('create');
+
     const [date, setDate] = useState('');
     const [type, setType] = useState('full'); // 'full' | 'half_am' | 'half_pm'
     const [loading, setLoading] = useState(false);
-    const [myRequests, setMyRequests] = useState([]);
-    const [selectedMonth, setSelectedMonth] = useState(new Date());
 
-    // Fetch requests
+    const [myRequests, setMyRequests] = useState([]);
+    const [specialAttendance, setSpecialAttendance] = useState([]);
+    const [selectedMonth, setSelectedMonth] = useState(new Date());
+    const [dbError, setDbError] = useState(false);
+
+    // Fetch requests when user is available or viewMode changes to history
     useEffect(() => {
         if (user) {
+            // Always fetch requests for calendar events
             fetchRequests();
+            if (viewMode === 'history') {
+                fetchSpecialAttendance();
+            }
         }
-    }, [user]);
+    }, [user, viewMode]);
 
     const fetchRequests = async () => {
         try {
@@ -34,16 +47,25 @@ const InlineVacationRequest = () => {
         }
     };
 
-    const handlePrevMonth = () => {
-        const newDate = new Date(selectedMonth);
-        newDate.setMonth(newDate.getMonth() - 1);
-        setSelectedMonth(newDate);
-    };
+    const fetchSpecialAttendance = async () => {
+        try {
+            setDbError(false);
+            const { data, error } = await supabase
+                .from('attendance_logs')
+                .select('date, period, status')
+                .eq('user_id', user.id)
+                .not('status', 'is', null)
+                .order('date', { ascending: false })
+                .limit(200);
 
-    const handleNextMonth = () => {
-        const newDate = new Date(selectedMonth);
-        newDate.setMonth(newDate.getMonth() + 1);
-        setSelectedMonth(newDate);
+            if (error) throw error;
+            setSpecialAttendance(data || []);
+        } catch (err) {
+            console.error('Error fetching special attendance:', err);
+            if (err.message && err.message.includes('column "status" does not exist')) {
+                setDbError(true);
+            }
+        }
     };
 
     const handleSubmit = async () => {
@@ -86,6 +108,7 @@ const InlineVacationRequest = () => {
             alert('휴가 신청이 완료되었습니다.');
             setDate(''); // Reset
             fetchRequests(); // Refresh list
+            setViewMode('history'); // Switch to history view
         } catch (err) {
             console.error('Error submitting vacation request:', err);
             alert('신청에 실패했습니다.');
@@ -93,15 +116,6 @@ const InlineVacationRequest = () => {
             setLoading(false);
         }
     };
-
-    // Filter requests by selected month
-    const todayStr = new Date().toISOString().split('T')[0];
-    const yearMonthStr = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
-
-    // List for the selected month
-    const filteredRequests = myRequests.filter(req => req.date.startsWith(yearMonthStr));
-    // Sort by date (oldest to newest for list view? or newest? Usually calendar order is nice, let's do Date Ascending)
-    const sortedRequests = [...filteredRequests].sort((a, b) => a.date.localeCompare(b.date));
 
     const handleCancel = async (id, date) => {
         if (!confirm(`${date} 휴가 신청을 취소하시겠습니까?`)) return;
@@ -121,11 +135,31 @@ const InlineVacationRequest = () => {
         }
     };
 
+    // Merge and Filter List logic (same as VacationRequest.jsx)
+    const mergedList = useMemo(() => {
+        // 1. Tag items
+        const requests = myRequests.map(r => ({ ...r, category: 'vacation' }));
+        const attendances = specialAttendance.map(a => ({ ...a, category: 'attendance', id: `att_${a.date}_${a.period}` }));
 
+        // 2. Merge
+        const all = [...requests, ...attendances];
 
+        // 3. Filter by month (String comparison)
+        const targetMonth = format(selectedMonth, 'yyyy-MM');
+        const filtered = all.filter(item => item.date.startsWith(targetMonth));
+
+        // 4. Sort by date desc, then period asc
+        return filtered.sort((a, b) => {
+            if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+            // Same date: period logic if available
+            if (a.periods && b.period) return a.periods[0] - b.period;
+            return 0;
+        });
+    }, [myRequests, specialAttendance, selectedMonth]);
 
 
     // Date constraints
+    const todayStr = new Date().toISOString().split('T')[0];
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + 14);
     const maxDateStr = maxDate.toISOString().split('T')[0];
@@ -140,202 +174,276 @@ const InlineVacationRequest = () => {
             height: '100%',
             overflowY: 'auto'
         }}>
-            {/* Embedded Calendar */}
-            <div style={{ marginBottom: '20px' }}>
-                <EmbeddedCalendar
-                    selectedDate={date}
-                    onSelectDate={(val) => {
-                        if (val < todayStr) {
-                            alert('지난 날짜는 신청할 수 없습니다.');
-                            return;
-                        }
-                        if (val > maxDateStr) {
-                            alert('최대 2주 뒤까지만 신청 가능합니다.');
-                            return;
-                        }
-                        setDate(val);
-                    }}
-                    events={myRequests}
-                    minDate={todayStr}
-                    maxDate={maxDateStr}
-                />
-            </div>
-
-            {/* Button Group */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+            {/* Header with View Toggle */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0, color: '#2d3748' }}>
+                    {viewMode === 'create' ? '휴가 신청' : '출석 및 휴무 내역'}
+                </h3>
                 <button
-                    onClick={() => setType('full')}
+                    onClick={() => setViewMode(viewMode === 'create' ? 'history' : 'create')}
                     style={{
-                        flex: 1,
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: type === 'full' ? '2px solid #e53e3e' : '1px solid #e2e8f0', // Red for Full
-                        background: type === 'full' ? '#fff5f5' : 'white',
-                        color: type === 'full' ? '#c53030' : '#4a5568',
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '0.85rem',
                         fontWeight: 'bold',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem'
+                        color: 'var(--color-primary)',
+                        textDecoration: 'underline',
+                        cursor: 'pointer'
                     }}
                 >
-                    월차
-                </button>
-                <button
-                    onClick={() => setType('half_am')}
-                    style={{
-                        flex: 1,
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: type === 'half_am' ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for Half
-                        background: type === 'half_am' ? '#ebf8ff' : 'white',
-                        color: type === 'half_am' ? '#2c5282' : '#4a5568',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem'
-                    }}
-                >
-                    오전반차
-                </button>
-                <button
-                    onClick={() => setType('half_pm')}
-                    style={{
-                        flex: 1,
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: type === 'half_pm' ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for Half
-                        background: type === 'half_pm' ? '#ebf8ff' : 'white',
-                        color: type === 'half_pm' ? '#2c5282' : '#4a5568',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem'
-                    }}
-                >
-                    오후반차
+                    {viewMode === 'create' ? '내역 보기' : '신청하기'}
                 </button>
             </div>
 
-            {/* Submit Button */}
-            <button
-                onClick={handleSubmit}
-                disabled={loading}
-                style={{
-                    width: '100%',
-                    padding: '15px',
-                    borderRadius: '12px',
-                    background: 'var(--color-primary)',
-                    color: 'white',
-                    border: 'none',
-                    fontSize: '1rem',
-                    fontWeight: 'bold',
-                    cursor: loading ? 'wait' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    marginBottom: '25px',
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                }}
-            >
-                {loading ? '신청 중...' : '신청하기'}
-            </button>
-
-            {/* Request List (Filtered by Month) */}
-            <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                    <CalendarIcon size={18} color="#2d3748" />
-                    <h4 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
-                        신청 내역 ({filteredRequests.length}건)
-                    </h4>
-                </div>
-                {sortedRequests.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', background: '#f7fafc', borderRadius: '8px', color: '#a0aec0' }}>
-                        내역이 없습니다.
+            {viewMode === 'create' ? (
+                <>
+                    {/* Embedded Calendar */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <EmbeddedCalendar
+                            selectedDate={date}
+                            onSelectDate={(val) => {
+                                if (val < todayStr) {
+                                    alert('지난 날짜는 신청할 수 없습니다.');
+                                    return;
+                                }
+                                if (val > maxDateStr) {
+                                    alert('최대 2주 뒤까지만 신청 가능합니다.');
+                                    return;
+                                }
+                                setDate(val);
+                            }}
+                            events={myRequests}
+                            minDate={todayStr}
+                            maxDate={maxDateStr}
+                        />
                     </div>
-                ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {sortedRequests.map(req => {
-                            const isPast = req.date < todayStr;
-                            let bgColor, borderColor, textColor, labelText;
 
-                            if (req.reason) {
-                                // Gray styling for requests with a reason (other leave)
-                                bgColor = '#f7fafc'; // Light gray background
-                                borderColor = '#cbd5e0'; // Gray border
-                                textColor = '#718096'; // Darker gray text
+                    {/* Button Group */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                        <button
+                            onClick={() => setType('full')}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: type === 'full' ? '2px solid #e53e3e' : '1px solid #e2e8f0', // Red for Full
+                                background: type === 'full' ? '#fff5f5' : 'white',
+                                color: type === 'full' ? '#c53030' : '#4a5568',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            월차
+                        </button>
+                        <button
+                            onClick={() => setType('half_am')}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: type === 'half_am' ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for Half
+                                background: type === 'half_am' ? '#ebf8ff' : 'white',
+                                color: type === 'half_am' ? '#2c5282' : '#4a5568',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            오전반차
+                        </button>
+                        <button
+                            onClick={() => setType('half_pm')}
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: type === 'half_pm' ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for Half
+                                background: type === 'half_pm' ? '#ebf8ff' : 'white',
+                                color: type === 'half_pm' ? '#2c5282' : '#4a5568',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            오후반차
+                        </button>
+                    </div>
 
-                                let timePrefix = '';
-                                if (req.type === 'half') {
-                                    if (req.periods?.includes(1)) {
-                                        timePrefix = '오전 ';
-                                    } else if (req.periods?.includes(5)) {
-                                        timePrefix = '오후 ';
-                                    }
-                                } else if (req.type === 'full') {
-                                    timePrefix = '종일 ';
-                                }
-                                labelText = `${timePrefix}${req.reason}`;
-                            } else if (isPast) {
-                                bgColor = '#f7fafc'; // Gray
-                                borderColor = '#cbd5e0';
-                                textColor = '#a0aec0';
-                                labelText = req.type === 'full' ? '월차' : (req.periods?.includes(1) ? '오전반차' : (req.periods?.includes(5) ? '오후반차' : '반차'));
-                            } else {
-                                // Future requests without a reason (regular vacation)
-                                if (req.type === 'full') {
-                                    bgColor = '#fff5f5';
-                                    borderColor = '#e53e3e';
-                                    textColor = '#c53030';
-                                    labelText = '월차';
-                                } else {
-                                    bgColor = '#ebf8ff';
-                                    borderColor = '#3182ce';
-                                    textColor = '#2c5282';
-                                    labelText = req.periods?.includes(1) ? '오전반차' : (req.periods?.includes(5) ? '오후반차' : '반차');
-                                }
-                            }
+                    {/* Submit Button */}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        style={{
+                            width: '100%',
+                            padding: '15px',
+                            borderRadius: '12px',
+                            background: 'var(--color-primary)',
+                            color: 'white',
+                            border: 'none',
+                            fontSize: '1rem',
+                            fontWeight: 'bold',
+                            cursor: loading ? 'wait' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            marginBottom: '25px',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                        }}
+                    >
+                        <CheckCircle size={20} />
+                        {loading ? '신청 중...' : '신청하기'}
+                    </button>
+                </>
+            ) : (
+                /* History Mode */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
 
-                            return (
-                                <div key={req.id} style={{
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '12px',
-                                    background: bgColor,
-                                    borderRadius: '8px',
-                                    borderLeft: `4px solid ${borderColor} `
-                                }}>
-                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                        <span style={{ fontWeight: 'bold', color: isPast && !req.reason ? '#a0aec0' : '#2d3748' }}>
-                                            {req.date.split('-')[1]}.{req.date.split('-')[2]} ({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
-                                        </span>
-                                        <span style={{
-                                            fontSize: '0.9rem',
-                                            fontWeight: 'bold',
-                                            color: textColor
-                                        }}>
-                                            {labelText}
-                                        </span>
-                                    </div>
-                                    {!isPast && (
-                                        <button
-                                            onClick={() => handleCancel(req.id, req.date)}
+                    {/* Month Selector */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
+                        <button
+                            onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
+                        >
+                            <ChevronLeft size={24} color="#4a5568" />
+                        </button>
+                        <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                            {format(selectedMonth, 'yyyy년 M월')}
+                        </span>
+                        <button
+                            onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
+                        >
+                            <ChevronRight size={24} color="#4a5568" />
+                        </button>
+                    </div>
+
+                    {dbError && (
+                        <div style={{ background: '#fff5f5', color: '#c53030', padding: '12px', borderRadius: '8px', border: '1px solid #fc8181', fontSize: '0.85rem' }}>
+                            ⚠️ DB 업데이트 필요: 관리자 문의 요망
+                        </div>
+                    )}
+
+                    {mergedList.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#a0aec0', padding: '30px 0', background: '#f7fafc', borderRadius: '8px' }}>
+                            내역이 없습니다.
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {mergedList.map((item) => {
+                                // Attendance Item
+                                if (item.category === 'attendance') {
+                                    return (
+                                        <div
+                                            key={item.id}
                                             style={{
-                                                background: '#fee2e2',
-                                                color: '#e53e3e',
-                                                border: 'none',
-                                                padding: '5px 10px',
-                                                borderRadius: '6px',
-                                                fontSize: '0.8rem',
-                                                fontWeight: 'bold',
-                                                cursor: 'pointer'
+                                                background: 'white',
+                                                borderRadius: '8px',
+                                                padding: '12px 16px',
+                                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                                borderLeft: '4px solid #38a169',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between'
                                             }}
                                         >
-                                            취소
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                                    {format(parseISO(item.date), 'MM.dd(EEE)', { locale: ko })}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '0.85rem', fontWeight: 'bold',
+                                                    color: '#c53030',
+                                                    background: '#c6f6d5',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px'
+                                                }}>
+                                                    {item.status}
+                                                </span>
+                                            </div>
+                                            <div style={{ color: '#718096', fontSize: '0.85rem' }}>
+                                                {item.period}교시
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                // Vacation Request Item
+                                const req = item;
+                                const isPast = req.date < todayStr;
+
+                                return (
+                                    <div
+                                        key={req.id}
+                                        style={{
+                                            background: 'white',
+                                            borderRadius: '8px',
+                                            padding: '12px 16px',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                            borderLeft: `4px solid ${req.type === 'full' ? '#805ad5' : req.type === 'special' ? '#e53e3e' : '#3182ce'}`,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '6px'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                                {format(parseISO(req.date), 'MM.dd(EEE)', { locale: ko })}
+                                            </span>
+                                            <span style={{
+                                                background: req.type === 'full' ? '#e9d8fd' : req.type === 'special' ? '#fed7d7' : '#ebf8ff',
+                                                color: req.type === 'full' ? '#553c9a' : req.type === 'special' ? '#c53030' : '#2c5282',
+                                                padding: '2px 6px',
+                                                borderRadius: '4px',
+                                                fontSize: '0.8rem',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {req.type === 'full' ? '월차' : req.type === 'special' ? '특별휴가' : '반차'}
+                                            </span>
+                                        </div>
+
+                                        {(req.type === 'half' || (req.type === 'special' && req.periods)) && (
+                                            <div style={{ color: '#718096', fontSize: '0.85rem' }}>
+                                                교시: {req.periods ? req.periods.join(', ') : ''}
+                                            </div>
+                                        )}
+                                        {req.type === 'special' && req.reason && (
+                                            <div style={{ color: '#e53e3e', fontSize: '0.85rem' }}>
+                                                사유: {req.reason}
+                                            </div>
+                                        )}
+
+                                        {!isPast && (
+                                            <button
+                                                onClick={() => handleCancel(req.id, req.date)}
+                                                style={{
+                                                    alignSelf: 'flex-end',
+                                                    background: '#fff5f5',
+                                                    color: '#e53e3e',
+                                                    border: '1px solid #fc8181',
+                                                    padding: '4px 10px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 'bold',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    marginTop: '4px'
+                                                }}
+                                            >
+                                                <Trash2 size={12} />
+                                                취소
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
