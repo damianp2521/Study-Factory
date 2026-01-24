@@ -55,21 +55,28 @@ const VacationRequest = () => {
         }
     };
 
+    const [dbError, setDbError] = useState(false); // DB 스키마 에러 감지
+
     // Fetch special attendance statuses for this user
     const fetchSpecialAttendance = async () => {
         try {
+            setDbError(false);
             const { data, error } = await supabase
                 .from('attendance_logs')
                 .select('date, period, status')
                 .eq('user_id', user.id)
                 .not('status', 'is', null)
                 .order('date', { ascending: false })
-                .limit(200); // 넉넉하게 200개
+                .limit(200);
 
             if (error) throw error;
             setSpecialAttendance(data || []);
         } catch (err) {
             console.error('Error fetching special attendance:', err);
+            // 만약 status 컬럼이 없어서 에러가 난 경우 사용자에게 알림
+            if (err.message && err.message.includes('column "status" does not exist')) {
+                setDbError(true);
+            }
         }
     };
 
@@ -82,14 +89,14 @@ const VacationRequest = () => {
         // 2. Merge
         const all = [...requests, ...attendances];
 
-        // 3. Filter by month (String comparison is safer for YYYY-MM-DD)
-        const targetMonth = format(selectedMonth, 'yyyy-MM');
-        const filtered = all.filter(item => item.date.startsWith(targetMonth));
+        // 3. Filter by month (Strict Date Object Comparison)
+        const targetYear = selectedMonth.getFullYear();
+        const targetMonth = selectedMonth.getMonth();
 
-        // Debug log
-        console.log('Target Month:', targetMonth);
-        console.log('All Items:', all.length);
-        console.log('Filtered Items:', filtered.length);
+        const filtered = all.filter(item => {
+            const d = new Date(item.date);
+            return d.getFullYear() === targetYear && d.getMonth() === targetMonth;
+        });
 
         // 4. Sort by date desc, then period asc
         return filtered.sort((a, b) => {
@@ -531,6 +538,13 @@ const VacationRequest = () => {
                         <Calendar size={18} />
                         출석 및 휴무 내역 ({mergedList.length}건)
                     </h3>
+
+                    {dbError && (
+                        <div style={{ background: '#fff5f5', color: '#c53030', padding: '15px', borderRadius: '12px', border: '1px solid #fc8181', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                            <div style={{ marginBottom: '5px' }}>⚠️ 데이터베이스 업데이트가 필요합니다.</div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>'지각', '조퇴' 등의 상태가 표시되지 않고 있습니다. 관리자에게 DB 업데이트를 요청해주세요. (status 컬럼 추가 필요)</div>
+                        </div>
+                    )}
 
                     {loading ? (
                         <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>로딩 중...</div>
