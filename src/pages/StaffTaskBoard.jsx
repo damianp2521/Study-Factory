@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2, ChevronDown } from 'lucide-react';
+import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2, ChevronDown, Settings, Calendar } from 'lucide-react';
 
 const StaffTaskBoard = () => {
     const { user } = useAuth();
+    const [view, setView] = useState(() => localStorage.getItem('staff_task_board_view') || 'tasks'); // 'tasks' | 'schedule'
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newTodo, setNewTodo] = useState('');
     const [isUrgent, setIsUrgent] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
     const [editContent, setEditContent] = useState('');
+
+    // Persist view
+    useEffect(() => {
+        localStorage.setItem('staff_task_board_view', view);
+    }, [view]);
 
     // Branch configuration
     // Branch configuration
@@ -297,266 +303,606 @@ const StaffTaskBoard = () => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
-            {/* Compact Branch Filter Dropdown */}
-            <div style={{ marginBottom: '15px' }}>
+            {/* Header Controls: Branch + View Toggle */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: '15px',
+                marginBottom: '15px',
+                flexWrap: 'wrap'
+            }}>
+                {/* Compact Branch Filter Dropdown */}
                 <div style={{ position: 'relative', width: 'fit-content' }}>
-                    <select
-                        value={selectedBranch}
-                        onChange={(e) => setSelectedBranch(e.target.value)}
-                        style={{
-                            width: 'auto',
-                            minWidth: '130px',
-                            padding: '6px 32px 6px 16px',
-                            borderRadius: '12px',
-                            border: '1px solid #e2e8f0',
-                            backgroundColor: 'white',
-                            color: '#4a5568',
-                            fontSize: '0.95rem',
-                            fontWeight: '500',
-                            appearance: 'none',
-                            cursor: 'pointer',
-                            outline: 'none',
-                        }}
-                    >
-                        {branches.map(branch => (
-                            <option key={branch} value={branch}>
-                                {branch === '전체' ? '전체 지점' : branch}
-                            </option>
-                        ))}
-                    </select>
-                    <div style={{
-                        position: 'absolute',
-                        right: '10px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        pointerEvents: 'none',
-                        color: '#718096',
-                        display: 'flex',
-                        alignItems: 'center'
-                    }}>
-                        <ChevronDown size={16} />
-                    </div>
-                </div>
-            </div>
-
-            {/* Add Todo Input */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                <div style={{ position: 'relative', flex: 1 }}>
-                    <input
-                        type="text"
-                        value={newTodo}
-                        onChange={(e) => setNewTodo(e.target.value)}
-                        placeholder={selectedBranch === '전체' ? '지점 선택 후 할 일을 입력하여 주세요' : '할 일을 입력하세요...'}
-                        disabled={selectedBranch === '전체'}
-                        style={{
-                            width: '100%',
-                            padding: '12px 15px',
-                            paddingRight: '80px',
-                            borderRadius: '12px',
-                            border: `2px solid ${isUrgent ? '#feb2b2' : '#e2e8f0'}`,
-                            outline: 'none',
-                            transition: 'all 0.2s',
-                            fontSize: '1rem',
-                            backgroundColor: selectedBranch === '전체' ? '#f7fafc' : 'white',
-                            cursor: selectedBranch === '전체' ? 'not-allowed' : 'text'
-                        }}
-                    />
-                    <div
-                        onClick={() => setIsUrgent(!isUrgent)}
-                        style={{
+                    <div style={{ fontSize: '0.8rem', color: '#718096', marginBottom: '4px', paddingLeft: '4px' }}>지점</div>
+                    <div style={{ position: 'relative' }}>
+                        <select
+                            value={selectedBranch}
+                            onChange={(e) => setSelectedBranch(e.target.value)}
+                            style={{
+                                width: 'auto',
+                                minWidth: '130px',
+                                padding: '6px 32px 6px 16px',
+                                borderRadius: '12px',
+                                border: '1px solid #e2e8f0',
+                                backgroundColor: 'white',
+                                color: '#4a5568',
+                                fontSize: '0.95rem',
+                                fontWeight: '500',
+                                appearance: 'none',
+                                cursor: 'pointer',
+                                outline: 'none',
+                            }}
+                        >
+                            {branches.map(branch => (
+                                <option key={branch} value={branch}>
+                                    {branch === '전체' ? '전체 지점' : branch}
+                                </option>
+                            ))}
+                        </select>
+                        <div style={{
                             position: 'absolute',
                             right: '10px',
                             top: '50%',
                             transform: 'translateY(-50%)',
+                            pointerEvents: 'none',
+                            color: '#718096',
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '20px',
-                            background: isUrgent ? '#c53030' : '#edf2f7',
-                            color: isUrgent ? 'white' : '#718096',
-                            fontSize: '0.8rem',
-                            fontWeight: 'bold',
-                            userSelect: 'none'
-                        }}
-                    >
-                        <AlertCircle size={14} />
-                        긴급
+                            alignItems: 'center'
+                        }}>
+                            <ChevronDown size={16} />
+                        </div>
                     </div>
                 </div>
+
+                {/* View Toggle Button */}
                 <button
-                    onClick={handleAddTodo}
-                    disabled={selectedBranch === '전체'}
+                    onClick={() => setView(view === 'tasks' ? 'schedule' : 'tasks')}
                     style={{
-                        padding: '0 16px',
+                        padding: '6px 16px',
+                        height: '38px', // Match dropdown height roughly
                         borderRadius: '12px',
-                        background: selectedBranch === '전체' ? '#cbd5e0' : 'var(--color-primary)',
-                        color: 'white',
-                        border: 'none',
-                        cursor: selectedBranch === '전체' ? 'not-allowed' : 'pointer',
+                        border: '1px solid #e2e8f0',
+                        backgroundColor: view === 'schedule' ? 'var(--color-primary)' : 'white',
+                        color: view === 'schedule' ? 'white' : '#4a5568',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        gap: '8px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: view === 'schedule' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
                     }}
                 >
-                    <Plus size={24} />
+                    {view === 'schedule' ? <MessageCircle size={18} /> : <Calendar size={18} />}
+                    {view === 'schedule' ? '업무 현황 보기' : '스탭 근무표 보기'}
                 </button>
             </div>
 
-            {/* Task List */}
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {loading ? (
-                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>로딩중...</div>
-                ) : sortedTasks.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>
-                        {selectedBranch === '전체' ? '등록된 업무가 없습니다.' : `${selectedBranch}의 업무가 없습니다.`}
-                    </div>
-                ) : (
-                    sortedTasks.map(task => {
-                        const style = getTaskStyle(task);
-                        const isCompleted = task.status === 'completed';
-                        const canModify = canUserModify(task);
-                        const isEditing = editingTask?.id === task.id && editingTask?.type === task.type;
-
-                        return (
-                            <div
-                                key={`${task.type}-${task.id}`}
+            {view === 'tasks' ? (
+                <>
+                    {/* Add Todo Input */}
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                        {/* ... (rest of the input code) */}
+                        <div style={{ position: 'relative', flex: 1 }}>
+                            <input
+                                type="text"
+                                value={newTodo}
+                                onChange={(e) => setNewTodo(e.target.value)}
+                                placeholder={selectedBranch === '전체' ? '지점 선택 후 할 일을 입력하여 주세요' : '할 일을 입력하세요...'}
+                                disabled={selectedBranch === '전체'}
                                 style={{
-                                    display: 'flex',
-                                    alignItems: 'flex-start',
-                                    padding: '8px 10px',
+                                    width: '100%',
+                                    padding: '12px 15px',
+                                    paddingRight: '80px',
                                     borderRadius: '12px',
-                                    border: `1px solid ${style.borderColor}`,
-                                    backgroundColor: style.bg,
+                                    border: `2px solid ${isUrgent ? '#feb2b2' : '#e2e8f0'}`,
+                                    outline: 'none',
                                     transition: 'all 0.2s',
-                                    gap: '8px'
+                                    fontSize: '1rem',
+                                    backgroundColor: selectedBranch === '전체' ? '#f7fafc' : 'white',
+                                    cursor: selectedBranch === '전체' ? 'not-allowed' : 'text'
+                                }}
+                            />
+                            <div
+                                onClick={() => setIsUrgent(!isUrgent)}
+                                style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    cursor: 'pointer',
+                                    padding: '4px 8px',
+                                    borderRadius: '20px',
+                                    background: isUrgent ? '#c53030' : '#edf2f7',
+                                    color: isUrgent ? 'white' : '#718096',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold',
+                                    userSelect: 'none'
                                 }}
                             >
-                                {/* Checkbox */}
-                                <div
-                                    onClick={() => handleToggleComplete(task)}
-                                    style={{
-                                        minWidth: '20px',
-                                        height: '20px',
-                                        borderRadius: '5px',
-                                        border: `2px solid ${isCompleted ? '#cbd5e0' : style.text}`,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: 'pointer',
-                                        flexShrink: 0,
-                                        backgroundColor: isCompleted ? '#cbd5e0' : 'white'
-                                    }}
-                                >
-                                    {isCompleted && <Check size={12} color="white" />}
-                                </div>
+                                <AlertCircle size={14} />
+                                긴급
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleAddTodo}
+                            disabled={selectedBranch === '전체'}
+                            style={{
+                                padding: '0 16px',
+                                borderRadius: '12px',
+                                background: selectedBranch === '전체' ? '#cbd5e0' : 'var(--color-primary)',
+                                color: 'white',
+                                border: 'none',
+                                cursor: selectedBranch === '전체' ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <Plus size={24} />
+                        </button>
+                    </div>
 
-                                {/* Content - flexible width, wraps when needed */}
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    {isEditing ? (
-                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                            <input
-                                                type="text"
-                                                value={editContent}
-                                                onChange={(e) => setEditContent(e.target.value)}
-                                                autoFocus
-                                                style={{
-                                                    flex: 1,
-                                                    minWidth: '150px',
-                                                    padding: '4px 8px',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid #cbd5e0',
-                                                    fontSize: '0.9rem'
-                                                }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') handleEdit(task);
-                                                    if (e.key === 'Escape') { setEditingTask(null); setEditContent(''); }
-                                                }}
-                                            />
-                                            <button
-                                                onClick={() => handleEdit(task)}
-                                                style={{ padding: '3px 8px', borderRadius: '5px', background: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                            >저장</button>
-                                            <button
-                                                onClick={() => { setEditingTask(null); setEditContent(''); }}
-                                                style={{ padding: '3px 8px', borderRadius: '5px', background: '#e2e8f0', color: '#4a5568', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                            >취소</button>
+                    {/* Task List */}
+                    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {loading ? (
+                            <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>로딩중...</div>
+                        ) : sortedTasks.length === 0 ? (
+                            <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>
+                                {selectedBranch === '전체' ? '등록된 업무가 없습니다.' : `${selectedBranch}의 업무가 없습니다.`}
+                            </div>
+                        ) : (
+                            sortedTasks.map(task => {
+                                const style = getTaskStyle(task);
+                                const isCompleted = task.status === 'completed';
+                                const canModify = canUserModify(task);
+                                const isEditing = editingTask?.id === task.id && editingTask?.type === task.type;
+
+                                return (
+                                    <div
+                                        key={`${task.type}-${task.id}`}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            padding: '8px 10px',
+                                            borderRadius: '12px',
+                                            border: `1px solid ${style.borderColor}`,
+                                            backgroundColor: style.bg,
+                                            transition: 'all 0.2s',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        {/* Checkbox */}
+                                        <div
+                                            onClick={() => handleToggleComplete(task)}
+                                            style={{
+                                                minWidth: '20px',
+                                                height: '20px',
+                                                borderRadius: '5px',
+                                                border: `2px solid ${isCompleted ? '#cbd5e0' : style.text}`,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: 'pointer',
+                                                flexShrink: 0,
+                                                backgroundColor: isCompleted ? '#cbd5e0' : 'white'
+                                            }}
+                                        >
+                                            {isCompleted && <Check size={12} color="white" />}
                                         </div>
-                                    ) : (
-                                        <div style={{
-                                            fontSize: '0.9rem',
-                                            color: isCompleted ? '#718096' : '#2d3748',
-                                            textDecoration: isCompleted ? 'line-through' : 'none',
-                                            wordBreak: 'break-word',
-                                            lineHeight: '1.4'
-                                        }}>
-                                            {task.content}
+
+                                        {/* Content - flexible width, wraps when needed */}
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            {isEditing ? (
+                                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                    <input
+                                                        type="text"
+                                                        value={editContent}
+                                                        onChange={(e) => setEditContent(e.target.value)}
+                                                        autoFocus
+                                                        style={{
+                                                            flex: 1,
+                                                            minWidth: '150px',
+                                                            padding: '4px 8px',
+                                                            borderRadius: '6px',
+                                                            border: '1px solid #cbd5e0',
+                                                            fontSize: '0.9rem'
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleEdit(task);
+                                                            if (e.key === 'Escape') { setEditingTask(null); setEditContent(''); }
+                                                        }}
+                                                    />
+                                                    <button
+                                                        onClick={() => handleEdit(task)}
+                                                        style={{ padding: '3px 8px', borderRadius: '5px', background: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                                    >저장</button>
+                                                    <button
+                                                        onClick={() => { setEditingTask(null); setEditContent(''); }}
+                                                        style={{ padding: '3px 8px', borderRadius: '5px', background: '#e2e8f0', color: '#4a5568', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                                    >취소</button>
+                                                </div>
+                                            ) : (
+                                                <div style={{
+                                                    fontSize: '0.9rem',
+                                                    color: isCompleted ? '#718096' : '#2d3748',
+                                                    textDecoration: isCompleted ? 'line-through' : 'none',
+                                                    wordBreak: 'break-word',
+                                                    lineHeight: '1.4'
+                                                }}>
+                                                    {task.content}
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
 
-                                {/* Right side: Author + Action Buttons */}
-                                {!isEditing && (
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                        flexShrink: 0,
-                                        marginLeft: 'auto'
-                                    }}>
-                                        {/* Author Info */}
-                                        <span style={{
-                                            fontSize: '0.7rem',
-                                            color: isCompleted ? '#a0aec0' : style.text,
-                                            opacity: 0.8,
-                                            whiteSpace: 'nowrap'
-                                        }}>
-                                            {task.type === 'suggestion' ? `요청:${task.authorName}` : `작성:${task.authorName}`}
-                                            {task.completerName && ` /완료:${task.completerName}`}
-                                        </span>
+                                        {/* Right side: Author + Action Buttons */}
+                                        {!isEditing && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                flexShrink: 0,
+                                                marginLeft: 'auto'
+                                            }}>
+                                                {/* Author Info */}
+                                                <span style={{
+                                                    fontSize: '0.7rem',
+                                                    color: isCompleted ? '#a0aec0' : style.text,
+                                                    opacity: 0.8,
+                                                    whiteSpace: 'nowrap'
+                                                }}>
+                                                    {task.type === 'suggestion' ? `요청:${task.authorName}` : `작성:${task.authorName}`}
+                                                    {task.completerName && ` /완료:${task.completerName}`}
+                                                </span>
 
-                                        {/* Action Buttons */}
-                                        {canModify && (
-                                            <>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); startEdit(task); }}
-                                                    style={{
-                                                        background: 'none',
-                                                        border: 'none',
-                                                        color: isCompleted ? '#a0aec0' : '#3182ce',
-                                                        cursor: 'pointer',
-                                                        padding: '2px',
-                                                        opacity: 0.6
-                                                    }}
-                                                    onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                                                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
-                                                >
-                                                    <Edit2 size={14} />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
-                                                    style={{
-                                                        background: 'none',
-                                                        border: 'none',
-                                                        color: isCompleted ? '#a0aec0' : '#e53e3e',
-                                                        cursor: 'pointer',
-                                                        padding: '2px',
-                                                        opacity: 0.6
-                                                    }}
-                                                    onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                                                    onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </>
+                                                {/* Action Buttons */}
+                                                {canModify && (
+                                                    <>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); startEdit(task); }}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                color: isCompleted ? '#a0aec0' : '#3182ce',
+                                                                cursor: 'pointer',
+                                                                padding: '2px',
+                                                                opacity: 0.6
+                                                            }}
+                                                            onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                                                            onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
+                                                        >
+                                                            <Edit2 size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                color: isCompleted ? '#a0aec0' : '#e53e3e',
+                                                                cursor: 'pointer',
+                                                                padding: '2px',
+                                                                opacity: 0.6
+                                                            }}
+                                                            onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                                                            onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
-                                )}
+                                );
+                            })
+                        )}
+                    </div>
+                </>
+            ) : (
+                <StaffWorkSchedule
+                    branch={selectedBranch}
+                    isAdmin={user.role === 'admin' || user.role === 'manager'}
+                />
+            )}
+        </div>
+    );
+};
+
+// --- Sub-Components ---
+
+const StaffWorkSchedule = ({ branch, isAdmin }) => {
+    const [schedules, setSchedules] = useState([]);
+    const [staffList, setStaffList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    const fetchData = async () => {
+        if (branch === '전체') return;
+        setLoading(true);
+        try {
+            // 1. Fetch Staff List for this branch
+            const { data: staffData, error: staffError } = await supabase
+                .from('branch_staff_names')
+                .select('staff_name')
+                .eq('branch', branch)
+                .order('staff_name', { ascending: true });
+
+            if (staffError) throw staffError;
+            setStaffList(staffData?.map(s => s.staff_name) || []);
+
+            // 2. Fetch Weekly Schedule
+            const { data: scheduleData, error: scheduleError } = await supabase
+                .from('staff_schedules')
+                .select('*')
+                .eq('branch', branch);
+
+            if (scheduleError) throw scheduleError;
+            setSchedules(scheduleData || []);
+        } catch (err) {
+            console.error('Error fetching schedule:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, [branch]);
+
+    const handleUpdateAssignment = async (day, shift, role, name) => {
+        if (!isAdmin) return;
+        try {
+            const { error } = await supabase
+                .from('staff_schedules')
+                .upsert({
+                    branch,
+                    day_of_week: day,
+                    shift,
+                    role,
+                    staff_name: name,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'branch,day_of_week,shift,role' });
+
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            alert('배정 저장 실패');
+            console.error(err);
+        }
+    };
+
+    const days = ['월', '화', '수', '목', '금', '토', '일'];
+    const shifts = [
+        { key: 'morning', label: '오전', roles: [{ key: 'dish', label: '설거지' }, { key: 'sub', label: '서브' }] },
+        { key: 'afternoon', label: '오후', roles: [{ key: 'dish', label: '설거지' }, { key: 'sub', label: '서브' }] }
+    ];
+
+    if (branch === '전체') {
+        return <div style={{ textAlign: 'center', marginTop: '50px', color: '#718096' }}>지점을 선택하면 근무표를 볼 수 있습니다.</div>;
+    }
+
+    return (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        background: '#edf2f7',
+                        border: 'none',
+                        color: '#4a5568',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <Settings size={16} />
+                    근무표 설정
+                </button>
+            </div>
+
+            <div style={{ overflowX: 'auto', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '10px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                    <thead>
+                        <tr>
+                            <th style={{ padding: '10px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7' }}>시작</th>
+                            <th style={{ padding: '10px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7' }}>업무</th>
+                            {days.map(d => (
+                                <th key={d} style={{ padding: '10px', borderBottom: '2px solid #edf2f7', minWidth: '100px', backgroundColor: '#f8fafc' }}>{d}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {shifts.map((s, sIdx) => (
+                            <React.Fragment key={s.key}>
+                                {s.roles.map((r, rIdx) => (
+                                    <tr key={`${s.key}-${r.key}`}>
+                                        {rIdx === 0 && (
+                                            <td rowSpan={2} style={{
+                                                textAlign: 'center',
+                                                fontWeight: 'bold',
+                                                borderRight: '1px solid #edf2f7',
+                                                borderBottom: sIdx === 0 ? '2px solid #edf2f7' : 'none',
+                                                backgroundColor: '#f8fafc'
+                                            }}>
+                                                {s.label}
+                                            </td>
+                                        )}
+                                        <td style={{
+                                            textAlign: 'center',
+                                            padding: '8px',
+                                            borderRight: '1px solid #edf2f7',
+                                            color: '#718096',
+                                            borderBottom: rIdx === 0 ? '1px solid #f7fafc' : (sIdx === 0 ? '2px solid #edf2f7' : 'none')
+                                        }}>
+                                            {r.label}
+                                        </td>
+                                        {days.map((_, dIdx) => {
+                                            const assignment = schedules.find(as => as.day_of_week === dIdx && as.shift === s.key && as.role === r.key);
+                                            return (
+                                                <td key={dIdx} style={{
+                                                    padding: '5px',
+                                                    borderBottom: rIdx === 0 ? '1px solid #f7fafc' : (sIdx === 0 ? '2px solid #edf2f7' : 'none')
+                                                }}>
+                                                    <select
+                                                        disabled={!isAdmin}
+                                                        value={assignment?.staff_name || '미지정'}
+                                                        onChange={(e) => handleUpdateAssignment(dIdx, s.key, r.key, e.target.value)}
+                                                        style={{
+                                                            width: '100%',
+                                                            padding: '6px',
+                                                            borderRadius: '6px',
+                                                            border: '1px solid #e2e8f0',
+                                                            fontSize: '0.85rem',
+                                                            backgroundColor: assignment?.staff_name && assignment.staff_name !== '미지정' ? '#ebf8ff' : '#f8fafc',
+                                                            color: assignment?.staff_name && assignment.staff_name !== '미지정' ? '#2b6cb0' : '#a0aec0',
+                                                            cursor: isAdmin ? 'pointer' : 'default',
+                                                            outline: 'none'
+                                                        }}
+                                                    >
+                                                        <option value="미지정">미지정</option>
+                                                        {staffList.map(name => (
+                                                            <option key={name} value={name}>{name}</option>
+                                                        ))}
+                                                    </select>
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </React.Fragment>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {isSettingsOpen && (
+                <ScheduleSettings
+                    branch={branch}
+                    onClose={() => { setIsSettingsOpen(false); fetchData(); }}
+                />
+            )}
+        </div>
+    );
+};
+
+const ScheduleSettings = ({ branch, onClose }) => {
+    const [staffList, setStaffList] = useState([]);
+    const [newName, setNewName] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    const fetchStaff = async () => {
+        setLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('branch_staff_names')
+                .select('*')
+                .eq('branch', branch)
+                .order('staff_name', { ascending: true });
+            if (error) throw error;
+            setStaffList(data || []);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchStaff();
+    }, [branch]);
+
+    const handleAdd = async () => {
+        if (!newName.trim()) return;
+        try {
+            const { error } = await supabase
+                .from('branch_staff_names')
+                .insert({ branch, staff_name: newName.trim() });
+            if (error) {
+                if (error.code === '23505') alert('이미 등록된 이름입니다.');
+                else throw error;
+            }
+            setNewName('');
+            fetchStaff();
+        } catch (err) {
+            console.error(err);
+            alert('등록 실패');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!confirm('해당 스탭을 명단에서 삭제하시겠습니까? (기존 근무표 데이터는 유지됩니다)')) return;
+        try {
+            const { error } = await supabase
+                .from('branch_staff_names')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+            fetchStaff();
+        } catch (err) {
+            console.error(err);
+            alert('삭제 실패');
+        }
+    };
+
+    return (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: '20px'
+        }}>
+            <div style={{
+                backgroundColor: 'white', borderRadius: '16px', padding: '24px', width: '100%', maxWidth: '400px',
+                display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>근무표 스탭 설정</h3>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a0aec0' }}>✕</button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="스탭 이름"
+                        style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                    />
+                    <button
+                        onClick={handleAdd}
+                        style={{ padding: '10px 16px', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 'bold' }}
+                    >추가</button>
+                </div>
+
+                <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', color: '#a0aec0' }}>로딩중...</div>
+                    ) : staffList.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>등록된 스탭이 없습니다.</div>
+                    ) : (
+                        staffList.map(s => (
+                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                                <span style={{ fontWeight: '500' }}>{s.staff_name}</span>
+                                <button onClick={() => handleDelete(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e53e3e' }}>
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
-                        );
-                    })
-                )}
+                        ))
+                    )}
+                </div>
+
+                <button
+                    onClick={onClose}
+                    style={{ padding: '12px', borderRadius: '12px', background: '#f7fafc', color: '#4a5568', border: '1px solid #e2e8f0', fontWeight: 'bold', cursor: 'pointer' }}
+                >닫기</button>
             </div>
         </div>
     );
