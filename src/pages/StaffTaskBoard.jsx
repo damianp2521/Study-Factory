@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Check, Trash2, AlertCircle, MessageCircle } from 'lucide-react';
+import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2 } from 'lucide-react';
 
 const StaffTaskBoard = () => {
     const { user } = useAuth();
@@ -10,6 +10,8 @@ const StaffTaskBoard = () => {
     const [loading, setLoading] = useState(true);
     const [newTodo, setNewTodo] = useState('');
     const [isUrgent, setIsUrgent] = useState(false);
+    const [editingTask, setEditingTask] = useState(null);
+    const [editContent, setEditContent] = useState('');
 
     // Branch configuration
     // Branch configuration
@@ -213,6 +215,31 @@ const StaffTaskBoard = () => {
         }
     };
 
+    // Edit Task
+    const handleEdit = async (task) => {
+        if (!editContent.trim()) return;
+        try {
+            const table = task.type === 'staff' ? 'staff_todos' : 'suggestions';
+            const { error } = await supabase
+                .from(table)
+                .update({ content: editContent })
+                .eq('id', task.id);
+            if (error) throw error;
+            setEditingTask(null);
+            setEditContent('');
+            fetchData();
+        } catch (error) {
+            console.error('Error editing task:', error);
+            alert(`수정 실패: ${error.message || error.details || JSON.stringify(error)}`);
+        }
+    };
+
+    // Start Edit Mode
+    const startEdit = (task) => {
+        setEditingTask(task);
+        setEditContent(task.content);
+    };
+
     // Sorting & Filtering
     const sortedTasks = [...tasks]
         .filter(task => {
@@ -256,12 +283,12 @@ const StaffTaskBoard = () => {
         return { borderColor: '#bee3f8', bg: '#ebf8ff', text: '#2c5282' }; // Blue
     };
 
-    // Check Delete Permission Helper
-    const canUserDelete = (task) => {
+    // Check Delete/Edit Permission Helper (same rules)
+    const canUserModify = (task) => {
         const isAdmin = user.role === 'admin' || user.role === 'manager';
         if (isAdmin) return true;
 
-        // Staff can only delete their own pending tasks
+        // Staff can only edit/delete their own pending tasks
         if (task.type === 'staff' && task.status === 'pending' && task.created_by === user.id) {
             return true;
         }
@@ -386,7 +413,8 @@ const StaffTaskBoard = () => {
                     sortedTasks.map(task => {
                         const style = getTaskStyle(task);
                         const isCompleted = task.status === 'completed';
-                        const showDelete = canUserDelete(task);
+                        const canModify = canUserModify(task);
+                        const isEditing = editingTask?.id === task.id && editingTask?.type === task.type;
 
                         return (
                             <div
@@ -394,7 +422,7 @@ const StaffTaskBoard = () => {
                                 style={{
                                     display: 'flex',
                                     alignItems: 'flex-start',
-                                    padding: '15px',
+                                    padding: '10px 12px',
                                     borderRadius: '12px',
                                     border: `1px solid ${style.borderColor}`,
                                     backgroundColor: style.bg,
@@ -405,71 +433,119 @@ const StaffTaskBoard = () => {
                                 <div
                                     onClick={() => handleToggleComplete(task)}
                                     style={{
-                                        minWidth: '24px',
-                                        height: '24px',
+                                        minWidth: '22px',
+                                        height: '22px',
                                         borderRadius: '6px',
                                         border: `2px solid ${isCompleted ? '#cbd5e0' : style.text}`,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         cursor: 'pointer',
-                                        marginRight: '12px',
-                                        marginTop: '2px', // Align with text top
+                                        marginRight: '10px',
+                                        marginTop: '1px',
                                         backgroundColor: isCompleted ? '#cbd5e0' : 'white'
                                     }}
                                 >
-                                    {isCompleted && <Check size={16} color="white" />}
+                                    {isCompleted && <Check size={14} color="white" />}
                                 </div>
 
                                 {/* Content */}
                                 <div style={{ flex: 1 }}>
-                                    <div style={{
-                                        fontSize: '1rem',
-                                        color: isCompleted ? '#718096' : '#2d3748', // Darker gray for completed text
-                                        textDecoration: isCompleted ? 'line-through' : 'none',
-                                        wordBreak: 'break-all',
-                                        lineHeight: '1.5',
-                                        marginBottom: '6px'
-                                    }}>
-                                        {task.content}
-                                    </div>
+                                    {isEditing ? (
+                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            <input
+                                                type="text"
+                                                value={editContent}
+                                                onChange={(e) => setEditContent(e.target.value)}
+                                                autoFocus
+                                                style={{
+                                                    flex: 1,
+                                                    padding: '6px 10px',
+                                                    borderRadius: '8px',
+                                                    border: '1px solid #cbd5e0',
+                                                    fontSize: '0.95rem'
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleEdit(task);
+                                                    if (e.key === 'Escape') { setEditingTask(null); setEditContent(''); }
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => handleEdit(task)}
+                                                style={{ padding: '4px 10px', borderRadius: '6px', background: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                                            >저장</button>
+                                            <button
+                                                onClick={() => { setEditingTask(null); setEditContent(''); }}
+                                                style={{ padding: '4px 10px', borderRadius: '6px', background: '#e2e8f0', color: '#4a5568', border: 'none', cursor: 'pointer', fontSize: '0.85rem' }}
+                                            >취소</button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div style={{
+                                                fontSize: '0.95rem',
+                                                color: isCompleted ? '#718096' : '#2d3748',
+                                                textDecoration: isCompleted ? 'line-through' : 'none',
+                                                wordBreak: 'break-all',
+                                                lineHeight: '1.4',
+                                                marginBottom: '4px'
+                                            }}>
+                                                {task.content}
+                                            </div>
 
-                                    {/* Footer Info */}
-                                    <div style={{
-                                        display: 'flex',
-                                        justifyContent: 'flex-end',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        fontSize: '0.75rem',
-                                        color: isCompleted ? '#718096' : style.text, // Darker gray for completed footer
-                                        opacity: isCompleted ? 0.8 : 0.8
-                                    }}>
-                                        {task.type === 'suggestion' ? (
-                                            <span>요청 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`}</span>
-                                        ) : (
-                                            <span>작성 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`}</span>
-                                        )}
-                                    </div>
+                                            {/* Footer Info */}
+                                            <div style={{
+                                                display: 'flex',
+                                                justifyContent: 'flex-end',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                fontSize: '0.7rem',
+                                                color: isCompleted ? '#718096' : style.text,
+                                                opacity: 0.8
+                                            }}>
+                                                {task.type === 'suggestion' ? (
+                                                    <span>요청 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`}</span>
+                                                ) : (
+                                                    <span>작성 : {task.authorName} {task.completerName && `/ 완료 : ${task.completerName}`}</span>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
 
-                                {/* Delete Button - Conditionally Rendered */}
-                                {showDelete && (
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
-                                        style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            color: isCompleted ? '#cbd5e0' : '#e53e3e',
-                                            cursor: 'pointer',
-                                            padding: '4px',
-                                            marginLeft: '8px',
-                                            opacity: 0.5
-                                        }}
-                                        onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                                        onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                {/* Action Buttons - Conditionally Rendered */}
+                                {canModify && !isEditing && (
+                                    <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); startEdit(task); }}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: isCompleted ? '#a0aec0' : '#3182ce',
+                                                cursor: 'pointer',
+                                                padding: '4px',
+                                                opacity: 0.5
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                                            onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                                        >
+                                            <Edit2 size={15} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: isCompleted ? '#a0aec0' : '#e53e3e',
+                                                cursor: 'pointer',
+                                                padding: '4px',
+                                                opacity: 0.5
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                                            onMouseOut={(e) => e.currentTarget.style.opacity = 0.5}
+                                        >
+                                            <Trash2 size={15} />
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         );
