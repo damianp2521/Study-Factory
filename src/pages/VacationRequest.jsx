@@ -625,6 +625,18 @@ const VacationRequest = () => {
                                 textColor = '#2c5282';
                             }
 
+                            // Override for 'Other Leave' (Gray)
+                            if (req.reason) {
+                                const allowedReasons = ['알바', '스터디', '병원'];
+                                if (allowedReasons.includes(req.reason)) {
+                                    labelText = req.reason;
+                                    // Gray Style
+                                    mainColor = '#cbd5e0';
+                                    subColor = '#f7fafc';
+                                    textColor = '#4a5568';
+                                }
+                            }
+
                             return (
                                 <div
                                     key={req.id}
