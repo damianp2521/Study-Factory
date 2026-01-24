@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, CheckCircle, AlertCircle, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import { format, addMonths, subMonths, isSameMonth, parseISO } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
 
@@ -13,7 +15,8 @@ const VacationRequest = () => {
     // View Mode: 'create' | 'history'
     const [viewMode, setViewMode] = useState('create');
     const [myRequests, setMyRequests] = useState([]);
-    const [specialAttendance, setSpecialAttendance] = useState([]); // 특별 출석 상태 내역
+    const [specialAttendance, setSpecialAttendance] = useState([]);
+    const [selectedMonth, setSelectedMonth] = useState(new Date()); // 월별 필터링
 
     // Type: 'full' | 'half' | 'special'
     const [type, setType] = useState('full');
@@ -61,7 +64,7 @@ const VacationRequest = () => {
                 .eq('user_id', user.id)
                 .not('status', 'is', null)
                 .order('date', { ascending: false })
-                .limit(50);
+                .limit(200); // 넉넉하게 200개
 
             if (error) throw error;
             setSpecialAttendance(data || []);
@@ -69,6 +72,27 @@ const VacationRequest = () => {
             console.error('Error fetching special attendance:', err);
         }
     };
+
+    // Merge and Filter List
+    const mergedList = useMemo(() => {
+        // 1. Tag items
+        const requests = myRequests.map(r => ({ ...r, category: 'vacation' }));
+        const attendances = specialAttendance.map(a => ({ ...a, category: 'attendance', id: `att_${a.date}_${a.period}` }));
+
+        // 2. Merge
+        const all = [...requests, ...attendances];
+
+        // 3. Filter by month
+        const filtered = all.filter(item => isSameMonth(parseISO(item.date), selectedMonth));
+
+        // 4. Sort by date desc, then period asc
+        return filtered.sort((a, b) => {
+            if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
+            // Same date: period logic if available
+            if (a.periods && b.period) return a.periods[0] - b.period;
+            return 0;
+        });
+    }, [myRequests, specialAttendance, selectedMonth]);
 
     const handleCancel = async (id, date) => {
         if (!confirm(`${date} 휴가 신청을 취소하시겠습니까?`)) return;
@@ -478,124 +502,158 @@ const VacationRequest = () => {
             ) : (
                 /* History Mode */
                 <div className="flex-col" style={{ gap: '15px' }}>
+                    {/* Month Selector */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '10px' }}>
+                        <button
+                            onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
+                        >
+                            <ChevronLeft size={24} color="#4a5568" />
+                        </button>
+                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748' }}>
+                            {format(selectedMonth, 'yyyy년 M월')}
+                        </span>
+                        <button
+                            onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
+                        >
+                            <ChevronRight size={24} color="#4a5568" />
+                        </button>
+                    </div>
+
+                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#4a5568', marginBottom: '5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Calendar size={18} />
+                        출석 및 휴무 내역 ({mergedList.length}건)
+                    </h3>
+
                     {loading ? (
-                        <div style={{ textAlign: 'center', color: '#999' }}>로딩 중...</div>
-                    ) : myRequests.length === 0 ? (
-                        <div style={{ textAlign: 'center', color: '#999', marginTop: '50px' }}>
-                            신청된 휴가가 없습니다.
+                        <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>로딩 중...</div>
+                    ) : mergedList.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#999', marginTop: '30px', padding: '20px', background: '#f7fafc', borderRadius: '12px' }}>
+                            해당 월의 내역이 없습니다.
                         </div>
                     ) : (
-                        myRequests.map((req) => (
-                            <div
-                                key={req.id}
-                                style={{
-                                    background: 'white',
-                                    borderRadius: '12px',
-                                    padding: '20px',
-                                    boxShadow: 'var(--shadow-sm)',
-                                    borderLeft: `5px solid ${req.type === 'full' ? '#805ad5' : req.type === 'special' ? '#e53e3e' : '#3182ce'}`,
-                                    position: 'relative'
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
-                                        {req.date} ({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
-                                    </span>
-                                    <span style={{
-                                        background: req.type === 'full' ? '#e9d8fd' : req.type === 'special' ? '#fed7d7' : '#ebf8ff',
-                                        color: req.type === 'full' ? '#553c9a' : req.type === 'special' ? '#c53030' : '#2c5282',
-                                        padding: '4px 8px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {req.type === 'full' ? '월차' : req.type === 'special' ? '특별휴가' : '반차'}
-                                    </span>
-                                </div>
+                        mergedList.map((item) => {
+                            // Attendance Item
+                            if (item.category === 'attendance') {
+                                return (
+                                    <div
+                                        key={item.id}
+                                        style={{
+                                            background: 'white',
+                                            borderRadius: '12px',
+                                            padding: '16px 20px',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                            borderLeft: '5px solid #38a169',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                                {format(parseISO(item.date), 'MM.dd(EEE)', { locale: ko })}
+                                            </span>
+                                            <span style={{
+                                                fontSize: '0.95rem', fontWeight: 'bold',
+                                                color: '#c53030',
+                                                background: '#c6f6d5',
+                                                padding: '2px 8px',
+                                                borderRadius: '4px'
+                                            }}>
+                                                {item.status}
+                                            </span>
+                                        </div>
+                                        <div style={{ color: '#718096', fontSize: '0.9rem', fontWeight: '600' }}>
+                                            {item.period}교시
+                                        </div>
+                                    </div>
+                                );
+                            }
 
-                                {(req.type === 'half' || (req.type === 'special' && req.periods)) && (
-                                    <div style={{ color: '#4a5568', marginBottom: '15px' }}>
-                                        <span style={{ fontWeight: '600' }}>사용 교시:</span> {req.periods ? req.periods.join(', ') : ''}교시
-                                    </div>
-                                )}
-                                {req.type === 'special' && req.reason && (
-                                    <div style={{ color: '#c53030', marginBottom: '15px' }}>
-                                        <span style={{ fontWeight: '600' }}>사유:</span> {req.reason}
-                                    </div>
-                                )}
-                                {req.type === 'full' && (
-                                    <div style={{ color: '#aaa', marginBottom: '15px', fontSize: '0.9rem' }}>
-                                        하루 종일 휴무
-                                    </div>
-                                )}
-
-                                <button
-                                    onClick={() => handleCancel(req.id, req.date)}
+                            // Vacation Request Item
+                            const req = item;
+                            return (
+                                <div
+                                    key={req.id}
                                     style={{
-                                        width: '100%',
-                                        padding: '10px',
-                                        borderRadius: '8px',
-                                        border: '1px solid #e53e3e',
                                         background: 'white',
-                                        color: '#e53e3e',
-                                        fontWeight: 'bold',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '6px',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onMouseOver={(e) => {
-                                        e.currentTarget.style.background = '#e53e3e';
-                                        e.currentTarget.style.color = 'white';
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.currentTarget.style.background = 'white';
-                                        e.currentTarget.style.color = '#e53e3e';
+                                        borderRadius: '12px',
+                                        padding: '20px',
+                                        boxShadow: 'var(--shadow-sm)',
+                                        borderLeft: `5px solid ${req.type === 'full' ? '#805ad5' : req.type === 'special' ? '#e53e3e' : '#3182ce'}`,
+                                        position: 'relative'
                                     }}
                                 >
-                                    <Trash2 size={16} />
-                                    취소하기
-                                </button>
-                            </div>
-                        ))
-                    )}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                        <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
+                                            {req.date} ({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
+                                        </span>
+                                        <span style={{
+                                            background: req.type === 'full' ? '#e9d8fd' : req.type === 'special' ? '#fed7d7' : '#ebf8ff',
+                                            color: req.type === 'full' ? '#553c9a' : req.type === 'special' ? '#c53030' : '#2c5282',
+                                            padding: '4px 8px',
+                                            borderRadius: '6px',
+                                            fontSize: '0.85rem',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            {req.type === 'full' ? '월차' : req.type === 'special' ? '특별휴가' : '반차'}
+                                        </span>
+                                    </div>
 
-                    {/* Special Attendance Status Section */}
-                    {specialAttendance.length > 0 && (
-                        <div style={{ marginTop: '20px' }}>
-                            <h3 style={{ fontSize: '1rem', fontWeight: 'bold', color: '#4a5568', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <Clock size={18} />
-                                출석 특이사항
-                            </h3>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                {specialAttendance.map((item, idx) => {
-                                    const dateObj = new Date(item.date);
-                                    const days = ['일', '월', '화', '수', '목', '금', '토'];
-                                    const dateLabel = `${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}(${days[dateObj.getDay()]})`;
-                                    return (
-                                        <div
-                                            key={idx}
-                                            style={{
-                                                background: '#c6f6d5',
-                                                color: '#c53030',
-                                                padding: '8px 12px',
-                                                borderRadius: '8px',
-                                                fontSize: '0.85rem',
-                                                fontWeight: 'bold'
-                                            }}
-                                        >
-                                            {dateLabel} {item.period}교시 {item.status}
+                                    {(req.type === 'half' || (req.type === 'special' && req.periods)) && (
+                                        <div style={{ color: '#4a5568', marginBottom: '15px' }}>
+                                            <span style={{ fontWeight: '600' }}>사용 교시:</span> {req.periods ? req.periods.join(', ') : ''}교시
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                                    )}
+                                    {req.type === 'special' && req.reason && (
+                                        <div style={{ color: '#c53030', marginBottom: '15px' }}>
+                                            <span style={{ fontWeight: '600' }}>사유:</span> {req.reason}
+                                        </div>
+                                    )}
+                                    {req.type === 'full' && (
+                                        <div style={{ color: '#aaa', marginBottom: '15px', fontSize: '0.9rem' }}>
+                                            하루 종일 휴무
+                                        </div>
+                                    )}
+
+                                    <button
+                                        onClick={() => handleCancel(req.id, req.date)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '10px',
+                                            borderRadius: '8px',
+                                            border: '1px solid #e53e3e',
+                                            background: 'white',
+                                            color: '#e53e3e',
+                                            fontWeight: 'bold',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '6px',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.background = '#e53e3e';
+                                            e.currentTarget.style.color = 'white';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.background = 'white';
+                                            e.currentTarget.style.color = '#e53e3e';
+                                        }}
+                                    >
+                                        <Trash2 size={16} />
+                                        취소하기
+                                    </button>
+                                </div>
+                            );
+                        })
                     )}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 
