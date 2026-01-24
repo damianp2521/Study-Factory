@@ -2,11 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2, ChevronDown, Settings, Calendar } from 'lucide-react';
+import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2, ChevronDown, Calendar } from 'lucide-react';
 
 const StaffTaskBoard = () => {
     const { user } = useAuth();
     const [view, setView] = useState(() => localStorage.getItem('staff_task_board_view') || 'tasks'); // 'tasks' | 'schedule'
+    const [isAssignmentMode, setIsAssignmentMode] = useState(false); // Assignment mode for schedule
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [newTodo, setNewTodo] = useState('');
@@ -307,7 +308,7 @@ const StaffTaskBoard = () => {
             <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between', // Align button to far right
+                justifyContent: 'space-between',
                 gap: '10px',
                 marginBottom: '15px'
             }}>
@@ -352,28 +353,61 @@ const StaffTaskBoard = () => {
                     </div>
                 </div>
 
-                {/* View Toggle Button (Right Aligned) */}
-                <button
-                    onClick={() => setView(view === 'tasks' ? 'schedule' : 'tasks')}
-                    style={{
-                        padding: '0 12px',
-                        height: '34px', // Matches dropdown height
-                        borderRadius: '10px',
-                        border: '1px solid #e2e8f0',
-                        backgroundColor: 'white', // Neutral white background like dropdown
-                        color: '#4a5568',
-                        fontSize: '0.9rem', // Matches dropdown font size
-                        fontWeight: '600',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                    }}
-                >
-                    {view === 'schedule' ? <MessageCircle size={16} /> : <Calendar size={16} />}
-                    {view === 'schedule' ? '업무 보기' : '근무표 보기'}
-                </button>
+                {/* Main Action Group (Right Aligned) */}
+                <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                    {/* View Toggle Button */}
+                    <button
+                        onClick={() => {
+                            setView(view === 'tasks' ? 'schedule' : 'tasks');
+                            if (view === 'tasks') setIsAssignmentMode(false);
+                        }}
+                        style={{
+                            width: '105px', // Same fixed width
+                            height: '34px',
+                            borderRadius: '10px',
+                            border: '1px solid #e2e8f0',
+                            backgroundColor: 'white',
+                            color: '#4a5568',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                        }}
+                    >
+                        {view === 'schedule' ? <MessageCircle size={16} /> : <Calendar size={16} />}
+                        {view === 'schedule' ? '업무 보기' : '근무표 보기'}
+                    </button>
+
+                    {/* Assignment Mode Toggle - Only shown in schedule view for admins */}
+                    {view === 'schedule' && (user.role === 'admin' || user.role === 'manager') && (
+                        <button
+                            onClick={() => setIsAssignmentMode(!isAssignmentMode)}
+                            style={{
+                                width: '105px', // Fixed width for consistency
+                                height: '34px',
+                                borderRadius: '10px',
+                                border: '1px solid #e2e8f0',
+                                backgroundColor: isAssignmentMode ? 'var(--color-primary)' : 'white',
+                                color: isAssignmentMode ? 'white' : '#4a5568',
+                                fontSize: '0.85rem',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            <Edit2 size={14} />
+                            {isAssignmentMode ? '배정 완료' : '근무 배정'}
+                        </button>
+                    )}
+                </div>
             </div>
 
             {view === 'tasks' ? (
@@ -603,6 +637,8 @@ const StaffTaskBoard = () => {
                 <StaffWorkSchedule
                     branch={selectedBranch}
                     isAdmin={user.role === 'admin' || user.role === 'manager'}
+                    isAssignmentMode={isAssignmentMode}
+                    setIsAssignmentMode={setIsAssignmentMode}
                 />
             )}
         </div>
@@ -611,28 +647,27 @@ const StaffTaskBoard = () => {
 
 // --- Sub-Components ---
 
-const StaffWorkSchedule = ({ branch, isAdmin }) => {
+const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentMode }) => {
     const [schedules, setSchedules] = useState([]);
     const [staffList, setStaffList] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const [isAssignmentMode, setIsAssignmentMode] = useState(false); // Toggle for editing assignments
 
     const fetchData = async () => {
         if (branch === '전체') return;
         setLoading(true);
         try {
-            // 1. Fetch Staff List
+            // 1. Fetch users with role 'staff' from authorized_users FOR THIS BRANCH
             const { data: staffData, error: staffError } = await supabase
-                .from('branch_staff_names')
-                .select('staff_name')
+                .from('authorized_users')
+                .select('name')
+                .eq('role', 'staff')
                 .eq('branch', branch)
-                .order('staff_name', { ascending: true });
+                .order('name', { ascending: true });
 
             if (staffError) throw staffError;
-            setStaffList(staffData?.map(s => s.staff_name) || []);
+            setStaffList(staffData?.map(s => s.name) || []);
 
-            // 2. Fetch Weekly Schedule
+            // 2. Fetch Weekly Schedule for this branch
             const { data: scheduleData, error: scheduleError } = await supabase
                 .from('staff_schedules')
                 .select('*')
@@ -685,52 +720,6 @@ const StaffWorkSchedule = ({ branch, isAdmin }) => {
 
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* Schedule Controls */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                {isAdmin && (
-                    <>
-                        <button
-                            onClick={() => setIsAssignmentMode(!isAssignmentMode)}
-                            style={{
-                                padding: '6px 12px',
-                                borderRadius: '8px',
-                                background: isAssignmentMode ? 'var(--color-primary)' : '#edf2f7',
-                                border: 'none',
-                                color: isAssignmentMode ? 'white' : '#4a5568',
-                                fontSize: '0.85rem',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            }}
-                        >
-                            <Edit2 size={14} />
-                            {isAssignmentMode ? '수정 완료' : '근무 배정'}
-                        </button>
-                        <button
-                            onClick={() => setIsSettingsOpen(true)}
-                            style={{
-                                padding: '6px 12px',
-                                borderRadius: '8px',
-                                background: '#edf2f7',
-                                border: 'none',
-                                color: '#4a5568',
-                                fontSize: '0.85rem',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
-                            }}
-                        >
-                            <Settings size={14} />
-                            스탭 설정
-                        </button>
-                    </>
-                )}
-            </div>
-
             {/* Compact Table Container */}
             <div style={{
                 overflowX: 'auto',
@@ -833,128 +822,6 @@ const StaffWorkSchedule = ({ branch, isAdmin }) => {
                         ))}
                     </tbody>
                 </table>
-            </div>
-
-            {isSettingsOpen && (
-                <ScheduleSettings
-                    branch={branch}
-                    onClose={() => { setIsSettingsOpen(false); fetchData(); }}
-                />
-            )}
-        </div>
-    );
-};
-
-const ScheduleSettings = ({ branch, onClose }) => {
-    const [staffList, setStaffList] = useState([]);
-    const [newName, setNewName] = useState('');
-    const [loading, setLoading] = useState(true);
-
-    const fetchStaff = async () => {
-        setLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('branch_staff_names')
-                .select('*')
-                .eq('branch', branch)
-                .order('staff_name', { ascending: true });
-            if (error) throw error;
-            setStaffList(data || []);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchStaff();
-    }, [branch]);
-
-    const handleAdd = async () => {
-        if (!newName.trim()) return;
-        try {
-            const { error } = await supabase
-                .from('branch_staff_names')
-                .insert({ branch, staff_name: newName.trim() });
-            if (error) {
-                if (error.code === '23505') alert('이미 등록된 이름입니다.');
-                else throw error;
-            }
-            setNewName('');
-            fetchStaff();
-        } catch (err) {
-            console.error(err);
-            alert('등록 실패');
-        }
-    };
-
-    const handleDelete = async (id) => {
-        if (!confirm('해당 스탭을 명단에서 삭제하시겠습니까? (기존 근무표 데이터는 유지됩니다)')) return;
-        try {
-            const { error } = await supabase
-                .from('branch_staff_names')
-                .delete()
-                .eq('id', id);
-            if (error) throw error;
-            fetchStaff();
-        } catch (err) {
-            console.error(err);
-            alert('삭제 실패');
-        }
-    };
-
-    return (
-        <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 1000, padding: '15px'
-        }}>
-            <div style={{
-                backgroundColor: 'white', borderRadius: '16px', padding: '20px', width: '90%', maxWidth: '360px',
-                display: 'flex', flexDirection: 'column', gap: '15px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                maxHeight: '80vh', overflowY: 'auto'
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold' }}>스탭 명단 설정</h3>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#a0aec0', fontSize: '1.2rem' }}>✕</button>
-                </div>
-
-                <div style={{ display: 'flex', gap: '6px' }}>
-                    <input
-                        type="text"
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                        placeholder="스탭 이름"
-                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem' }}
-                    />
-                    <button
-                        onClick={handleAdd}
-                        style={{ padding: '8px 14px', borderRadius: '8px', background: 'var(--color-primary)', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '0.85rem' }}
-                    >추가</button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {loading ? (
-                        <div style={{ textAlign: 'center', color: '#a0aec0', padding: '10px' }}>로딩중...</div>
-                    ) : staffList.length === 0 ? (
-                        <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>등록된 스탭이 없습니다.</div>
-                    ) : (
-                        staffList.map(s => (
-                            <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
-                                <span style={{ fontWeight: '500', fontSize: '0.9rem' }}>{s.staff_name}</span>
-                                <button onClick={() => handleDelete(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e53e3e' }}>
-                                    <Trash2 size={14} />
-                                </button>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-                <button
-                    onClick={onClose}
-                    style={{ padding: '10px', borderRadius: '10px', background: '#f7fafc', color: '#4a5568', border: '1px solid #e2e8f0', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem', marginTop: '5px' }}
-                >닫기</button>
             </div>
         </div>
     );
