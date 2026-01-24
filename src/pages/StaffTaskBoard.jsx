@@ -297,50 +297,44 @@ const StaffTaskBoard = () => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
-            {/* Branch Filter Dropdown Style */}
-            <div style={{ marginBottom: '20px' }}>
-                <div style={{
-                    fontSize: '0.9rem',
-                    color: '#718096',
-                    marginBottom: '8px',
-                    fontWeight: '500',
-                    paddingLeft: '4px'
-                }}>지점</div>
-                <div style={{ position: 'relative', width: '100%', maxWidth: '200px' }}>
+            {/* Compact Branch Filter Dropdown */}
+            <div style={{ marginBottom: '15px' }}>
+                <div style={{ position: 'relative', width: 'fit-content' }}>
                     <select
                         value={selectedBranch}
                         onChange={(e) => setSelectedBranch(e.target.value)}
                         style={{
-                            width: '100%',
-                            padding: '12px 16px',
-                            paddingRight: '40px',
-                            borderRadius: '16px',
+                            width: 'auto',
+                            minWidth: '130px',
+                            padding: '6px 32px 6px 16px',
+                            borderRadius: '12px',
                             border: '1px solid #e2e8f0',
                             backgroundColor: 'white',
-                            color: '#2d3748',
-                            fontSize: '1.1rem',
-                            fontWeight: '600',
+                            color: '#4a5568',
+                            fontSize: '0.95rem',
+                            fontWeight: '500',
                             appearance: 'none',
                             cursor: 'pointer',
                             outline: 'none',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                         }}
                     >
                         {branches.map(branch => (
-                            <option key={branch} value={branch}>{branch}</option>
+                            <option key={branch} value={branch}>
+                                {branch === '전체' ? '전체 지점' : branch}
+                            </option>
                         ))}
                     </select>
                     <div style={{
                         position: 'absolute',
-                        right: '15px',
+                        right: '10px',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         pointerEvents: 'none',
-                        color: '#2d3748',
+                        color: '#718096',
                         display: 'flex',
                         alignItems: 'center'
                     }}>
-                        <ChevronDown size={20} />
+                        <ChevronDown size={16} />
                     </div>
                 </div>
             </div>
