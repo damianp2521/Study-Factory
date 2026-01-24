@@ -171,7 +171,7 @@ const InlineVacationRequest = () => {
             height: '100%',
             overflowY: 'auto'
         }}>
-            {/* Embedded Calendar */}
+            {/* Embedded Calendar - Controlled Month */}
             <div style={{ marginBottom: '20px' }}>
                 <EmbeddedCalendar
                     selectedDate={date}
@@ -189,6 +189,9 @@ const InlineVacationRequest = () => {
                     events={myRequests}
                     minDate={todayStr}
                     maxDate={maxDateStr}
+                    // Sync Month State
+                    currentMonth={selectedMonth}
+                    onMonthChange={setSelectedMonth}
                 />
             </div>
 
@@ -273,24 +276,8 @@ const InlineVacationRequest = () => {
             {/* History Section (Merged List) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
 
-                {/* Month Selector */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
-                    <button
-                        onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
-                    >
-                        <ChevronLeft size={24} color="#4a5568" />
-                    </button>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                        {format(selectedMonth, 'yyyy년 M월')}
-                    </span>
-                    <button
-                        onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
-                    >
-                        <ChevronRight size={24} color="#4a5568" />
-                    </button>
-                </div>
+                {/* NOTE: Month Selector removed. Synced with Calendar above. */}
+
 
                 {dbError && (
                     <div style={{ background: '#fff5f5', color: '#c53030', padding: '12px', borderRadius: '8px', border: '1px solid #fc8181', fontSize: '0.85rem' }}>

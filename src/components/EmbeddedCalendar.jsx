@@ -7,31 +7,47 @@ const EmbeddedCalendar = ({
     onSelectDate,
     events = [], // Array of objects: { date: 'YYYY-MM-DD', type: 'full'|'half'|'special', ... }
     minDate,
-    maxDate
+    maxDate,
+    // New props for controlled mode
+    currentMonth: controlledMonth,
+    onMonthChange
 }) => {
-    // Initialize calendar view to selectedDate, or the first of selectedDates, or today
-    const [currentMonth, setCurrentMonth] = useState(() => {
+    // Internal state for uncontrolled mode
+    const [internalMonth, setInternalMonth] = useState(() => {
         if (selectedDate) return new Date(selectedDate);
         if (selectedDates.length > 0) return new Date(selectedDates[0]);
         return new Date();
     });
 
+    // Use controlled value if provided, otherwise internal
+    const currentMonth = controlledMonth || internalMonth;
+
     useEffect(() => {
-        if (selectedDate) {
-            setCurrentMonth(new Date(selectedDate));
+        if (selectedDate && !controlledMonth) {
+            setInternalMonth(new Date(selectedDate));
         }
-    }, [selectedDate]);
+    }, [selectedDate, controlledMonth]);
 
     const handlePrevMonth = () => {
         const newDate = new Date(currentMonth);
         newDate.setMonth(newDate.getMonth() - 1);
-        setCurrentMonth(newDate);
+
+        if (onMonthChange) {
+            onMonthChange(newDate);
+        } else {
+            setInternalMonth(newDate);
+        }
     };
 
     const handleNextMonth = () => {
         const newDate = new Date(currentMonth);
         newDate.setMonth(newDate.getMonth() + 1);
-        setCurrentMonth(newDate);
+
+        if (onMonthChange) {
+            onMonthChange(newDate);
+        } else {
+            setInternalMonth(newDate);
+        }
     };
 
     const getDaysInMonth = (date) => {
