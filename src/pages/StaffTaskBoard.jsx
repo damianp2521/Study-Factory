@@ -308,7 +308,7 @@ const StaffTaskBoard = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between', // Align button to far right
-                gap: '15px',
+                gap: '10px',
                 marginBottom: '15px'
             }}>
                 {/* Compact Branch Filter Dropdown (No Label) */}
@@ -318,15 +318,15 @@ const StaffTaskBoard = () => {
                         onChange={(e) => setSelectedBranch(e.target.value)}
                         style={{
                             width: 'auto',
-                            minWidth: '130px',
-                            height: '38px', // Exact height match
-                            padding: '0 32px 0 16px',
-                            borderRadius: '12px',
+                            minWidth: '110px',
+                            height: '34px', // Reduced height
+                            padding: '0 28px 0 12px',
+                            borderRadius: '10px', // Slightly smaller radius
                             border: '1px solid #e2e8f0',
                             backgroundColor: 'white',
                             color: '#4a5568',
-                            fontSize: '0.95rem',
-                            fontWeight: '600', // Matches button weight
+                            fontSize: '0.9rem', // Reduced font size
+                            fontWeight: '600',
                             appearance: 'none',
                             cursor: 'pointer',
                             outline: 'none',
@@ -340,7 +340,7 @@ const StaffTaskBoard = () => {
                     </select>
                     <div style={{
                         position: 'absolute',
-                        right: '10px',
+                        right: '8px',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         pointerEvents: 'none',
@@ -348,7 +348,7 @@ const StaffTaskBoard = () => {
                         display: 'flex',
                         alignItems: 'center'
                     }}>
-                        <ChevronDown size={16} />
+                        <ChevronDown size={14} />
                     </div>
                 </div>
 
@@ -356,23 +356,23 @@ const StaffTaskBoard = () => {
                 <button
                     onClick={() => setView(view === 'tasks' ? 'schedule' : 'tasks')}
                     style={{
-                        padding: '0 16px',
-                        height: '38px', // Exact height match
-                        borderRadius: '12px',
+                        padding: '0 12px',
+                        height: '34px', // Matches dropdown height
+                        borderRadius: '10px',
                         border: '1px solid #e2e8f0',
                         backgroundColor: 'white', // Neutral white background like dropdown
                         color: '#4a5568',
-                        fontSize: '0.95rem',
+                        fontSize: '0.9rem', // Matches dropdown font size
                         fontWeight: '600',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
+                        gap: '6px',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                     }}
                 >
-                    {view === 'schedule' ? <MessageCircle size={18} /> : <Calendar size={18} />}
-                    {view === 'schedule' ? '업무 현황 보기' : '스탭 근무표 보기'}
+                    {view === 'schedule' ? <MessageCircle size={16} /> : <Calendar size={16} />}
+                    {view === 'schedule' ? '업무 보기' : '근무표 보기'}
                 </button>
             </div>
 
