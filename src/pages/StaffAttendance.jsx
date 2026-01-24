@@ -564,7 +564,7 @@ const StaffAttendance = ({ onBack }) => {
             const endDate = format(endOfMonth(currentViewDate), 'yyyy-MM-dd');
 
             const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes] = await Promise.all([
-                supabase.from('authorized_users').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
+                supabase.from('profiles').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
                 supabase.from('attendance_memos').select('*').eq('date', format(today, 'yyyy-MM-dd')).order('created_at', { ascending: true }),

@@ -30,7 +30,7 @@ const AdminAttendanceStatus = ({ onBack }) => {
         try {
             // 1. Fetch Users
             const { data: userData, error: userError } = await supabase
-                .from('authorized_users')
+                .from('profiles')
                 .select('*')
                 .eq('branch', branch)
                 .order('seat_number', { ascending: true, nullsLast: true });
