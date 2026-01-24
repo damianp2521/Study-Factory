@@ -174,276 +174,281 @@ const InlineVacationRequest = () => {
             height: '100%',
             overflowY: 'auto'
         }}>
-            {/* Header with View Toggle */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', margin: 0, color: '#2d3748' }}>
-                    {viewMode === 'create' ? '휴가 신청' : '출석 및 휴무 내역'}
-                </h3>
+            {/* Embedded Calendar */}
+            <div style={{ marginBottom: '20px' }}>
+                <EmbeddedCalendar
+                    selectedDate={date}
+                    onSelectDate={(val) => {
+                        if (val < todayStr) {
+                            alert('지난 날짜는 신청할 수 없습니다.');
+                            return;
+                        }
+                        if (val > maxDateStr) {
+                            alert('최대 2주 뒤까지만 신청 가능합니다.');
+                            return;
+                        }
+                        setDate(val);
+                    }}
+                    events={myRequests}
+                    minDate={todayStr}
+                    maxDate={maxDateStr}
+                />
+            </div>
+
+            {/* Button Group */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                 <button
-                    onClick={() => setViewMode(viewMode === 'create' ? 'history' : 'create')}
+                    onClick={() => setType('full')}
                     style={{
-                        background: 'none',
-                        border: 'none',
-                        fontSize: '0.85rem',
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: type === 'full' ? '2px solid #e53e3e' : '1px solid #e2e8f0', // Red for Full
+                        background: type === 'full' ? '#fff5f5' : 'white',
+                        color: type === 'full' ? '#c53030' : '#4a5568',
                         fontWeight: 'bold',
-                        color: 'var(--color-primary)',
-                        textDecoration: 'underline',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
                     }}
                 >
-                    {viewMode === 'create' ? '내역 보기' : '신청하기'}
+                    월차
+                </button>
+                <button
+                    onClick={() => setType('half_am')}
+                    style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: type === 'half_am' ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for Half
+                        background: type === 'half_am' ? '#ebf8ff' : 'white',
+                        color: type === 'half_am' ? '#2c5282' : '#4a5568',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    오전반차
+                </button>
+                <button
+                    onClick={() => setType('half_pm')}
+                    style={{
+                        flex: 1,
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: type === 'half_pm' ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for Half
+                        background: type === 'half_pm' ? '#ebf8ff' : 'white',
+                        color: type === 'half_pm' ? '#2c5282' : '#4a5568',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    오후반차
                 </button>
             </div>
 
-            {viewMode === 'create' ? (
-                <>
-                    {/* Embedded Calendar */}
-                    <div style={{ marginBottom: '20px' }}>
-                        <EmbeddedCalendar
-                            selectedDate={date}
-                            onSelectDate={(val) => {
-                                if (val < todayStr) {
-                                    alert('지난 날짜는 신청할 수 없습니다.');
-                                    return;
-                                }
-                                if (val > maxDateStr) {
-                                    alert('최대 2주 뒤까지만 신청 가능합니다.');
-                                    return;
-                                }
-                                setDate(val);
-                            }}
-                            events={myRequests}
-                            minDate={todayStr}
-                            maxDate={maxDateStr}
-                        />
-                    </div>
+            {/* Submit Button */}
+            <button
+                onClick={handleSubmit}
+                disabled={loading}
+                style={{
+                    width: '100%',
+                    padding: '15px',
+                    borderRadius: '12px',
+                    background: 'var(--color-primary)',
+                    color: 'white',
+                    border: 'none',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    cursor: loading ? 'wait' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginBottom: '25px',
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                }}
+            >
+                <CheckCircle size={20} />
+                {loading ? '신청 중...' : '신청하기'}
+            </button>
 
-                    {/* Button Group */}
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                        <button
-                            onClick={() => setType('full')}
-                            style={{
-                                flex: 1,
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: type === 'full' ? '2px solid #e53e3e' : '1px solid #e2e8f0', // Red for Full
-                                background: type === 'full' ? '#fff5f5' : 'white',
-                                color: type === 'full' ? '#c53030' : '#4a5568',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                fontSize: '0.9rem'
-                            }}
-                        >
-                            월차
-                        </button>
-                        <button
-                            onClick={() => setType('half_am')}
-                            style={{
-                                flex: 1,
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: type === 'half_am' ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for Half
-                                background: type === 'half_am' ? '#ebf8ff' : 'white',
-                                color: type === 'half_am' ? '#2c5282' : '#4a5568',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                fontSize: '0.9rem'
-                            }}
-                        >
-                            오전반차
-                        </button>
-                        <button
-                            onClick={() => setType('half_pm')}
-                            style={{
-                                flex: 1,
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: type === 'half_pm' ? '2px solid #3182ce' : '1px solid #e2e8f0', // Blue for Half
-                                background: type === 'half_pm' ? '#ebf8ff' : 'white',
-                                color: type === 'half_pm' ? '#2c5282' : '#4a5568',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                fontSize: '0.9rem'
-                            }}
-                        >
-                            오후반차
-                        </button>
-                    </div>
+            {/* History Section (Merged List) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
 
-                    {/* Submit Button */}
+                {/* Month Selector */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
                     <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        style={{
-                            width: '100%',
-                            padding: '15px',
-                            borderRadius: '12px',
-                            background: 'var(--color-primary)',
-                            color: 'white',
-                            border: 'none',
-                            fontSize: '1rem',
-                            fontWeight: 'bold',
-                            cursor: loading ? 'wait' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            marginBottom: '25px',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                        }}
+                        onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
                     >
-                        <CheckCircle size={20} />
-                        {loading ? '신청 중...' : '신청하기'}
+                        <ChevronLeft size={24} color="#4a5568" />
                     </button>
-                </>
-            ) : (
-                /* History Mode */
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                        {format(selectedMonth, 'yyyy년 M월')}
+                    </span>
+                    <button
+                        onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
+                    >
+                        <ChevronRight size={24} color="#4a5568" />
+                    </button>
+                </div>
 
-                    {/* Month Selector */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '5px' }}>
-                        <button
-                            onClick={() => setSelectedMonth(prev => subMonths(prev, 1))}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
-                        >
-                            <ChevronLeft size={24} color="#4a5568" />
-                        </button>
-                        <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                            {format(selectedMonth, 'yyyy년 M월')}
-                        </span>
-                        <button
-                            onClick={() => setSelectedMonth(prev => addMonths(prev, 1))}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}
-                        >
-                            <ChevronRight size={24} color="#4a5568" />
-                        </button>
+                {dbError && (
+                    <div style={{ background: '#fff5f5', color: '#c53030', padding: '12px', borderRadius: '8px', border: '1px solid #fc8181', fontSize: '0.85rem' }}>
+                        ⚠️ DB 업데이트 필요: 관리자 문의 요망
                     </div>
+                )}
 
-                    {dbError && (
-                        <div style={{ background: '#fff5f5', color: '#c53030', padding: '12px', borderRadius: '8px', border: '1px solid #fc8181', fontSize: '0.85rem' }}>
-                            ⚠️ DB 업데이트 필요: 관리자 문의 요망
-                        </div>
-                    )}
-
-                    {mergedList.length === 0 ? (
-                        <div style={{ textAlign: 'center', color: '#a0aec0', padding: '30px 0', background: '#f7fafc', borderRadius: '8px' }}>
-                            내역이 없습니다.
-                        </div>
-                    ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {mergedList.map((item) => {
-                                // Attendance Item
-                                if (item.category === 'attendance') {
-                                    return (
-                                        <div
-                                            key={item.id}
-                                            style={{
-                                                background: 'white',
-                                                borderRadius: '8px',
-                                                padding: '12px 16px',
-                                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                                borderLeft: '4px solid #38a169',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between'
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#2d3748' }}>
-                                                    {format(parseISO(item.date), 'MM.dd(EEE)', { locale: ko })}
-                                                </span>
-                                                <span style={{
-                                                    fontSize: '0.85rem', fontWeight: 'bold',
-                                                    color: '#c53030',
-                                                    background: '#c6f6d5',
-                                                    padding: '2px 6px',
-                                                    borderRadius: '4px'
-                                                }}>
-                                                    {item.status}
-                                                </span>
-                                            </div>
-                                            <div style={{ color: '#718096', fontSize: '0.85rem' }}>
-                                                {item.period}교시
-                                            </div>
-                                        </div>
-                                    );
-                                }
-
-                                // Vacation Request Item
-                                const req = item;
-                                const isPast = req.date < todayStr;
-
+                {mergedList.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#a0aec0', padding: '30px 0', background: '#f7fafc', borderRadius: '8px' }}>
+                        내역이 없습니다.
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {mergedList.map((item) => {
+                            // Attendance Item
+                            if (item.category === 'attendance') {
                                 return (
                                     <div
-                                        key={req.id}
+                                        key={item.id}
                                         style={{
                                             background: 'white',
                                             borderRadius: '8px',
                                             padding: '12px 16px',
                                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                            borderLeft: `4px solid ${req.type === 'full' ? '#805ad5' : req.type === 'special' ? '#e53e3e' : '#3182ce'}`,
+                                            borderLeft: '4px solid #38a169',
                                             display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '6px'
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between'
                                         }}
                                     >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                             <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#2d3748' }}>
-                                                {format(parseISO(req.date), 'MM.dd(EEE)', { locale: ko })}
+                                                {format(parseISO(item.date), 'MM.dd(EEE)', { locale: ko })}
                                             </span>
                                             <span style={{
-                                                background: req.type === 'full' ? '#e9d8fd' : req.type === 'special' ? '#fed7d7' : '#ebf8ff',
-                                                color: req.type === 'full' ? '#553c9a' : req.type === 'special' ? '#c53030' : '#2c5282',
+                                                fontSize: '0.85rem', fontWeight: 'bold',
+                                                color: '#c53030',
+                                                background: '#c6f6d5',
                                                 padding: '2px 6px',
-                                                borderRadius: '4px',
-                                                fontSize: '0.8rem',
-                                                fontWeight: 'bold'
+                                                borderRadius: '4px'
                                             }}>
-                                                {req.type === 'full' ? '월차' : req.type === 'special' ? '특별휴가' : '반차'}
+                                                {item.status}
                                             </span>
                                         </div>
-
-                                        {(req.type === 'half' || (req.type === 'special' && req.periods)) && (
-                                            <div style={{ color: '#718096', fontSize: '0.85rem' }}>
-                                                교시: {req.periods ? req.periods.join(', ') : ''}
-                                            </div>
-                                        )}
-                                        {req.type === 'special' && req.reason && (
-                                            <div style={{ color: '#e53e3e', fontSize: '0.85rem' }}>
-                                                사유: {req.reason}
-                                            </div>
-                                        )}
-
-                                        {!isPast && (
-                                            <button
-                                                onClick={() => handleCancel(req.id, req.date)}
-                                                style={{
-                                                    alignSelf: 'flex-end',
-                                                    background: '#fff5f5',
-                                                    color: '#e53e3e',
-                                                    border: '1px solid #fc8181',
-                                                    padding: '4px 10px',
-                                                    borderRadius: '6px',
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 'bold',
-                                                    cursor: 'pointer',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '4px',
-                                                    marginTop: '4px'
-                                                }}
-                                            >
-                                                <Trash2 size={12} />
-                                                취소
-                                            </button>
-                                        )}
+                                        <div style={{ color: '#718096', fontSize: '0.85rem' }}>
+                                            {item.period}교시
+                                        </div>
                                     </div>
                                 );
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
+                            }
+
+                            // Vacation Request Item
+                            const req = item;
+                            const isPast = req.date < todayStr;
+
+                            // Determine Label and Style
+                            let labelText = '';
+                            let mainColor = '#3182ce'; // Default Blue
+                            let subColor = '#ebf8ff';
+                            let textColor = '#2c5282';
+
+                            if (req.type === 'full') {
+                                labelText = '월차';
+                                mainColor = '#e53e3e'; // Red
+                                subColor = '#fff5f5';
+                                textColor = '#c53030';
+                            } else if (req.type === 'special') {
+                                labelText = '특별휴가';
+                                mainColor = '#e53e3e'; // Red for special too usually? Or maybe separate. Keeping Red as it's critical.
+                                subColor = '#fff5f5';
+                                textColor = '#c53030';
+                            } else {
+                                // Half
+                                if (req.periods && req.periods.length > 0) {
+                                    // Heuristic for AM/PM
+                                    const isAm = req.periods.includes(1);
+                                    const isPm = req.periods.includes(5); // Assuming 5,6,7 is PM
+                                    if (isAm && !isPm) labelText = '오전반차';
+                                    else if (!isAm && isPm) labelText = '오후반차';
+                                    else labelText = '반차';
+                                } else {
+                                    labelText = '반차';
+                                }
+                                // Half is Blue
+                                mainColor = '#3182ce';
+                                subColor = '#ebf8ff';
+                                textColor = '#2c5282';
+                            }
+
+                            return (
+                                <div
+                                    key={req.id}
+                                    style={{
+                                        background: 'white',
+                                        borderRadius: '8px',
+                                        padding: '12px 16px',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                        borderLeft: `4px solid ${mainColor}`,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '6px'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                            {format(parseISO(req.date), 'MM.dd(EEE)', { locale: ko })}
+                                        </span>
+                                        <span style={{
+                                            background: subColor,
+                                            color: textColor,
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.8rem',
+                                            fontWeight: 'bold'
+                                        }}>
+                                            {labelText}
+                                        </span>
+                                    </div>
+
+
+                                    {req.type === 'special' && req.reason && (
+                                        <div style={{ color: '#e53e3e', fontSize: '0.85rem' }}>
+                                            사유: {req.reason}
+                                        </div>
+                                    )}
+
+                                    {!isPast && (
+                                        <button
+                                            onClick={() => handleCancel(req.id, req.date)}
+                                            style={{
+                                                alignSelf: 'flex-end',
+                                                background: '#fff5f5',
+                                                color: '#e53e3e',
+                                                border: '1px solid #fc8181',
+                                                padding: '4px 10px',
+                                                borderRadius: '6px',
+                                                fontSize: '0.8rem',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px',
+                                                marginTop: '4px'
+                                            }}
+                                        >
+                                            <Trash2 size={12} />
+                                            취소
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

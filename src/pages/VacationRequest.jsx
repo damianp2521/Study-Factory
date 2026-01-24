@@ -593,6 +593,38 @@ const VacationRequest = () => {
 
                             // Vacation Request Item
                             const req = item;
+                            // Determine Label and Style
+                            let labelText = '';
+                            let mainColor = '#3182ce'; // Default Blue
+                            let subColor = '#ebf8ff';
+                            let textColor = '#2c5282';
+
+                            if (req.type === 'full') {
+                                labelText = '월차';
+                                mainColor = '#e53e3e'; // Red
+                                subColor = '#fff5f5';
+                                textColor = '#c53030';
+                            } else if (req.type === 'special') {
+                                labelText = '특별휴가';
+                                mainColor = '#e53e3e'; // Red
+                                subColor = '#fff5f5';
+                                textColor = '#c53030';
+                            } else {
+                                // Half
+                                if (req.periods && req.periods.length > 0) {
+                                    const isAm = req.periods.includes(1);
+                                    const isPm = req.periods.includes(5); // Assuming 5,6,7 is PM start
+                                    if (isAm && !isPm) labelText = '오전반차';
+                                    else if (!isAm && isPm) labelText = '오후반차';
+                                    else labelText = '반차';
+                                } else {
+                                    labelText = '반차';
+                                }
+                                mainColor = '#3182ce'; // Blue
+                                subColor = '#ebf8ff';
+                                textColor = '#2c5282';
+                            }
+
                             return (
                                 <div
                                     key={req.id}
@@ -601,7 +633,7 @@ const VacationRequest = () => {
                                         borderRadius: '12px',
                                         padding: '20px',
                                         boxShadow: 'var(--shadow-sm)',
-                                        borderLeft: `5px solid ${req.type === 'full' ? '#805ad5' : req.type === 'special' ? '#e53e3e' : '#3182ce'}`,
+                                        borderLeft: `5px solid ${mainColor}`,
                                         position: 'relative'
                                     }}
                                 >
@@ -610,22 +642,18 @@ const VacationRequest = () => {
                                             {req.date} ({['일', '월', '화', '수', '목', '금', '토'][new Date(req.date).getDay()]})
                                         </span>
                                         <span style={{
-                                            background: req.type === 'full' ? '#e9d8fd' : req.type === 'special' ? '#fed7d7' : '#ebf8ff',
-                                            color: req.type === 'full' ? '#553c9a' : req.type === 'special' ? '#c53030' : '#2c5282',
+                                            background: subColor,
+                                            color: textColor,
                                             padding: '4px 8px',
                                             borderRadius: '6px',
                                             fontSize: '0.85rem',
                                             fontWeight: 'bold'
                                         }}>
-                                            {req.type === 'full' ? '월차' : req.type === 'special' ? '특별휴가' : '반차'}
+                                            {labelText}
                                         </span>
                                     </div>
 
-                                    {(req.type === 'half' || (req.type === 'special' && req.periods)) && (
-                                        <div style={{ color: '#4a5568', marginBottom: '15px' }}>
-                                            <span style={{ fontWeight: '600' }}>사용 교시:</span> {req.periods ? req.periods.join(', ') : ''}교시
-                                        </div>
-                                    )}
+                                    {/* Removed detailed period text */}
                                     {req.type === 'special' && req.reason && (
                                         <div style={{ color: '#c53030', marginBottom: '15px' }}>
                                             <span style={{ fontWeight: '600' }}>사유:</span> {req.reason}
