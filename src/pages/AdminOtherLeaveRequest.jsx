@@ -13,8 +13,8 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
 
     // Form State
     const [selectedDates, setSelectedDates] = useState([]); // Array of strings 'YYYY-MM-DD'
-    const [timeType, setTimeType] = useState('full'); // 'full', 'am', 'pm'
-    const [reasonType, setReasonType] = useState('알바'); // '알바', '스터디', '병원', '기타'
+    const [selectedPeriods, setSelectedPeriods] = useState([]); // [1, 2, ..., 7]
+    const [reasonType, setReasonType] = useState('알바'); // '알바', '스터디', '병원', '개인'
     const [customReason, setCustomReason] = useState('');
 
     // History State
@@ -43,7 +43,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('profiles') // Fetches from correct table now
+                .from('profiles')
                 .select('*')
                 .order('name');
             if (error) throw error;
@@ -60,13 +60,14 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
     const fetchHistory = async () => {
         if (!selectedUser) return;
         try {
-            // Fetch requests where reason is NOT NULL (assuming 'Other Leave' always has reason)
+            // Fetch RECENT attendance logs with status
             const { data, error } = await supabase
-                .from('vacation_requests')
+                .from('attendance_logs')
                 .select('*')
                 .eq('user_id', selectedUser.id)
-                .not('reason', 'is', null) // Filter for Other Leave
-                .order('date', { ascending: false });
+                .not('status', 'is', null) // Only special statuses
+                .order('date', { ascending: false })
+                .limit(50);
 
             if (error) throw error;
             setHistory(data || []);
@@ -81,7 +82,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
         setSelectedDates([]); // Reset dates
         setCustomReason('');
         setReasonType('알바');
-        setTimeType('full');
+        setSelectedPeriods([]);
     };
 
     const toggleDate = (dateStr) => {
@@ -94,9 +95,24 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
         });
     };
 
+    const togglePeriod = (p) => {
+        if (p === 'all') {
+            setSelectedPeriods(prev => prev.length === 7 ? [] : [1, 2, 3, 4, 5, 6, 7]);
+            return;
+        }
+        setSelectedPeriods(prev => {
+            if (prev.includes(p)) return prev.filter(x => x !== p);
+            return [...prev, p].sort((a, b) => a - b);
+        });
+    };
+
     const handleSubmit = async () => {
         if (selectedDates.length === 0) {
             alert('날짜를 선택해주세요.');
+            return;
+        }
+        if (selectedPeriods.length === 0) {
+            alert('교시를 선택해주세요.');
             return;
         }
 
@@ -110,43 +126,35 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
             finalReason = customReason.trim();
         }
 
-        if (confirm(`${selectedUser.name}님의 휴무를 신청하시겠습니까?\n\n날짜: ${selectedDates.join(', ')}\n사유: ${finalReason}`)) {
+        if (confirm(`${selectedUser.name}님의 일정(${finalReason})을 등록하시겠습니까?\n날짜: ${selectedDates.join(', ')}\n교시: ${selectedPeriods.join(', ')}`)) {
             setLoading(true);
             try {
-                // Prepare Insert Payload
-                const inserts = selectedDates.map(date => {
-                    let dbType = 'full';
-                    let periods = null;
-
-                    if (timeType === 'am') {
-                        dbType = 'half';
-                        periods = [1, 2, 3, 4]; // Morning
-                    } else if (timeType === 'pm') {
-                        dbType = 'half';
-                        periods = [5, 6, 7]; // Afternoon
-                    }
-
-                    return {
-                        user_id: selectedUser.id,
-                        type: dbType,
-                        periods: periods,
-                        date: date,
-                        reason: finalReason
-                    };
+                // Prepare Upserts for attendance_logs
+                const upserts = [];
+                selectedDates.forEach(date => {
+                    selectedPeriods.forEach(p => {
+                        upserts.push({
+                            user_id: selectedUser.id,
+                            date: date,
+                            period: p,
+                            status: finalReason
+                        });
+                    });
                 });
 
                 const { error } = await supabase
-                    .from('vacation_requests')
-                    .insert(inserts);
+                    .from('attendance_logs')
+                    .upsert(upserts, { onConflict: 'user_id, date, period' });
 
                 if (error) throw error;
 
-                alert('신청되었습니다.');
+                alert('등록되었습니다.');
                 setSelectedDates([]);
+                setSelectedPeriods([]);
                 fetchHistory(); // Refresh history
             } catch (err) {
                 console.error(err);
-                alert('신청 실패: ' + err.message);
+                alert('등록 실패: ' + err.message);
             } finally {
                 setLoading(false);
             }
@@ -157,7 +165,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
         if (!confirm('정말 삭제하시겠습니까?')) return;
         try {
             const { error } = await supabase
-                .from('vacation_requests')
+                .from('attendance_logs')
                 .delete()
                 .eq('id', id);
 
@@ -235,42 +243,54 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Time Selection */}
+            {/* Period Selection */}
             <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>시간</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    {['full', 'am', 'pm'].map(type => (
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>교시</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                    {[1, 2, 3, 4, 5, 6, 7].map(p => (
                         <button
-                            key={type}
-                            onClick={() => setTimeType(type)}
+                            key={p}
+                            onClick={() => togglePeriod(p)}
                             style={{
-                                flex: 1, padding: '12px', borderRadius: '8px',
-                                border: timeType === type ? '2px solid #3182ce' : '1px solid #e2e8f0',
-                                background: timeType === type ? '#ebf8ff' : 'white',
-                                color: timeType === type ? '#2c5282' : '#a0aec0',
-                                fontWeight: 'bold', cursor: 'pointer'
+                                padding: '12px 0', borderRadius: '8px',
+                                border: selectedPeriods.includes(p) ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                                background: selectedPeriods.includes(p) ? '#ebf8ff' : 'white',
+                                color: selectedPeriods.includes(p) ? '#2c5282' : '#a0aec0',
+                                fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem'
                             }}
                         >
-                            {type === 'full' ? '종일' : type === 'am' ? '오전' : '오후'}
+                            {p}
                         </button>
                     ))}
+                    <button
+                        onClick={() => togglePeriod('all')}
+                        style={{
+                            gridColumn: 'span 7', marginTop: '4px', padding: '10px', borderRadius: '8px',
+                            border: selectedPeriods.length === 7 ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                            background: selectedPeriods.length === 7 ? '#ebf8ff' : 'white',
+                            color: selectedPeriods.length === 7 ? '#2c5282' : '#a0aec0',
+                            fontWeight: 'bold', cursor: 'pointer'
+                        }}
+                    >
+                        전체 선택
+                    </button>
                 </div>
             </div>
 
             {/* Reason Selection */}
             <div style={{ marginBottom: '25px' }}>
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유</label>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                    {['알바', '스터디', '병원'].map(r => (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                    {['알바', '스터디', '병원', '개인'].map(r => (
                         <button
                             key={r}
                             onClick={() => { setReasonType(r); setCustomReason(''); }}
                             style={{
-                                flex: 1, padding: '10px', borderRadius: '8px',
+                                padding: '10px', borderRadius: '8px',
                                 border: reasonType === r ? '2px solid #38a169' : '1px solid #e2e8f0',
                                 background: reasonType === r ? '#f0fff4' : 'white',
                                 color: reasonType === r ? '#276749' : '#a0aec0',
-                                fontWeight: 'bold', cursor: 'pointer'
+                                fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem'
                             }}
                         >
                             {r}
@@ -338,10 +358,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {history.map(item => {
-                            const isAm = (item.periods || []).includes(1);
-                            let label = item.type === 'full' ? '종일' : isAm ? '오전' : '오후';
-                            if (item.reason) label += ` ${item.reason}`;
-
+                            // item is attendance_log: { id, date, period, status }
                             return (
                                 <div key={item.id} style={{
                                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -355,21 +372,21 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
                                         <div style={{ fontSize: '0.9rem', color: '#4a5568' }}>
                                             <span style={{
                                                 display: 'inline-block',
-                                                padding: '2px 6px',
+                                                padding: '2px 8px',
                                                 borderRadius: '4px',
-                                                background: item.type === 'full' ? '#fff5f5' : '#ebf8ff',
-                                                color: item.type === 'full' ? '#c53030' : '#2c5282',
-                                                fontSize: '0.8rem',
+                                                background: '#ebf8ff',
+                                                color: '#2c5282',
+                                                fontSize: '0.85rem',
                                                 marginRight: '6px',
                                                 fontWeight: 'bold'
                                             }}>
-                                                {label}
+                                                {item.status} ({item.period}교시)
                                             </span>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => handleDeleteHistory(item.id)}
-                                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: '#cbd5e0' }}
+                                        style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '8px', color: '#e53e3e' }}
                                     >
                                         <Trash2 size={18} />
                                     </button>
