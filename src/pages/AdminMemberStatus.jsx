@@ -87,8 +87,13 @@ const AdminMemberStatus = ({ onBack }) => {
             console.log('Update result:', data);
 
             setEditingId(null);
+            console.log('Update successful, refreshing list...');
             await fetchUsers();
             alert('수정되었습니다.');
+            // Double check list after alert
+            setTimeout(() => {
+                fetchUsers();
+            }, 500);
         } catch (error) {
             console.error('Update error:', error);
             // Alert detailed error message to help debugging

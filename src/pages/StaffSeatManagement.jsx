@@ -51,9 +51,15 @@ const StaffSeatManagement = ({ onBack }) => {
     };
 
     const handleSeatClick = (seatNum) => {
-        setTargetSeat(seatNum);
-        setIsModalOpen(true);
-        setSearchTerm('');
+        try {
+            console.log('handleSeatClick called for seat:', seatNum);
+            setTargetSeat(seatNum);
+            setSearchTerm('');
+            setIsModalOpen(true);
+        } catch (err) {
+            console.error('Error in handleSeatClick:', err);
+            alert('좌석 선택 중 오류가 발생했습니다: ' + err.message);
+        }
     };
 
     const handleAssignUser = async (user) => {
@@ -104,9 +110,11 @@ const StaffSeatManagement = ({ onBack }) => {
         }
     };
 
-    const filteredUsersForSearch = users.filter(u =>
-        (u.name || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsersForSearch = (users || []).filter(u => {
+        if (!u) return false;
+        const userName = u.name || '';
+        return userName.toLowerCase().includes((searchTerm || '').toLowerCase());
+    });
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -237,14 +245,13 @@ const StaffSeatManagement = ({ onBack }) => {
                 )}
             </div>
 
-            {/* Modal */}
             {isModalOpen && (
                 <div style={{
                     position: 'fixed',
                     top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.5)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    zIndex: 1000
+                    zIndex: 2000 // Higher z-index
                 }}>
                     <div style={{
                         background: 'white',
@@ -252,13 +259,14 @@ const StaffSeatManagement = ({ onBack }) => {
                         borderRadius: '16px',
                         padding: '20px',
                         display: 'flex', flexDirection: 'column',
-                        maxHeight: '80vh'
+                        maxHeight: '80vh',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                             <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>
                                 {targetSeat}번 좌석 배정
                             </h3>
-                            <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                            <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px' }}>
                                 <X size={24} />
                             </button>
                         </div>
@@ -268,7 +276,7 @@ const StaffSeatManagement = ({ onBack }) => {
                             <input
                                 type="text"
                                 placeholder="이름 검색..."
-                                value={searchTerm}
+                                value={searchTerm || ''}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 style={{
                                     width: '100%',
@@ -282,33 +290,40 @@ const StaffSeatManagement = ({ onBack }) => {
                         </div>
 
                         <div style={{ flex: 1, overflowY: 'auto' }}>
-                            {filteredUsersForSearch.map(u => (
-                                <button
-                                    key={u.id}
-                                    onClick={() => handleAssignUser(u)}
-                                    style={{
-                                        width: '100%',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: '12px',
-                                        border: 'none',
-                                        background: u.seat_number ? '#f7fafc' : 'white',
-                                        borderBottom: '1px solid #edf2f7',
-                                        cursor: 'pointer',
-                                        textAlign: 'left'
-                                    }}
-                                    disabled={!!u.seat_number} // Already seated elsewhere
-                                >
-                                    <div>
-                                        <div style={{ fontWeight: 'bold', color: u.seat_number ? '#a0aec0' : '#2d3748' }}>{u.name || '이름 없음'}</div>
-                                        <div style={{ fontSize: '0.8rem', color: '#a0aec0' }}>{u.branch} | {u.role === 'member' ? '회원' : '스탭/관리자'}</div>
-                                    </div>
-                                    {u.seat_number ? (
-                                        <div style={{ fontSize: '0.8rem', color: '#e53e3e' }}>{u.seat_number}번 사용중</div>
-                                    ) : (
-                                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #cbd5e0' }}></div>
-                                    )}
-                                </button>
-                            ))}
+                            {filteredUsersForSearch.length === 0 ? (
+                                <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>검색 결과가 없습니다.</div>
+                            ) : (
+                                filteredUsersForSearch.map(u => {
+                                    if (!u) return null;
+                                    return (
+                                        <button
+                                            key={u.id}
+                                            onClick={() => handleAssignUser(u)}
+                                            style={{
+                                                width: '100%',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                padding: '12px',
+                                                border: 'none',
+                                                background: u.seat_number ? '#f7fafc' : 'white',
+                                                borderBottom: '1px solid #edf2f7',
+                                                cursor: 'pointer',
+                                                textAlign: 'left'
+                                            }}
+                                            disabled={!!u.seat_number}
+                                        >
+                                            <div>
+                                                <div style={{ fontWeight: 'bold', color: u.seat_number ? '#a0aec0' : '#2d3748' }}>{u.name || '이름 없음'}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#a0aec0' }}>{(u.branch || '')} | {u.role === 'member' ? '회원' : '스탭/관리자'}</div>
+                                            </div>
+                                            {u.seat_number ? (
+                                                <div style={{ fontSize: '0.8rem', color: '#e53e3e' }}>{u.seat_number}번 사용중</div>
+                                            ) : (
+                                                <div style={{ width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #cbd5e0' }}></div>
+                                            )}
+                                        </button>
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>
