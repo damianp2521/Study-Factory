@@ -82,8 +82,14 @@ const VacationRequest = () => {
         // 2. Merge
         const all = [...requests, ...attendances];
 
-        // 3. Filter by month
-        const filtered = all.filter(item => isSameMonth(parseISO(item.date), selectedMonth));
+        // 3. Filter by month (String comparison is safer for YYYY-MM-DD)
+        const targetMonth = format(selectedMonth, 'yyyy-MM');
+        const filtered = all.filter(item => item.date.startsWith(targetMonth));
+
+        // Debug log
+        console.log('Target Month:', targetMonth);
+        console.log('All Items:', all.length);
+        console.log('Filtered Items:', filtered.length);
 
         // 4. Sort by date desc, then period asc
         return filtered.sort((a, b) => {
