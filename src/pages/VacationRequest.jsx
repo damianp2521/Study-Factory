@@ -159,7 +159,7 @@ const VacationRequest = () => {
         }
         if (type === 'special') {
             if (!specialReason) {
-                alert('사유(병가/기타)를 선택해주세요.');
+                alert('사유(교시, 스터디 등)를 선택해주세요.');
                 return;
             }
             if (selectedPeriods.length === 0) {
@@ -173,41 +173,58 @@ const VacationRequest = () => {
         else if (type === 'half_am') confirmMsg = `${date}에 오전반차를 신청하시겠습니까?`;
         else if (type === 'half_pm') confirmMsg = `${date}에 오후반차를 신청하시겠습니까?`;
         else if (type === 'half') confirmMsg = `${date}에 ${selectedPeriods.join(', ')}교시 반차를 신청하시겠습니까?`;
-        else confirmMsg = `${date}에 특별휴가(${specialReason}, ${selectedPeriods.length === 7 ? '전체' : selectedPeriods.join(', ') + '교시'})를 신청하시겠습니까?`;
+        else confirmMsg = `${date}에 ${specialReason} (${selectedPeriods.join(', ')}교시) 일정을 등록하시겠습니까?\n(출석부에 즉시 반영됩니다)`;
 
         if (!confirm(confirmMsg)) return;
 
         setLoading(true);
         try {
-            // Transform UI types to DB types
-            let dbType = type;
-            if (type === 'half_am' || type === 'half_pm') {
-                dbType = 'half';
+            if (type === 'special') {
+                // Special: Insert into attendance_logs directly
+                const inserts = selectedPeriods.map(p => ({
+                    user_id: user.id,
+                    date: date,
+                    period: p,
+                    status: specialReason
+                }));
+
+                const { error } = await supabase
+                    .from('attendance_logs')
+                    .upsert(inserts, { onConflict: 'user_id, date, period' }); // Upsert to overwrite
+
+                if (error) throw error;
+
+            } else {
+                // Full/Half: Insert into vacation_requests
+                let dbType = type;
+                if (type === 'half_am' || type === 'half_pm') {
+                    dbType = 'half';
+                }
+
+                const payload = {
+                    user_id: user.id,
+                    type: dbType,
+                    date,
+                    periods: (dbType === 'half') ? selectedPeriods : null,
+                    reason: null // Full/Half usually don't have reason
+                };
+
+                const { error } = await supabase
+                    .from('vacation_requests')
+                    .insert([payload]);
+
+                if (error) throw error;
             }
 
-            const payload = {
-                user_id: user.id,
-                type: dbType,
-                date,
-                periods: (dbType === 'half' || dbType === 'special') ? selectedPeriods : null,
-                reason: dbType === 'special' ? specialReason : null
-            };
-
-            const { error } = await supabase
-                .from('vacation_requests')
-                .insert([payload]);
-
-            if (error) throw error;
-
-            alert('휴가 신청이 완료되었습니다.');
+            alert('신청이 완료되었습니다.');
             setViewMode('history');
             setDate('');
             setSelectedPeriods([]);
             setSpecialReason('');
             setType('full');
         } catch (err) {
-            console.error('Error submitting vacation request:', err);
-            alert('신청에 실패했습니다. (DB 업데이트가 필요할 수 있습니다)');
+            console.error('Error submitting request:', err);
+            alert('신청에 실패했습니다.');
         } finally {
             setLoading(false);
         }
@@ -380,49 +397,55 @@ const VacationRequest = () => {
                             <div className="fade-in">
                                 <label style={{ display: 'block', marginBottom: '10px', fontWeight: 'bold', color: 'var(--color-text-main)' }}>
                                     <Clock size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-                                    쉬고 싶은 교시 선택
-                                    {type === 'half' && <span style={{ fontSize: '0.85rem', color: '#e53e3e', fontWeight: 'normal', marginLeft: '5px' }}>(최대 4개)</span>}
+                                    {type === 'half' ? '반차 사용 교시 (최대 4개)' : '일정 등록 교시'}
                                 </label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: type === 'special' ? 'repeat(7, 1fr)' : 'repeat(4, 1fr)',
+                                    gap: '5px'
+                                }}>
                                     {periodOptions.map((p) => (
                                         <button
                                             key={p}
                                             onClick={() => togglePeriod(p)}
                                             style={{
-                                                padding: '15px 0',
-                                                borderRadius: '12px',
+                                                padding: '12px 0',
+                                                borderRadius: '8px',
                                                 border: selectedPeriods.includes(p) ? '2px solid var(--color-primary)' : '1px solid #e2e8f0',
                                                 background: selectedPeriods.includes(p) ? '#ebf8ff' : 'white',
                                                 color: selectedPeriods.includes(p) ? 'var(--color-primary)' : '#4a5568',
                                                 fontWeight: 'bold',
                                                 cursor: 'pointer',
+                                                fontSize: '0.9rem',
                                                 transition: 'all 0.1s'
                                             }}
                                         >
-                                            {p}교시
+                                            {p}
                                         </button>
                                     ))}
-                                    {/* 'All' Button for Special Leave */}
+                                    {/* 'All' Button for Special Leave (Full Width below) */}
                                     {type === 'special' && (
                                         <button
                                             onClick={() => togglePeriod('all')}
                                             style={{
-                                                padding: '15px 0',
-                                                borderRadius: '12px',
-                                                border: selectedPeriods.length === 7 ? '2px solid var(--color-primary)' : '1px solid #e2e8f0', // Highlight if all are selected
+                                                gridColumn: 'span 7',
+                                                marginTop: '5px',
+                                                padding: '10px 0',
+                                                borderRadius: '8px',
+                                                border: selectedPeriods.length === 7 ? '2px solid var(--color-primary)' : '1px solid #e2e8f0',
                                                 background: selectedPeriods.length === 7 ? '#ebf8ff' : 'white',
-                                                color: selectedPeriods.length === 7 ? 'var(--color-primary)' : '#4a5568',
+                                                color: selectedPeriods.length === 7 ? 'var(--color-primary)' : '#718096',
                                                 fontWeight: 'bold',
                                                 cursor: 'pointer',
-                                                transition: 'all 0.1s'
+                                                fontSize: '0.9rem'
                                             }}
                                         >
-                                            전체
+                                            전체 선택 (1~7교시)
                                         </button>
                                     )}
                                 </div>
                                 {type === 'half' && (
-                                    <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#718096' }}>
+                                    <p style={{ marginTop: '10px', fontSize: '0.85rem', color: '#718096' }}>
                                         * 하루 최소 3교시는 근무해야 합니다.
                                     </p>
                                 )}
@@ -436,21 +459,21 @@ const VacationRequest = () => {
                                     <CheckCircle size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
                                     사유 선택
                                 </label>
-                                <div style={{ display: 'flex', gap: '15px' }}>
-                                    {['병가', '기타'].map((r) => (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                                    {['알바', '스터디', '병원', '개인'].map((r) => (
                                         <button
                                             key={r}
                                             onClick={() => setSpecialReason(r)}
                                             style={{
-                                                flex: 1,
-                                                padding: '15px 0',
+                                                padding: '12px 0',
                                                 borderRadius: '12px',
                                                 border: specialReason === r ? '2px solid var(--color-primary)' : '1px solid #e2e8f0',
                                                 background: specialReason === r ? '#ebf8ff' : 'white',
                                                 color: specialReason === r ? 'var(--color-primary)' : '#4a5568',
                                                 fontWeight: 'bold',
                                                 cursor: 'pointer',
-                                                transition: 'all 0.1s'
+                                                transition: 'all 0.1s',
+                                                fontSize: '0.9rem'
                                             }}
                                         >
                                             {r}
