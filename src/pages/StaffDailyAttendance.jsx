@@ -392,29 +392,31 @@ const StaffDailyAttendance = ({ onBack }) => {
         }
     };
 
-    const getSeatStyle = (seatNum) => {
-        let borderBottom = '1px solid #edf2f7';
-        let bgColor = 'white';
+    // Separator row configuration
+    const TEAL_SEPARATOR_SEATS = [54, 102]; // 청록색 두꺼운 구분선 (열람실 구분)
+    const THICK_SEPARATOR_SEATS = [7, 17, 22, 27, 32, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
+    const THIN_SEPARATOR_SEATS = [9, 11, 13, 15, 50];
 
-        // Ensure seatNum is a number for comparison
+    const getSeparatorStyle = (seatNum) => {
         const numericSeat = Number(seatNum);
-
-        // Separator Logic
-        const thickBorderSeats = [7, 17, 22, 27, 32, 42, 47, 52, 58, 62, 66, 70, 74, 78, 82, 83, 87, 90, 93, 96, 99];
-        const thinBorderSeats = [9, 11, 13, 15, 50];
-
-        if (numericSeat === 54 || numericSeat === 102) {
-            borderBottom = '4px solid #267E82'; // Separate Study Rooms (Very Thick Teal)
-        } else if (thickBorderSeats.includes(numericSeat)) {
-            borderBottom = '3px solid #718096';
-        } else if (thinBorderSeats.includes(numericSeat)) {
-            borderBottom = '1px solid #718096'; // Visible Thin Line
+        if (TEAL_SEPARATOR_SEATS.includes(numericSeat)) {
+            return { height: 6, color: '#267E82' }; // 청록색
+        } else if (THICK_SEPARATOR_SEATS.includes(numericSeat)) {
+            return { height: 4, color: '#718096' }; // 두꺼운 회색
+        } else if (THIN_SEPARATOR_SEATS.includes(numericSeat)) {
+            return { height: 2, color: '#a0aec0' }; // 얇은 회색
         }
+        return null;
+    };
+
+    const getSeatStyle = (seatNum) => {
+        let bgColor = 'white';
+        const numericSeat = Number(seatNum);
 
         if (numericSeat >= 8 && numericSeat <= 17) bgColor = '#edf2f7';
         else if (numericSeat === 53 || numericSeat === 54) bgColor = '#cbd5e0';
         else if (numericSeat === 83) bgColor = '#fed7d7';
-        return { borderBottom, bgColor };
+        return { bgColor };
     };
 
     return (
@@ -497,34 +499,40 @@ const StaffDailyAttendance = ({ onBack }) => {
                             const isDeactivated = user.isEmpty || user.isUnassigned;
                             const isRowHighlighted = highlightedSeat === user.seat_number && !isDeactivated;
                             const isAnyHighlighted = highlightedSeat !== null;
-                            const { borderBottom, bgColor } = getSeatStyle(user.seat_number);
+                            const { bgColor } = getSeatStyle(user.seat_number);
                             let rowOpacity = isAnyHighlighted ? (isRowHighlighted ? 1 : 0.4) : 1;
                             let stickyBg = isRowHighlighted ? '#ebf8ff' : (isDeactivated ? '#f7fafc' : bgColor);
+                            const separatorStyle = getSeparatorStyle(user.seat_number);
 
                             return (
-                                <div
-                                    key={user.id}
-                                    ref={el => rowRefs.current[user.seat_number] = el}
-                                    style={{ display: 'flex', height: ROW_HEIGHT, borderBottom, opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
-                                >
-                                    {/* Sticky Name/Seat */}
-                                    <div style={{ position: 'sticky', left: 0, zIndex: 10, display: 'flex', boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)', alignItems: 'flex-start', backgroundColor: stickyBg, height: '100%' }}>
-                                        {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />}
-                                        <div style={{ width: SEAT_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem` }}>{user.seat_number || '-'}</div>
-                                        <div onClick={() => handleNameClick(user.seat_number)} style={{ width: NAME_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: '#2d3748', fontSize: `${0.9 * scale}rem`, fontWeight: isDeactivated ? 'normal' : 'bold', cursor: isDeactivated ? 'default' : 'pointer' }}>{user.name}</div>
+                                <React.Fragment key={user.id}>
+                                    <div
+                                        ref={el => rowRefs.current[user.seat_number] = el}
+                                        style={{ display: 'flex', height: ROW_HEIGHT, borderBottom: '1px solid #edf2f7', opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
+                                    >
+                                        {/* Sticky Name/Seat */}
+                                        <div style={{ position: 'sticky', left: 0, zIndex: 10, display: 'flex', boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)', alignItems: 'flex-start', backgroundColor: stickyBg, height: '100%' }}>
+                                            {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />}
+                                            <div style={{ width: SEAT_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem` }}>{user.seat_number || '-'}</div>
+                                            <div onClick={() => handleNameClick(user.seat_number)} style={{ width: NAME_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: '#2d3748', fontSize: `${0.9 * scale}rem`, fontWeight: isDeactivated ? 'normal' : 'bold', cursor: isDeactivated ? 'default' : 'pointer' }}>{user.name}</div>
+                                        </div>
+                                        {/* Scrollable Day Data */}
+                                        <div style={{ display: 'flex', position: 'relative' }}>
+                                            {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />}
+                                            {daysInView.map(date => (
+                                                <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
+                                                    {[1, 2, 3, 4, 5, 6, 7].map(p => (
+                                                        <AttendanceCell key={p} user={user} dateStr={format(date, 'yyyy-MM-dd')} period={p} isRowHighlighted={isRowHighlighted} attendanceData={attendanceData} vacationData={vacationData} toggleAttendance={toggleAttendance} width={PERIOD_WIDTH} scale={scale} />
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                    {/* Scrollable Day Data */}
-                                    <div style={{ display: 'flex', position: 'relative' }}>
-                                        {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />}
-                                        {daysInView.map(date => (
-                                            <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
-                                                {[1, 2, 3, 4, 5, 6, 7].map(p => (
-                                                    <AttendanceCell key={p} user={user} dateStr={format(date, 'yyyy-MM-dd')} period={p} isRowHighlighted={isRowHighlighted} attendanceData={attendanceData} vacationData={vacationData} toggleAttendance={toggleAttendance} width={PERIOD_WIDTH} scale={scale} />
-                                                ))}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                                    {/* Separator Row */}
+                                    {separatorStyle && (
+                                        <div style={{ height: separatorStyle.height, backgroundColor: separatorStyle.color, width: '100%' }} />
+                                    )}
+                                </React.Fragment>
                             );
                         })}
                     </div>
