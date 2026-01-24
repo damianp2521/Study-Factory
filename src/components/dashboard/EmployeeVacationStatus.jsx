@@ -190,7 +190,7 @@ div::-webkit-scrollbar {
                             let color = '#c53030'; // Red
                             let bg = '#fff5f5';
 
-                            const isAm = (req.periods || []).includes(1);
+                            let isAm = (req.periods || []).includes(1);
 
                             if (req.type === 'half') {
                                 if (isAm) {
@@ -202,12 +202,16 @@ div::-webkit-scrollbar {
                                     color = '#2c5282'; // Blue
                                     bg = '#ebf8ff';
                                 }
+                            } else if (req.type === 'special_log') {
+                                typeLabel = `1교시 ${req.reason}`;
+                                color = '#c53030'; // Red (Morning Style)
+                                bg = '#fff5f5';
                             }
 
-                            // Reason override
+                            // Reason override (for normal vacations)
                             let displayLabel = typeLabel;
-                            if (req.reason) {
-                                // "Other Leave" logic
+                            if (req.reason && req.type !== 'special_log') {
+                                // "Other Leave" logic for vacations
                                 if (req.type === 'full') {
                                     displayLabel = `종일 ${req.reason}`;
                                 } else if (req.type === 'half') {

@@ -67,15 +67,51 @@ export const useVacationStatus = () => {
     const fetchVacations = useCallback(async () => {
         setLoading(true);
         try {
-            // 1. Fetch requests for the selected date
-            let query = supabase
-                .from('vacation_requests')
-                .select('*, profiles:user_id(name, branch), reason')
-                .eq('date', selectedDate)
-                .order('created_at', { ascending: false });
+            // 1. Parallel Fetch: Vacation Requests AND Attendance Logs
+            const [vacRes, logRes] = await Promise.all([
+                supabase
+                    .from('vacation_requests')
+                    .select('*, profiles:user_id(name, branch), reason')
+                    .eq('date', selectedDate)
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('attendance_logs')
+                    .select('user_id, status, profiles:user_id(name, branch)')
+                    .eq('date', selectedDate)
+                    .eq('period', 1)
+                    .not('status', 'is', null)
+            ]);
 
-            const { data, error } = await query;
-            if (error) throw error;
+            if (vacRes.error) throw vacRes.error;
+            if (logRes.error) throw logRes.error;
+
+            const vacData = vacRes.data || [];
+            const logData = logRes.data || [];
+
+            // Transform logs to vacation shape
+            const formattedLogs = logData.map(log => ({
+                id: `log_${log.user_id}`,
+                user_id: log.user_id,
+                type: 'special_log', // Custom type to distinguish
+                periods: [1],
+                reason: log.status,
+                profiles: log.profiles,
+                created_at: null // Logs don't typically have created_at for this view
+            }));
+
+            // Merge (Unique by user_id preference?)
+            // If a user has both, usually Vacation Request should take precedence if it covers the same time?
+            // "Special Leave" (attendance log) is "1교시".
+            // A "Full Day Vacation" covers 1교시.
+            // If I have full day vac, I don't need to show "1교시 Alba" separately?
+            // Existing logic: vacation_requests are definitive.
+            // Logs are now the ONLY way Special Leaves exist.
+            // So we treat them as additive.
+            // But let's filter out duplicates if any (e.g. if user matches both lists).
+            const vacUserIds = new Set(vacData.map(v => v.user_id));
+            const distinctLogs = formattedLogs.filter(l => !vacUserIds.has(l.user_id));
+
+            const combinedData = [...vacData, ...distinctLogs];
 
             // 2. Fetch Weekly Data for Limit Check
             const { start, end } = getWeekRange(selectedDate);
@@ -100,7 +136,7 @@ export const useVacationStatus = () => {
             setWeeklyUsage(usageMap);
 
             // 3. Client-side Filter by Branch and Type
-            const filtered = data.filter(req => {
+            const filtered = combinedData.filter(req => {
                 // Branch Filter
                 if (selectedBranch !== '전체' && req.profiles?.branch !== selectedBranch) return false;
 
@@ -110,6 +146,9 @@ export const useVacationStatus = () => {
                     const p = req.periods || [];
                     if (p.includes(1)) typeKey = 'half_am';
                     else typeKey = 'half_pm';
+                } else if (req.type === 'special_log') {
+                    // Treat special log (Period 1) as Morning
+                    typeKey = 'half_am';
                 }
 
                 return filters[typeKey];
