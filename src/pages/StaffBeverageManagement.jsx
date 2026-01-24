@@ -48,7 +48,7 @@ const StaffBeverageManagement = ({ onBack }) => {
     const fetchUsersAndSelections = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Users in Branch
+            // 1. Fetch Users in Branch (ID synchronized with profiles)
             const { data: userData, error: userError } = await supabase
                 .from('authorized_users')
                 .select('*')

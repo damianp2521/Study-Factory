@@ -33,9 +33,9 @@ const StaffBeverageOrderList = ({ onBack }) => {
         try {
             const today = date;
 
-            // 1. Fetch Users in Branch (Seated) - use profiles table since beverage selections are linked to profiles
+            // 1. Fetch Users in Branch (Seated) - ID synchronized with profiles
             const { data: userData, error: userError } = await supabase
-                .from('profiles')
+                .from('authorized_users')
                 .select('id, name, seat_number')
                 .eq('branch', selectedBranch)
                 .not('seat_number', 'is', null) // Only seated
