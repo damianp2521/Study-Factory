@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronLeft, Calendar, ClipboardList, UserPlus, UserCheck, MapPin, Coffee } from 'lucide-react';
 import { useDashboardNavigation } from '../../hooks/useDashboardNavigation';
+import { useAuth } from '../../context/AuthContext';
 
 import EmployeeVacationStatus from './EmployeeVacationStatus';
 import StaffTaskBoard from '../../pages/StaffTaskBoard';
@@ -10,9 +11,13 @@ import StaffSeatManagement from '../../pages/StaffSeatManagement';
 import StaffBeverageManagement from '../../pages/StaffBeverageManagement';
 import StaffBeverageOrderList from '../../pages/StaffBeverageOrderList';
 import StaffDailyAttendance from '../../pages/StaffDailyAttendance';
+import AdminVacationDetails from '../AdminVacationDetails';
 
 const StaffGridMenu = () => {
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
+    const { user } = useAuth();
+    const [selectedMember, setSelectedMember] = useState(null);
+    const isAdmin = user?.role === 'admin';
 
     // Helper to wrap content with padding
     const renderWithPadding = (component) => (
@@ -23,7 +28,25 @@ const StaffGridMenu = () => {
 
     // Sub-views
     if (currentView === 'employee_vacation') {
-        // Staff: No interaction on member click (only viewing)
+        // If a member is selected (admin only), show their vacation details
+        if (selectedMember && isAdmin) {
+            return renderWithPadding(
+                <AdminVacationDetails
+                    user={selectedMember}
+                    onBack={() => setSelectedMember(null)}
+                />
+            );
+        }
+
+        // Admin: click shows member details, Staff: no interaction
+        const handleUserClick = isAdmin ? (memberData) => {
+            setSelectedMember({
+                id: memberData.id,
+                name: memberData.name,
+                branch: memberData.branch
+            });
+        } : undefined;
+
         return renderWithPadding(
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
@@ -33,7 +56,7 @@ const StaffGridMenu = () => {
                     <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>일별 사원 휴무 현황</h3>
                 </div>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <EmployeeVacationStatus />
+                    <EmployeeVacationStatus onUserClick={handleUserClick} />
                 </div>
             </div>
         );
