@@ -27,7 +27,7 @@ const StaffGridMenu = () => {
     if (currentView === 'employee_vacation') {
         const handleUserClick = (user) => {
             // Navigate to monthly vacation status page with selected user
-            navigate(`/monthly-leave-status?userId=${user.id}`);
+            navigate(`/admin/monthly-leaves?userId=${user.id}`);
         };
         return renderWithPadding(
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
