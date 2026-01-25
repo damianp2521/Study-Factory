@@ -719,29 +719,27 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
     }
 
     return (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', height: '100%', overflow: 'hidden' }}>
-            {/* Compact Table Container */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Compact Table Container - No Scroll */}
             <div style={{
-                flex: 1,
-                overflowX: 'auto',
-                overflowY: 'auto',
                 background: 'white',
                 borderRadius: '12px',
                 border: '1px solid #e2e8f0',
-                padding: '5px'
+                padding: '5px',
+                overflow: 'hidden' // Force no scroll
             }}>
                 <table style={{
-                    minWidth: '100%',
-                    width: 'max-content',
+                    width: '100%',
                     borderCollapse: 'collapse',
-                    fontSize: '0.9rem',
+                    fontSize: '0.7rem', // Smaller font to fit
+                    tableLayout: 'fixed' // Force columns to fit width
                 }}>
                     <thead>
                         <tr>
-                            <th style={{ width: '60px', padding: '10px 4px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7', position: 'sticky', left: 0, background: 'white', zIndex: 10 }}>시간</th>
-                            <th style={{ width: '70px', padding: '10px 4px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7', position: 'sticky', left: 60, background: 'white', zIndex: 10 }}>업무</th>
+                            <th style={{ width: '12%', padding: '8px 2px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7', wordBreak: 'keep-all' }}>시간</th>
+                            <th style={{ width: '15%', padding: '8px 2px', borderBottom: '2px solid #edf2f7', borderRight: '1px solid #edf2f7', wordBreak: 'keep-all' }}>업무</th>
                             {days.map(d => (
-                                <th key={d} style={{ padding: '10px 2px', minWidth: '80px', borderBottom: '2px solid #edf2f7', backgroundColor: '#f8fafc' }}>{d}</th>
+                                <th key={d} style={{ padding: '8px 0', borderBottom: '2px solid #edf2f7', backgroundColor: '#f8fafc' }}>{d}</th>
                             ))}
                         </tr>
                     </thead>
@@ -757,18 +755,18 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
                                                 borderRight: '1px solid #edf2f7',
                                                 borderBottom: sIdx === 0 ? '2px solid #edf2f7' : 'none',
                                                 backgroundColor: '#f8fafc',
-                                                position: 'sticky', left: 0, zIndex: 10
+                                                verticalAlign: 'middle'
                                             }}>
                                                 {s.label}
                                             </td>
                                         )}
                                         <td style={{
                                             textAlign: 'center',
-                                            padding: '10px 4px',
+                                            padding: '4px 0',
                                             borderRight: '1px solid #edf2f7',
                                             color: '#718096',
                                             borderBottom: rIdx === 0 ? '1px solid #f7fafc' : (sIdx === 0 ? '2px solid #edf2f7' : 'none'),
-                                            position: 'sticky', left: 60, backgroundColor: 'white', zIndex: 10
+                                            verticalAlign: 'middle'
                                         }}>
                                             {r.label}
                                         </td>
@@ -778,9 +776,10 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
 
                                             return (
                                                 <td key={dIdx} style={{
-                                                    padding: '4px',
+                                                    padding: '2px',
                                                     borderBottom: rIdx === 0 ? '1px solid #f7fafc' : (sIdx === 0 ? '2px solid #edf2f7' : 'none'),
-                                                    textAlign: 'center'
+                                                    textAlign: 'center',
+                                                    verticalAlign: 'middle'
                                                 }}>
                                                     {isAssignmentMode ? (
                                                         <select
@@ -788,16 +787,16 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
                                                             onChange={(e) => handleUpdateAssignment(dIdx, s.key, r.key, e.target.value)}
                                                             style={{
                                                                 width: '100%',
-                                                                minWidth: '90px',
-                                                                padding: '6px 2px',
-                                                                borderRadius: '6px',
+                                                                padding: '4px 0',
+                                                                borderRadius: '4px',
                                                                 border: '1px solid #e2e8f0',
-                                                                fontSize: '0.85rem',
+                                                                fontSize: '0.7rem',
                                                                 backgroundColor: hasName ? '#ebf8ff' : '#f8fafc',
                                                                 color: hasName ? '#2b6cb0' : '#a0aec0',
                                                                 cursor: 'pointer',
                                                                 outline: 'none',
-                                                                textAlign: 'center'
+                                                                textAlign: 'center',
+                                                                textIndent: '2px'
                                                             }}
                                                         >
                                                             <option value="미지정">-</option>
@@ -807,13 +806,13 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
                                                         </select>
                                                     ) : (
                                                         <div style={{
-                                                            fontSize: '0.9rem',
+                                                            fontSize: '0.7rem', // Consistent small font
                                                             fontWeight: hasName ? 'bold' : 'normal',
-                                                            color: hasName ? '#2b6cb0' : '#a0aec0',
-                                                            padding: '6px 4px',
-                                                            whiteSpace: 'nowrap',
-                                                            minWidth: '80px',
-                                                            display: 'block'
+                                                            color: hasName ? '#2b6cb0' : '#e2e8f0', // Lighter color for empty dash
+                                                            padding: '4px 0',
+                                                            whiteSpace: 'normal', // Allow wrap if really tight
+                                                            wordBreak: 'keep-all', // Try not to break words if possible
+                                                            lineHeight: '1.2'
                                                         }}>
                                                             {hasName ? assignment.staff_name : '-'}
                                                         </div>
@@ -829,8 +828,8 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
                 </table>
             </div>
             {/* Legend or Note */}
-            <div style={{ fontSize: '0.8rem', color: '#718096', textAlign: 'right', marginTop: '-5px' }}>
-                * 월~금 평일 근무표입니다. (주말 제외)
+            <div style={{ fontSize: '0.75rem', color: '#718096', textAlign: 'right', marginTop: '-5px' }}>
+                * 월~금 평일 근무표 (주말 제외)
             </div>
         </div>
     );
