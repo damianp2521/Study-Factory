@@ -11,12 +11,25 @@ import StaffTaskBoard from '../pages/StaffTaskBoard'; // 스탭 업무 현황
 
 const ManagerDashboard = () => {
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+    const isAdmin = user?.role === 'admin';
 
-    // Default to '출석부' (Index 1)
+    const allItems = [
+        { title: '관리자 페이지', component: <AdminQuickMenu />, role: 'admin' },
+        { title: '출석부', component: <StaffDailyAttendance />, role: 'any' },
+        { title: '스탭 업무 현황', component: <StaffTaskBoard />, role: 'any' },
+        { title: '스탭 페이지', component: <StaffGridMenu />, role: 'any' },
+    ];
+
+    const items = allItems.filter(item => item.role === 'any' || (item.role === 'admin' && isAdmin));
+
+    // Default to '출석부'
     const [activeIndex, setActiveIndex] = useState(() => {
         const saved = localStorage.getItem('manager_dashboard_index');
-        return saved ? parseInt(saved, 10) : 1;
+        let initialIndex = saved ? parseInt(saved, 10) : (isAdmin ? 1 : 0);
+
+        if (initialIndex >= items.length) return 0;
+        return initialIndex;
     });
 
     // Save to LocalStorage whenever index changes
@@ -24,12 +37,12 @@ const ManagerDashboard = () => {
         localStorage.setItem('manager_dashboard_index', activeIndex);
     }, [activeIndex]);
 
-    const items = [
-        { title: '관리자 페이지', component: <AdminQuickMenu /> },
-        { title: '출석부', component: <StaffDailyAttendance /> },
-        { title: '스탭 업무 현황', component: <StaffTaskBoard /> },
-        { title: '스탭 페이지', component: <StaffGridMenu /> },
-    ];
+    // Handle case where activeIndex might become invalid after filter
+    useEffect(() => {
+        if (activeIndex >= items.length) {
+            setActiveIndex(0);
+        }
+    }, [items.length]);
 
     const handleLogout = async () => {
         try {
