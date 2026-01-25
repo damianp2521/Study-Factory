@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, Search, User, X, Check } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
@@ -245,13 +246,13 @@ const StaffSeatManagement = ({ onBack }) => {
                 )}
             </div>
 
-            {isModalOpen && (
+            {isModalOpen && createPortal(
                 <div style={{
                     position: 'fixed',
                     top: 0, left: 0, right: 0, bottom: 0,
                     background: 'rgba(0,0,0,0.5)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    zIndex: 2000 // Higher z-index
+                    zIndex: 9999 // Even higher z-index for portal
                 }}>
                     <div style={{
                         background: 'white',
@@ -326,7 +327,8 @@ const StaffSeatManagement = ({ onBack }) => {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

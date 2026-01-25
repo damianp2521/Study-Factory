@@ -1044,14 +1044,13 @@ const StaffAttendance = ({ onBack }) => {
             )}
 
             {/* Daily Memos Modal ... */}
-            {showMemoModal && (
+            {showMemoModal && createPortal(
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.5)', zIndex: 100,
+                    background: 'rgba(0,0,0,0.5)', zIndex: 9999,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     padding: '20px'
                 }}>
-                    {/* ... same modal ... */}
                     <div style={{
                         background: 'white', borderRadius: '16px', width: '100%', maxWidth: '400px', maxHeight: '80vh',
                         display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
@@ -1081,7 +1080,8 @@ const StaffAttendance = ({ onBack }) => {
                             <button onClick={() => { addDailyMemo(newMemo.trim()); setNewMemo(''); }} style={{ background: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', padding: '0 20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><Plus size={18} />등록</button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Status Selection Popup */}

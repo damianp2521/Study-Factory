@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, Plus, Trash2, Settings, X, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
@@ -332,10 +333,10 @@ const StaffBeverageManagement = ({ onBack }) => {
             </div>
 
             {/* Menu Settings Modal */}
-            {isSettingsOpen && (
+            {isSettingsOpen && createPortal(
                 <div style={{
                     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.5)', zIndex: 2000,
+                    background: 'rgba(0,0,0,0.5)', zIndex: 9999,
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
                     <div style={{
@@ -394,7 +395,8 @@ const StaffBeverageManagement = ({ onBack }) => {
                             )}
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
