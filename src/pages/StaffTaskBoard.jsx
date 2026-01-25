@@ -827,10 +827,6 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
                     </tbody>
                 </table>
             </div>
-            {/* Legend or Note */}
-            <div style={{ fontSize: '0.75rem', color: '#718096', textAlign: 'right', marginTop: '-5px' }}>
-                * 월~금 평일 근무표 (주말 제외)
-            </div>
         </div>
     );
 };
