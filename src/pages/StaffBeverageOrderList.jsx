@@ -211,32 +211,9 @@ const StaffBeverageOrderList = ({ onBack }) => {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px', marginBottom: '20px' }}>
                             {orders.map((order, idx) => {
                                 const theme = cardColors[idx % cardColors.length];
-                                return (
-                                    <div key={order.name} style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                        <div style={{
-                                            background: theme.header,
-                                            color: 'white',
-                                            padding: '10px',
-                                            textAlign: 'center',
-                                            fontWeight: 'bold',
-                                            fontSize: '1rem'
-                                        }}>
-                                            {order.name} <span style={{ fontSize: '1.1rem', marginLeft: '5px' }}>({order.count}잔)</span>
-                                        </div>
-                                        <div style={{
-                                            background: theme.body,
-                                            color: theme.text,
-                                            padding: '10px',
-                                            minHeight: '100px',
-                                            fontSize: '0.9rem',
-                                            lineHeight: '1.5'
-                                        }}>
-                                            {order.users.map((u, i) => (
-                                                <div key={i}>{u}</div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
+                                // Create a unique key for state tracking if needed, or manage state locally in a sub-component
+                                // Simpler approach: Create a local sub-component or use useState with an object
+                                return <BeverageCard key={order.name} order={order} theme={theme} />;
                             })}
                             {orders.length === 0 && (
                                 <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px', color: '#a0aec0' }}>
@@ -257,6 +234,55 @@ const StaffBeverageOrderList = ({ onBack }) => {
                     </>
                 )}
             </div>
+        </div>
+    );
+};
+
+const BeverageCard = ({ order, theme }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <div
+                onClick={() => setIsExpanded(!isExpanded)}
+                style={{
+                    background: theme.header,
+                    color: 'white',
+                    padding: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    cursor: 'pointer',
+                    position: 'relative'
+                }}>
+                <span>{order.name} <span style={{ fontSize: '1.1rem', marginLeft: '5px' }}>({order.count})</span></span>
+                <div style={{ position: 'absolute', right: '10px', display: 'flex', alignItems: 'center' }}>
+                    <svg
+                        width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                    >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+            </div>
+
+            {isExpanded && (
+                <div style={{
+                    background: theme.body,
+                    color: theme.text,
+                    padding: '10px',
+                    minHeight: '50px',
+                    fontSize: '0.9rem',
+                    lineHeight: '1.5',
+                    borderTop: `1px solid ${theme.header}40`
+                }}>
+                    {order.users.map((u, i) => (
+                        <div key={i}>{u}</div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
