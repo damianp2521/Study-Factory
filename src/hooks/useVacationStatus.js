@@ -78,7 +78,7 @@ export const useVacationStatus = () => {
                     .from('attendance_logs')
                     .select('user_id, status, created_at, profiles:user_id(name, branch)')
                     .eq('date', selectedDate)
-                    .eq('period', 1)
+                    // .eq('period', 1) // Removed to fetch all periods
                     .not('status', 'is', null)
             ]);
 
@@ -93,7 +93,7 @@ export const useVacationStatus = () => {
                 id: `log_${log.user_id}`,
                 user_id: log.user_id,
                 type: 'special_log', // Custom type to distinguish
-                periods: [1],
+                periods: [log.period], // Use actual period
                 reason: log.status,
                 profiles: log.profiles,
                 created_at: log.created_at // Use actual created_at
@@ -108,8 +108,19 @@ export const useVacationStatus = () => {
             // Logs are now the ONLY way Special Leaves exist.
             // So we treat them as additive.
             // But let's filter out duplicates if any (e.g. if user matches both lists).
+            // Merge Logic:
+            // Allow logs to appear alongside vacations unless redundant.
             const vacUserIds = new Set(vacData.map(v => v.user_id));
-            const distinctLogs = formattedLogs.filter(l => !vacUserIds.has(l.user_id));
+            const distinctLogs = formattedLogs.filter(l => {
+                const hasVacation = vacUserIds.has(l.user_id);
+                if (!hasVacation) return true;
+
+                // If user has vacation, filter out generic/redundant statuses
+                const redundantStatuses = ['월차', '반차', '오전', '오후', '출석', '결석', 'O', 'X'];
+                if (redundantStatuses.includes(l.reason)) return false;
+
+                return true;
+            });
 
             const combinedData = [...vacData, ...distinctLogs];
 
@@ -147,8 +158,10 @@ export const useVacationStatus = () => {
                     if (p.includes(1)) typeKey = 'half_am';
                     else typeKey = 'half_pm';
                 } else if (req.type === 'special_log') {
-                    // Treat special log (Period 1) as Morning
-                    typeKey = 'half_am';
+                    // Check period for AM/PM classification
+                    const p = req.periods ? req.periods[0] : 1;
+                    if (p === 1) typeKey = 'half_am';
+                    else typeKey = 'half_pm'; // Periods 2-7 -> PM
                 }
 
                 return filters[typeKey];

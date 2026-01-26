@@ -203,9 +203,16 @@ div::-webkit-scrollbar {
                                     bg = '#ebf8ff';
                                 }
                             } else if (req.type === 'special_log') {
-                                typeLabel = `1교시 ${req.reason}`;
-                                color = '#c53030'; // Red (Morning Style)
-                                bg = '#fff5f5';
+                                const p = req.periods ? req.periods[0] : 1;
+                                typeLabel = `${p}교시 ${req.reason}`;
+
+                                if (p === 1) {
+                                    color = '#c53030'; // Red (Morning Style)
+                                    bg = '#fff5f5';
+                                } else {
+                                    color = '#2c5282'; // Blue (Afternoon Style)
+                                    bg = '#ebf8ff';
+                                }
                             }
 
                             // Reason override (for normal vacations)
