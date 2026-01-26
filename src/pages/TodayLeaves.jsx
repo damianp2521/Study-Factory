@@ -88,9 +88,20 @@ const TodayLeaves = () => {
             // "Full/Half" is in requests.
             // So they should be distinct sets mostly.
 
-            // Check for duplicates just in case
-            const existingUserIds = new Set(results.map(r => r.user_id));
-            const newLogItems = logItems.filter(item => !existingUserIds.has(item.user_id));
+            // Improved Merge Logic:
+            // Allow logs to appear even if user has vacation, UNLESS it's a redundant label (e.g. '월차', '반차').
+            // This ensures specific statuses like '병원', '지각' appear alongside or independent of vacations.
+            const vacationUserIds = new Set(results.map(r => r.user_id));
+            const newLogItems = logItems.filter(item => {
+                const hasVacation = vacationUserIds.has(item.user_id);
+                if (!hasVacation) return true; // Show if no vacation
+
+                // If user has vacation, filter out generic/redundant statuses
+                const redundantStatuses = ['월차', '반차', '오전', '오후', '출석', '결석', 'O', 'X'];
+                if (redundantStatuses.includes(item.reason)) return false;
+
+                return true; // Show specific statuses (Late, Hospital, etc.)
+            });
 
             results = [...results, ...newLogItems];
 
