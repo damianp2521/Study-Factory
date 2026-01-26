@@ -55,6 +55,44 @@ const StatusPopup = ({ onSelect, onClose }) => {
                         </button>
                     ))}
                 </div>
+                <div style={{ margin: '15px 0', borderTop: '1px solid #e2e8f0' }}></div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={() => onSelect('vacation_full')}
+                        style={{
+                            flex: 1, padding: '10px 0', borderRadius: '10px',
+                            border: '1px solid #feb2b2', background: '#fff5f5',
+                            color: '#c53030', fontWeight: 'bold', fontSize: '0.9rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        월차
+                    </button>
+                    <button
+                        onClick={() => onSelect('vacation_half_am')}
+                        style={{
+                            flex: 1, padding: '10px 0', borderRadius: '10px',
+                            border: '1px solid #feb2b2', background: '#fff5f5',
+                            color: '#c53030', fontWeight: 'bold', fontSize: '0.9rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        오전반차
+                    </button>
+                    <button
+                        onClick={() => onSelect('vacation_half_pm')}
+                        style={{
+                            flex: 1, padding: '10px 0', borderRadius: '10px',
+                            border: '1px solid #90cdf4', background: '#ebf8ff',
+                            color: '#2c5282', fontWeight: 'bold', fontSize: '0.9rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        오후반차
+                    </button>
+                </div>
+
                 <button
                     onClick={onClose}
                     style={{
@@ -479,6 +517,39 @@ const StaffDailyAttendance = ({ onBack }) => {
     const handleStatusSelect = async (status) => {
         const { user, dateStr, period } = statusPopup;
         if (!user) return;
+
+        // Handle Vacation Requests
+        if (['vacation_full', 'vacation_half_am', 'vacation_half_pm'].includes(status)) {
+            try {
+                let type = 'full';
+                let periods = null;
+
+                if (status === 'vacation_half_am') {
+                    type = 'half';
+                    periods = [1, 2, 3, 4];
+                } else if (status === 'vacation_half_pm') {
+                    type = 'half';
+                    periods = [5, 6, 7];
+                }
+
+                const { error } = await supabase.from('vacation_requests').insert({
+                    user_id: user.id,
+                    date: dateStr,
+                    type: type,
+                    periods: periods,
+                    reason: null, // "Normal" vacation
+                    status: 'approved'
+                });
+
+                if (error) throw error;
+                fetchData(); // Refresh grid
+            } catch (e) {
+                console.error("Error creating vacation:", e);
+                alert("휴가 등록에 실패했습니다.");
+            }
+            setStatusPopup({ open: false, user: null, dateStr: '', period: null });
+            return;
+        }
 
         const key = `${user.id}_${dateStr}_${period}`;
 
