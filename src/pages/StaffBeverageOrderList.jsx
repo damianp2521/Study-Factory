@@ -57,13 +57,13 @@ const StaffBeverageOrderList = ({ onBack }) => {
             const userIds = allUsers.map(u => u.id);
             const { data: selectionsData, error: selectionsError } = await supabase
                 .from('user_beverage_selections')
-                .select('user_id, selection_1')
+                .select('user_id, selection_1, selection_2, selection_3, selection_4, selection_5')
                 .in('user_id', userIds);
 
             if (selectionsError) throw selectionsError;
 
-            const selectionMap = {}; // user_id -> beverage_id (selection_1 only)
-            (selectionsData || []).forEach(s => selectionMap[s.user_id] = s.selection_1);
+            const selectionMap = {}; // user_id -> { selection_1, ..., selection_5 }
+            (selectionsData || []).forEach(s => selectionMap[s.user_id] = s);
 
             // 4. Fetch Today's Vacation Requests (To exclude absentees)
             // Logic: Exclude if type='full' OR (type='half' AND periods includes 1)
@@ -99,18 +99,27 @@ const StaffBeverageOrderList = ({ onBack }) => {
                     return; // Skip absentee
                 }
 
-                const beverageId = selectionMap[user.id];
-                if (!beverageId) return; // No selection
+                const userSelections = selectionMap[user.id];
+                if (!userSelections) return; // No selection record
 
-                const beverageName = optionsMap[beverageId];
-                if (!beverageName) return; // Unknown beverage
+                // Iterate through selection_1 to selection_5
+                [1, 2, 3, 4, 5].forEach(i => {
+                    const beverageId = userSelections[`selection_${i}`];
+                    if (!beverageId) return;
 
-                if (!orderMap[beverageName]) {
-                    orderMap[beverageName] = { count: 0, users: [] };
-                }
+                    const beverageName = optionsMap[beverageId];
+                    if (!beverageName) return;
 
-                orderMap[beverageName].count++;
-                orderMap[beverageName].users.push(`${user.name} (${user.seat_number})`);
+                    if (!orderMap[beverageName]) {
+                        orderMap[beverageName] = { count: 0, users: [] };
+                    }
+
+                    orderMap[beverageName].count++;
+                    // Avoid duplicating user name if they ordered same drink twice? 
+                    // Or list them twice? Usually manufacturing list needs total count.
+                    // Let's append formatted name.
+                    orderMap[beverageName].users.push(`${user.name} (${user.seat_number})`);
+                });
             });
 
             // Convert to array and sort by count DESC
