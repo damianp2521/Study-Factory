@@ -702,8 +702,19 @@ const StaffAttendance = ({ onBack }) => {
                         .eq('date', dateStr);
 
                     if (error) throw error;
-                    if (count === 0) alert('삭제된 휴가가 없습니다. 이미 삭제되었거나 권한이 없을 수 있습니다.');
-                    else alert('휴가가 취소되었습니다.');
+                    if (count === 0) {
+                        alert('삭제된 휴가가 없습니다. 이미 삭제되었거나 권한이 없을 수 있습니다.');
+                    } else {
+                        // Optimistic Update: Remove from local state
+                        setVacationData(prev => {
+                            const next = { ...prev };
+                            const key = `${user.id}_${dateStr}`;
+                            delete next[key];
+                            return next;
+                        });
+                        alert('휴가가 취소되었습니다.');
+                        fetchData(); // Background refresh
+                    }
                 } else {
                     let type = 'full';
                     let periods = null;
@@ -716,7 +727,7 @@ const StaffAttendance = ({ onBack }) => {
                         periods = [5, 6, 7];
                     }
 
-                    // Check if a request already exists for this date/user
+                    // Check if a request already exists
                     const { data: existingVacation } = await supabase.from('vacation_requests')
                         .select('id')
                         .eq('user_id', user.id)
@@ -747,7 +758,15 @@ const StaffAttendance = ({ onBack }) => {
                         if (error) throw error;
                     }
 
-                    fetchData(); // Refresh grid
+                    // Optimistic Update: Add/Update local state
+                    setVacationData(prev => {
+                        const next = { ...prev };
+                        const key = `${user.id}_${dateStr}`;
+                        next[key] = { type, periods, reason: null, status: 'approved' };
+                        return next;
+                    });
+
+                    fetchData(); // Background refresh
                 }
             } catch (e) {
                 console.error("Error creating vacation:", e);
