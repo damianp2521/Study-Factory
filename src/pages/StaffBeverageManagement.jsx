@@ -150,7 +150,7 @@ const StaffBeverageManagement = ({ onBack }) => {
             if (error) throw error;
         } catch (err) {
             console.error('Update error:', err);
-            alert('저장 실패');
+            alert('저장 실패: ' + (err.message || err.details || JSON.stringify(err)));
             // Revert? (Complex, skipping for prototype)
         }
     };
