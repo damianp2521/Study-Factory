@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ClipboardList, Calendar, UserPlus, UserCheck } from 'lucide-react';
+import { ChevronLeft, ClipboardList, Calendar, UserPlus, UserCheck, Pin } from 'lucide-react';
 import { useDashboardNavigation } from '../../hooks/useDashboardNavigation';
 
 import AdminMemberRegister from '../../pages/AdminMemberRegister';
@@ -7,6 +7,7 @@ import AdminMemberStatus from '../../pages/AdminMemberStatus';
 import AdminEmployeeVacationHistory from '../../pages/AdminEmployeeVacationHistory';
 import AdminWorkReport from '../../pages/AdminWorkReport';
 import AdminOtherLeaveRequest from '../../pages/AdminOtherLeaveRequest';
+import AdminFixedLeaveManagement from '../../pages/AdminFixedLeaveManagement';
 import AdminAttendanceStatus from '../../pages/AdminAttendanceStatus';
 import StaffAttendance from '../../pages/StaffAttendance';
 
@@ -27,6 +28,7 @@ const AdminQuickMenu = () => {
     // 2. Attendance & Leave Views
     if (currentView === 'vacation_history') return renderWithPadding(<AdminEmployeeVacationHistory onBack={() => navigateTo('grid')} />);
     if (currentView === 'other_leave_request') return renderWithPadding(<AdminOtherLeaveRequest onBack={() => navigateTo('grid')} />);
+    if (currentView === 'fixed_leave_management') return renderWithPadding(<AdminFixedLeaveManagement onBack={() => navigateTo('grid')} />);
     if (currentView === 'attendance_status') return renderWithPadding(<AdminAttendanceStatus onBack={() => navigateTo('grid')} />);
     if (currentView === 'monthly_attendance_log') return renderWithPadding(<StaffAttendance onBack={() => navigateTo('grid')} />);
 
@@ -93,6 +95,14 @@ const AdminQuickMenu = () => {
                             <UserPlus size={24} />
                         </div>
                         <span style={{ ...labelStyle, lineHeight: '1.2' }}>사원 기타<br />휴무 신청</span>
+                    </button>
+
+                    {/* 4. 고정 기타 휴무 관리 */}
+                    <button onClick={() => navigateTo('fixed_leave_management')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#fffaf0', color: '#dd6b20' }}>
+                            <Pin size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>고정 기타<br />휴무 관리</span>
                     </button>
                 </div>
             </div>
