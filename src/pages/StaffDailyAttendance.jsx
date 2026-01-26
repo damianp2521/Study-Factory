@@ -532,20 +532,41 @@ const StaffDailyAttendance = ({ onBack }) => {
                     periods = [5, 6, 7];
                 }
 
-                const { error } = await supabase.from('vacation_requests').insert({
-                    user_id: user.id,
-                    date: dateStr,
-                    type: type,
-                    periods: periods,
-                    reason: null, // "Normal" vacation
-                    status: 'approved'
-                });
+                // Check if a request already exists for this date/user
+                const { data: existingVacation } = await supabase.from('vacation_requests')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('date', dateStr)
+                    .single();
 
-                if (error) throw error;
+                if (existingVacation) {
+                    // Update existing
+                    const { error } = await supabase.from('vacation_requests')
+                        .update({
+                            type: type,
+                            periods: periods,
+                            reason: null,
+                            status: 'approved'
+                        })
+                        .eq('id', existingVacation.id);
+                    if (error) throw error;
+                } else {
+                    // Insert new
+                    const { error } = await supabase.from('vacation_requests').insert({
+                        user_id: user.id,
+                        date: dateStr,
+                        type: type,
+                        periods: periods,
+                        reason: null,
+                        status: 'approved'
+                    });
+                    if (error) throw error;
+                }
+
                 fetchData(); // Refresh grid
             } catch (e) {
                 console.error("Error creating vacation:", e);
-                alert("휴가 등록에 실패했습니다.");
+                alert(`휴가 등록에 실패했습니다: ${e.message}`);
             }
             setStatusPopup({ open: false, user: null, dateStr: '', period: null });
             return;
