@@ -6,7 +6,7 @@ import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 // Special attendance statuses
-const SPECIAL_STATUSES = ['지각', '병원', '외출', '쉼', '운동', '알바', '스터디', '집공', '개인'];
+const SPECIAL_STATUSES = ['지각', '병원', '외출', '쉼', '운동', '알바', '스터디', '집공', '개인', '아픔', '모의', '시험', '그만둠', '늦잠'];
 
 // Status Selection Popup
 const StatusPopup = ({ onSelect, onClose }) => {
@@ -55,28 +55,6 @@ const StatusPopup = ({ onSelect, onClose }) => {
                         </button>
                     ))}
                 </div>
-                <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                    <button
-                        onClick={() => onSelect(null)}
-                        style={{
-                            flex: 1, padding: '12px', borderRadius: '10px',
-                            border: '1px solid #e2e8f0', background: '#c6f6d5',
-                            color: '#22543d', fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer'
-                        }}
-                    >
-                        출석 (O)
-                    </button>
-                    <button
-                        onClick={() => onSelect('absent')}
-                        style={{
-                            flex: 1, padding: '12px', borderRadius: '10px',
-                            border: '1px solid #e2e8f0', background: '#fed7d7',
-                            color: '#c53030', fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer'
-                        }}
-                    >
-                        결석 (X)
-                    </button>
-                </div>
                 <button
                     onClick={onClose}
                     style={{
@@ -88,7 +66,7 @@ const StatusPopup = ({ onSelect, onClose }) => {
                     취소
                 </button>
             </div>
-        </div>,
+        </div >,
         document.body
     );
 };
