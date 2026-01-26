@@ -49,7 +49,7 @@ const TodayLeaves = () => {
                         profiles (name, id)
                     `)
                     .eq('date', date)
-                    .eq('period', 1)
+                    // .eq('period', 1) // Removed to fetch all periods
                     .not('status', 'is', null) // Only with status
             ]);
 
@@ -73,7 +73,7 @@ const TodayLeaves = () => {
                 id: `log_${log.user_id}_${log.period}`,
                 type: 'special_log', // Custom type
                 reason: log.status,
-                periods: [1], // It is period 1
+                periods: [log.period], // Use actual period
                 user_id: log.user_id,
                 profiles: log.profiles,
                 weeklyUsage: 0 // Logs don't trigger warning usually
@@ -237,11 +237,19 @@ const TodayLeaves = () => {
                             // New Attendance Log Special
                             // User wants it to look like Month or Morning Leave.
                             // Let's use Blue (Morning) style but custom label
-                            borderColor = '#3182ce';
-                            badgeBg = '#ebf8ff';
-                            badgeColor = '#2c5282';
-                            // "1교시 + 사유"
-                            label = `1교시 ${item.reason}`;
+                            // 1교시 -> Same as before (Red)
+                            // 2~7교시 -> Blue
+                            const p = item.periods ? item.periods[0] : 1;
+                            if (p === 1) {
+                                borderColor = '#e53e3e';
+                                badgeBg = '#fed7d7';
+                                badgeColor = '#c53030';
+                            } else {
+                                borderColor = '#3182ce';
+                                badgeBg = '#ebf8ff';
+                                badgeColor = '#2c5282';
+                            }
+                            label = `${p}교시 ${item.reason}`;
                         }
 
                         return (
