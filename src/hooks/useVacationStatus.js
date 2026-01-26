@@ -76,7 +76,7 @@ export const useVacationStatus = () => {
                     .order('created_at', { ascending: false }),
                 supabase
                     .from('attendance_logs')
-                    .select('user_id, status, created_at, profiles:user_id(name, branch)')
+                    .select('user_id, status, period, created_at, profiles:user_id(name, branch)')
                     .eq('date', selectedDate)
                     // .eq('period', 1) // Removed to fetch all periods
                     .not('status', 'is', null)
