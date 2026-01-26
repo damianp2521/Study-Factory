@@ -537,12 +537,14 @@ const StaffDailyAttendance = ({ onBack }) => {
             try {
                 if (status === 'vacation_cancel') {
                     // Delete vacation request
-                    const { error } = await supabase.from('vacation_requests')
-                        .delete()
+                    const { count, error } = await supabase.from('vacation_requests')
+                        .delete({ count: 'exact' })
                         .eq('user_id', user.id)
                         .eq('date', dateStr);
 
                     if (error) throw error;
+                    if (count === 0) alert('삭제된 휴가가 없습니다. 이미 삭제되었거나 권한이 없을 수 있습니다.');
+                    else alert('휴가가 취소되었습니다.');
                 } else {
                     let type = 'full';
                     let periods = null;
