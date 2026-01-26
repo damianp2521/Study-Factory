@@ -150,7 +150,12 @@ const StaffBeverageManagement = ({ onBack }) => {
             if (error) throw error;
         } catch (err) {
             console.error('Update error:', err);
-            alert('저장 실패: ' + (err.message || err.details || JSON.stringify(err)));
+            const msg = err.message || JSON.stringify(err);
+            if (msg.includes('foreign key constraint')) {
+                alert(`저장 실패: 해당 사원의 프로필 데이터가 누락되었습니다. (User ID: ${userId})`);
+            } else {
+                alert('저장 실패: ' + msg);
+            }
             // Revert? (Complex, skipping for prototype)
         }
     };
