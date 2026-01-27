@@ -190,57 +190,66 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                 </span>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', alignItems: 'center' }}>
-                                    {vacations.map((vacation, idx) => {
-                                        let label = '';
-                                        let bgColor = '#fff';
-                                        let textColor = '#2d3748';
-                                        let borderColor = 'transparent';
+                                    {(() => {
+                                        // Group vacations by unique labels to avoid duplicates
+                                        const uniqueLabels = [];
+                                        const seenLabels = new Set();
 
-                                        const isAm = (vacation.periods || []).includes(1);
-                                        const isPm = (vacation.periods || []).includes(2);
+                                        vacations.forEach(vacation => {
+                                            let label = '';
+                                            let bgColor = '#fff';
+                                            let textColor = '#2d3748';
+                                            let borderColor = 'transparent';
 
-                                        // 1. Determine Base Style & Label
-                                        if (vacation.type === 'full') {
-                                            label = '월차';
-                                            bgColor = '#fff5f5';
-                                            textColor = '#c53030';
-                                            borderColor = '#feb2b2';
-                                        } else if (vacation.type === 'half') {
-                                            if (isAm) {
-                                                label = '오전';
-                                                bgColor = '#fff5f5'; // Red for AM
+                                            const isAm = (vacation.periods || []).includes(1);
+
+                                            // 1. Determine Base Style & Label
+                                            if (vacation.type === 'full') {
+                                                label = '월차';
+                                                bgColor = '#fff5f5';
                                                 textColor = '#c53030';
                                                 borderColor = '#feb2b2';
-                                            } else {
-                                                label = '오후';
-                                                bgColor = '#ebf8ff'; // Blue for PM
-                                                textColor = '#2c5282';
-                                                borderColor = '#90cdf4';
+                                            } else if (vacation.type === 'half') {
+                                                if (isAm) {
+                                                    label = '오전';
+                                                    bgColor = '#fff5f5';
+                                                    textColor = '#c53030';
+                                                    borderColor = '#feb2b2';
+                                                } else {
+                                                    label = '오후';
+                                                    bgColor = '#ebf8ff';
+                                                    textColor = '#2c5282';
+                                                    borderColor = '#90cdf4';
+                                                }
+                                            } else if (vacation.type === 'special') {
+                                                label = '특휴';
+                                                bgColor = '#faf5ff';
+                                                textColor = '#553c9a';
+                                                borderColor = '#d6bcfa';
                                             }
-                                        } else if (vacation.type === 'special') {
-                                            label = '특휴';
-                                            bgColor = '#faf5ff';
-                                            textColor = '#553c9a';
-                                            borderColor = '#d6bcfa';
-                                        }
 
-                                        // 2. Override Label and Style if 'reason' exists (Other Leave)
-                                        if (vacation.reason) {
-                                            label = vacation.reason;
+                                            // 2. Override Label and Style if 'reason' exists (Other Leave)
+                                            if (vacation.reason) {
+                                                label = vacation.reason;
+                                                bgColor = '#F7FAFC';
+                                                textColor = '#4A5568';
+                                                borderColor = '#CBD5E0';
+                                            }
 
-                                            // Gray Style for Other Leave
-                                            bgColor = '#F7FAFC'; // Gray 50
-                                            textColor = '#4A5568'; // Gray 700
-                                            borderColor = '#CBD5E0'; // Gray 300
-                                        }
+                                            // Only add if we haven't seen this label
+                                            if (!seenLabels.has(label)) {
+                                                seenLabels.add(label);
+                                                uniqueLabels.push({ label, bgColor, textColor, borderColor });
+                                            }
+                                        });
 
-                                        return (
+                                        return uniqueLabels.map((item, idx) => (
                                             <div key={idx} style={{
                                                 fontSize: '0.7rem',
                                                 fontWeight: 'bold',
-                                                color: textColor,
-                                                backgroundColor: bgColor,
-                                                border: `1px solid ${borderColor}`,
+                                                color: item.textColor,
+                                                backgroundColor: item.bgColor,
+                                                border: `1px solid ${item.borderColor}`,
                                                 borderRadius: '4px',
                                                 textAlign: 'center',
                                                 wordBreak: 'keep-all',
@@ -249,10 +258,10 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                                 padding: '2px',
                                                 width: '95%'
                                             }}>
-                                                {label}
+                                                {item.label}
                                             </div>
-                                        );
-                                    })}
+                                        ));
+                                    })()}
                                 </div>
                             </div>
                         );
