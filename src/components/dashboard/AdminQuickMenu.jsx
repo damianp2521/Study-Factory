@@ -81,13 +81,14 @@ const AdminQuickMenu = () => {
                         <span style={{ ...labelStyle, lineHeight: '1.2' }}>월별 사원<br />휴무 현황</span>
                     </button>
 
-                    {/* 2. 월별 출석 현황 (Old StaffAttendance) */}
+                    {/* 2. 월별 출석 현황 (Old StaffAttendance) - DISABLED
                     <button onClick={() => navigateTo('monthly_attendance_log')} style={menuButtonStyle}>
                         <div style={{ ...iconContainerStyle, background: '#e9d8fd', color: '#6b46c1' }}>
                             <UserCheck size={24} />
                         </div>
                         <span style={{ ...labelStyle, lineHeight: '1.2' }}>월별<br />출석 현황</span>
                     </button>
+                    */}
 
                     {/* 3. 사원 기타 휴무 신청 */}
                     <button onClick={() => navigateTo('other_leave_request')} style={menuButtonStyle}>
