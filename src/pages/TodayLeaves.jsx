@@ -202,7 +202,7 @@ const TodayLeaves = () => {
                         <ArrowLeft size={24} color="var(--color-text-main)" />
                     </button>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                        일별 사원 휴무 현황 (Update)
+                        일별 사원 휴무 현황
                     </h2>
                 </div>
             </div>
@@ -212,23 +212,26 @@ const TodayLeaves = () => {
 
                 {/* 1. Top Row: Search (Left) & Branch (Right) */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {/* Search */}
+                    {/* Search - Copied Style from StaffDailyAttendance */}
                     <div>
                         {isSearchOpen ? (
-                            <form style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <form
+                                onSubmit={(e) => { e.preventDefault(); /* Search handled by filter logic automatically */ setIsSearchOpen(false); }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+                            >
                                 <div style={{
                                     display: 'flex', alignItems: 'center',
                                     background: 'white', border: '1px solid #cbd5e0', borderRadius: '20px',
-                                    padding: '6px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                    padding: '4px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                 }}>
-                                    <Search size={18} color="#a0aec0" style={{ marginRight: '5px' }} />
+                                    <Search size={16} color="#a0aec0" style={{ marginRight: '5px' }} />
                                     <input
                                         type="text"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         placeholder="이름 검색"
                                         style={{
-                                            border: 'none', outline: 'none', fontSize: '0.9rem', width: '100px', color: '#4a5568'
+                                            border: 'none', outline: 'none', fontSize: '0.85rem', width: '80px', color: '#4a5568'
                                         }}
                                         autoFocus
                                         onBlur={() => {
@@ -242,40 +245,38 @@ const TodayLeaves = () => {
                                 onClick={() => setIsSearchOpen(true)}
                                 style={{
                                     background: 'white', border: '1px solid #e2e8f0', borderRadius: '20px',
-                                    padding: '8px 14px', fontSize: '0.9rem', color: '#718096', fontWeight: 'bold',
+                                    padding: '6px 12px', fontSize: '0.85rem', color: '#718096', fontWeight: 'bold',
                                     display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px'
                                 }}
                             >
-                                <Search size={18} />
+                                <Search size={16} />
                                 <span>이름 검색</span>
                             </button>
                         )}
                     </div>
 
-                    {/* Branch Dropdown */}
-                    <div style={{ position: 'relative' }}>
-                        <select
-                            value={selectedBranch}
-                            onChange={(e) => setSelectedBranch(e.target.value)}
-                            style={{
-                                appearance: 'none',
-                                background: 'white',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '20px',
-                                padding: '8px 32px 8px 16px',
-                                fontSize: '0.9rem',
-                                color: '#2d3748',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                outline: 'none'
-                            }}
-                        >
-                            <option value="전체">전체 지점</option>
-                            {BRANCH_LIST.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
-                        <ChevronDown size={16} color="#718096" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                    {/* Branch Buttons (Pill Style) */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {['전체', '망미점', '화명점'].map(b => (
+                            <button
+                                key={b}
+                                onClick={() => setSelectedBranch(b)}
+                                style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '20px',
+                                    border: selectedBranch === b ? 'none' : '1px solid #e2e8f0',
+                                    background: selectedBranch === b ? '#267E82' : 'white',
+                                    color: selectedBranch === b ? 'white' : '#718096',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}
+                            >
+                                {b}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
