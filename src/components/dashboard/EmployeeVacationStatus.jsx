@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Search, X } from 'lucide-react';
 import EmbeddedCalendar from '../EmbeddedCalendar';
 import { useVacationStatus } from '../../hooks/useVacationStatus';
 import { formatDateWithDay } from '../../utils/dateUtils';
@@ -20,54 +20,90 @@ const EmployeeVacationStatus = ({ onUserClick }) => {
         weeklyUsage
     } = useVacationStatus();
 
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    // Filter vacations by search term
+    const filteredVacations = vacations.filter(v => {
+        if (!searchTerm.trim()) return true;
+        return v.profiles?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Top Controls: Branch & Date */}
+            {/* Top Controls: Search & Branch Dropdown */}
             <div style={{
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '15px',
                 marginBottom: '20px',
             }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', overflow: 'hidden' }}>
-                    {/* Branch Filter (Horizontal Scroll) */}
-
-                    <div style={{
-                        display: 'flex',
-                        gap: '8px',
-                        overflowX: 'auto',
-                        paddingBottom: '5px',
-                        whiteSpace: 'nowrap',
-                        scrollbarWidth: 'none', // Firefox
-                        msOverflowStyle: 'none' // IE/Edge
-                    }}>
-                        <style>{`
-/* Hide scrollbar for Chrome/Safari/Opera */
-div::-webkit-scrollbar {
-    display: none;
-}
-`}</style>
-                        {branches.map(branch => (
-                            <button
-                                key={branch}
-                                onClick={() => setSelectedBranch(branch)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Name Search */}
+                    {isSearchOpen ? (
+                        <div style={{
+                            display: 'flex', alignItems: 'center',
+                            background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                            padding: '8px 12px', flex: 1
+                        }}>
+                            <Search size={16} color="#a0aec0" style={{ marginRight: '6px', flexShrink: 0 }} />
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="이름 검색"
                                 style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '20px',
-                                    border: selectedBranch === branch ? 'none' : '1px solid #e2e8f0',
-                                    background: selectedBranch === branch ? 'var(--color-primary)' : 'white',
-                                    color: selectedBranch === branch ? 'white' : '#718096',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.9rem',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s',
-                                    flexShrink: 0
+                                    border: 'none', outline: 'none', fontSize: '0.9rem', flex: 1, color: '#4a5568'
                                 }}
-                            >
-                                {branch}
-                            </button>
+                                autoFocus
+                                onBlur={() => {
+                                    if (!searchTerm) setIsSearchOpen(false);
+                                }}
+                            />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => { setSearchTerm(''); setIsSearchOpen(false); }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                                >
+                                    <X size={14} color="#a0aec0" />
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setIsSearchOpen(true)}
+                            style={{
+                                background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                                padding: '8px 12px', fontSize: '0.9rem', color: '#4a5568',
+                                display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'
+                            }}
+                        >
+                            <Search size={16} color="#718096" />
+                            <span>이름 검색</span>
+                        </button>
+                    )}
+
+                    {/* Branch Filter Dropdown */}
+                    <select
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
+                        style={{
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '0.9rem',
+                            color: '#4a5568',
+                            backgroundColor: 'white',
+                            outline: 'none',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        {branches.map(branch => (
+                            <option key={branch} value={branch}>
+                                {branch === '전체' ? '전체 지점' : branch}
+                            </option>
                         ))}
-                    </div>
+                    </select>
                 </div>
 
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -180,11 +216,11 @@ div::-webkit-scrollbar {
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 {loading ? (
                     <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>로딩 중...</div>
-                ) : vacations.length === 0 ? (
+                ) : filteredVacations.length === 0 ? (
                     <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '20px' }}>휴무자가 없습니다.</div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {vacations.map(req => {
+                        {filteredVacations.map(req => {
                             // Determine type label and color
                             let typeLabel = '월차';
                             let color = '#c53030'; // Red
