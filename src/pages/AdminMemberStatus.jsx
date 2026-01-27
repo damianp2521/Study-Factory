@@ -163,17 +163,17 @@ const AdminMemberStatus = ({ onBack }) => {
                     {isSearchOpen ? (
                         <div style={{
                             display: 'flex', alignItems: 'center',
-                            background: 'white', border: '1px solid #cbd5e0', borderRadius: '20px',
-                            padding: '4px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                            background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                            padding: '8px 12px'
                         }}>
-                            <Search size={16} color="#a0aec0" style={{ marginRight: '5px', flexShrink: 0 }} />
+                            <Search size={16} color="#a0aec0" style={{ marginRight: '6px', flexShrink: 0 }} />
                             <input
                                 type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="이름 검색"
                                 style={{
-                                    border: 'none', outline: 'none', fontSize: '0.85rem', width: '80px', color: '#4a5568'
+                                    border: 'none', outline: 'none', fontSize: '0.9rem', width: '70px', color: '#4a5568'
                                 }}
                                 autoFocus
                                 onBlur={() => {
@@ -193,13 +193,13 @@ const AdminMemberStatus = ({ onBack }) => {
                         <button
                             onClick={() => setIsSearchOpen(true)}
                             style={{
-                                background: 'white', border: '1px solid #e2e8f0', borderRadius: '20px',
-                                padding: '6px 10px', fontSize: '0.85rem', color: '#718096', fontWeight: 'bold',
-                                display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
-                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '34px'
+                                background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
+                                padding: '8px 12px', fontSize: '0.9rem', color: '#4a5568',
+                                display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'
                             }}
                         >
-                            <Search size={16} />
+                            <Search size={16} color="#718096" />
+                            <span>이름 검색</span>
                         </button>
                     )}
 
