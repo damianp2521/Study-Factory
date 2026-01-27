@@ -389,7 +389,7 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                 </div>
 
                 <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', background: '#f7fafc' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: '10px', marginBottom: '10px' }}>
                         <div>
                             <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>입사예정일</label>
                             <input
@@ -416,7 +416,7 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                             type="text"
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
-                            placeholder="예: 8번 박지민 회계사 (명패, 음료 준비)"
+                            placeholder="예: 김회원 / 회계사 / 선식, 뜨아"
                             style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
                         />
                     </div>
