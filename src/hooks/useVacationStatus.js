@@ -89,15 +89,47 @@ export const useVacationStatus = () => {
             const logData = logRes.data || [];
 
             // Transform logs to vacation shape
-            const formattedLogs = logData.map(log => ({
-                id: `log_${log.user_id}`,
-                user_id: log.user_id,
-                type: 'special_log', // Custom type to distinguish
-                periods: [log.period], // Use actual period
-                reason: log.status,
-                profiles: log.profiles,
-                created_at: log.created_at // Use actual created_at
-            }));
+            // RULE: Period 1 stays separate (red), Periods 2-7 are grouped by user+status
+            const period1Logs = [];
+            const otherLogGroups = {};
+
+            logData.forEach(log => {
+                if (log.period === 1) {
+                    // Keep period 1 separate
+                    period1Logs.push({
+                        id: `log_${log.user_id}_1`,
+                        user_id: log.user_id,
+                        type: 'special_log',
+                        periods: [1],
+                        reason: log.status,
+                        profiles: log.profiles,
+                        created_at: log.created_at
+                    });
+                } else {
+                    // Group periods 2-7 by user + status
+                    const key = `${log.user_id}_${log.status}`;
+                    if (!otherLogGroups[key]) {
+                        otherLogGroups[key] = {
+                            id: `log_${log.user_id}_${log.status}_other`,
+                            user_id: log.user_id,
+                            type: 'special_log',
+                            periods: [],
+                            reason: log.status,
+                            profiles: log.profiles,
+                            created_at: log.created_at
+                        };
+                    }
+                    otherLogGroups[key].periods.push(log.period);
+                }
+            });
+
+            // Sort periods within each group
+            Object.values(otherLogGroups).forEach(group => {
+                group.periods.sort((a, b) => a - b);
+            });
+
+            // Combine: period 1 logs + grouped other logs
+            const formattedLogs = [...period1Logs, ...Object.values(otherLogGroups)];
 
             // Merge (Unique by user_id preference?)
             // If a user has both, usually Vacation Request should take precedence if it covers the same time?

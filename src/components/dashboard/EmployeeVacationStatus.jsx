@@ -203,10 +203,12 @@ div::-webkit-scrollbar {
                                     bg = '#ebf8ff';
                                 }
                             } else if (req.type === 'special_log') {
-                                const p = req.periods ? req.periods[0] : 1;
-                                typeLabel = `${p}교시 ${req.reason}`;
+                                const periods = req.periods || [1];
+                                const firstPeriod = periods[0];
+                                // Show all periods joined
+                                typeLabel = `${periods.join(', ')}교시 ${req.reason}`;
 
-                                if (p === 1) {
+                                if (firstPeriod === 1) {
                                     color = '#c53030'; // Red (Morning Style)
                                     bg = '#fff5f5';
                                 } else {
