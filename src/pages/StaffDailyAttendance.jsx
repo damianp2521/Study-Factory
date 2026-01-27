@@ -277,8 +277,10 @@ const UserMemoPopup = ({ user, memberMemos, onAdd, onDelete, onClose }) => {
                     </span>
                 </div>
                 <button
+                    type="button"
                     onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         onClose();
                     }}
                     style={{
