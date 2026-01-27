@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search, UserPlus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search, UserPlus, CheckSquare, Square, Trash } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -350,6 +350,128 @@ const UserMemoPopup = ({ user, memberMemos, onAdd, onDelete, onClose }) => {
     );
 };
 
+// Incoming Employee Modal
+const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, onClose }) => {
+    const [entryDate, setEntryDate] = useState(new Date()); // Default today
+    const [seatNumber, setSeatNumber] = useState('');
+    const [content, setContent] = useState('');
+
+    const handleAdd = () => {
+        if (!seatNumber || !content) {
+            alert('좌석 번호와 내용을 입력해주세요.');
+            return;
+        }
+        onAdd({
+            seat_number: parseInt(seatNumber),
+            entry_date: format(entryDate, 'yyyy-MM-dd'),
+            content: content
+        });
+        setSeatNumber('');
+        setContent('');
+    };
+
+    return createPortal(
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+            <div style={{
+                background: 'white', borderRadius: '16px', width: '90%', maxWidth: '500px',
+                height: '80vh', display: 'flex', flexDirection: 'column',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+            }}>
+                <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#267E82', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <UserPlus size={24} /> 입사예정자 관리
+                    </h3>
+                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#a0aec0" /></button>
+                </div>
+
+                <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', background: '#f7fafc' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>입사예정일</label>
+                            <input
+                                type="date"
+                                value={format(entryDate, 'yyyy-MM-dd')}
+                                onChange={(e) => setEntryDate(new Date(e.target.value))}
+                                style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>좌석번호</label>
+                            <input
+                                type="number"
+                                value={seatNumber}
+                                onChange={(e) => setSeatNumber(e.target.value)}
+                                placeholder="번호"
+                                style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
+                            />
+                        </div>
+                    </div>
+                    <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>내용 (이름, 준비물 등)</label>
+                        <input
+                            type="text"
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            placeholder="예: 8번 박지민 회계사 (명패, 음료 준비)"
+                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
+                        />
+                    </div>
+                    <button
+                        onClick={handleAdd}
+                        style={{
+                            width: '100%', padding: '10px', background: '#267E82', color: 'white',
+                            border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'
+                        }}
+                    >
+                        등록하기
+                    </button>
+                </div>
+
+                <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+                    {incomingEmployees.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '40px' }}>등록된 입사예정자가 없습니다.</div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {incomingEmployees.map(emp => (
+                                <div key={emp.id} style={{
+                                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '15px',
+                                    display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}>
+                                    <div
+                                        onClick={() => onUpdate(emp.id, { is_prepared: !emp.is_prepared })}
+                                        style={{ cursor: 'pointer', color: emp.is_prepared ? '#38a169' : '#cbd5e0' }}
+                                    >
+                                        {emp.is_prepared ? <CheckSquare size={24} /> : <Square size={24} />}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '0.9rem', color: '#718096', marginBottom: '2px' }}>
+                                            {format(new Date(emp.entry_date), 'M.d(EEE)', { locale: ko })} | 좌석 {emp.seat_number}
+                                        </div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                            {emp.content}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => onDelete(emp.id)}
+                                        style={{ background: '#fff5f5', color: '#e53e3e', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
+                                    >
+                                        <Trash size={18} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
+
 const StaffDailyAttendance = ({ onBack }) => {
     const [today] = useState(new Date());
     // Fixed: Initialize navigation with today, allow changes
@@ -363,11 +485,13 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [vacationData, setVacationData] = useState({});
     const [dailyMemos, setDailyMemos] = useState([]);
     const [memberMemos, setMemberMemos] = useState([]);
+    const [incomingEmployees, setIncomingEmployees] = useState([]);
 
     const [loading, setLoading] = useState(false);
     const [highlightedSeat, setHighlightedSeat] = useState(null);
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [showMemoModal, setShowMemoModal] = useState(false);
+    const [showIncomingModal, setShowIncomingModal] = useState(false);
     const [newMemo, setNewMemo] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -458,12 +582,13 @@ const StaffDailyAttendance = ({ onBack }) => {
             const startDate = dateStr;
             const endDate = dateStr;
 
-            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes] = await Promise.all([
+            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, incomingRes] = await Promise.all([
                 supabase.from('profiles').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
                 supabase.from('attendance_memos').select('*').eq('date', dateStr).order('created_at', { ascending: true }),
-                supabase.from('member_memos').select('*').order('created_at', { ascending: true })
+                supabase.from('member_memos').select('*').order('created_at', { ascending: true }),
+                supabase.from('incoming_employees').select('*').order('entry_date', { ascending: true })
             ]);
 
             if (userRes.error) throw userRes.error;
@@ -500,6 +625,8 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             setDailyMemos(dailyMemoRes.data || []);
             setMemberMemos(memberMemoRes.data || []);
+            setIncomingEmployees(incomingRes.data || []);
+
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -719,6 +846,40 @@ const StaffDailyAttendance = ({ onBack }) => {
         } catch (e) { alert('삭제 실패'); }
     };
 
+    // Incoming Employee Functions
+    const addIncomingEmployee = async (employee) => {
+        try {
+            const { data, error } = await supabase.from('incoming_employees').insert(employee).select().single();
+            if (error) throw error;
+            setIncomingEmployees(prev => [...prev, data].sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date)));
+        } catch (e) {
+            console.error(e);
+            alert('입사예정자 등록 실패');
+        }
+    };
+
+    const updateIncomingEmployee = async (id, updates) => {
+        try {
+            const { error } = await supabase.from('incoming_employees').update(updates).eq('id', id);
+            if (error) throw error;
+            setIncomingEmployees(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+        } catch (e) {
+            console.error(e);
+            alert('수정 실패');
+        }
+    };
+
+    const deleteIncomingEmployee = async (id) => {
+        if (!confirm('정말 삭제하시겠습니까?')) return;
+        try {
+            await supabase.from('incoming_employees').delete().eq('id', id);
+            setIncomingEmployees(prev => prev.filter(e => e.id !== id));
+        } catch (e) {
+            console.error(e);
+            alert('삭제 실패');
+        }
+    };
+
     const changeDate = (days) => {
         setCurrentViewDate(prev => addDays(prev, days));
     };
@@ -841,7 +1002,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <button
-                            onClick={() => alert('입사예정자 관리 기능은 아직 구현되지 않았습니다.')}
+                            onClick={() => setShowIncomingModal(true)}
                             style={{
                                 background: '#e6fffa', border: '1px solid #b2f5ea', borderRadius: '16px',
                                 padding: '6px 12px', fontSize: '0.85rem', color: '#267E82', fontWeight: 'bold',
@@ -935,13 +1096,49 @@ const StaffDailyAttendance = ({ onBack }) => {
                                         {/* Scrollable Day Data */}
                                         <div style={{ display: 'flex', position: 'relative' }}>
                                             {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />}
-                                            {daysInView.map(date => (
-                                                <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
-                                                    {[1, 2, 3, 4, 5, 6, 7].map(p => (
-                                                        <AttendanceCell key={p} user={user} dateStr={format(date, 'yyyy-MM-dd')} period={p} isRowHighlighted={isRowHighlighted} attendanceData={attendanceData} statusData={statusData} vacationData={vacationData} toggleAttendance={toggleAttendance} onLongPress={handleLongPress} width={PERIOD_WIDTH} scale={scale} />
-                                                    ))}
-                                                </div>
-                                            ))}
+                                            {daysInView.map(date => {
+                                                const incoming = incomingEmployees.find(i => i.seat_number === user.seat_number);
+                                                let showIncoming = false;
+                                                let incomingColor = '#fefcbf'; // Yellow by default (not prepared)
+                                                let incomingTextColor = '#b7791f';
+
+                                                if (incoming) {
+                                                    if (!incoming.is_prepared) {
+                                                        showIncoming = true;
+                                                    } else {
+                                                        const entryDate = new Date(incoming.entry_date);
+                                                        const viewDate = new Date(format(currentViewDate, 'yyyy-MM-dd'));
+                                                        // entry_date is string yyyy-MM-dd
+                                                        // Compare dates
+                                                        if (viewDate < entryDate) {
+                                                            showIncoming = true;
+                                                            incomingColor = '#c6f6d5'; // Green (prepared but not yet entered)
+                                                            incomingTextColor = '#2f855a';
+                                                        }
+                                                    }
+                                                }
+
+                                                if (showIncoming) {
+                                                    return (
+                                                        <div key={format(date, 'yyyy-MM-dd')} style={{
+                                                            display: 'flex', height: ROW_HEIGHT, width: DAY_WIDTH,
+                                                            background: incomingColor, color: incomingTextColor,
+                                                            alignItems: 'center', paddingLeft: '10px', fontWeight: 'bold', fontSize: `${0.9 * scale}rem`,
+                                                            borderBottom: '1px solid #e2e8f0'
+                                                        }}>
+                                                            {format(new Date(incoming.entry_date), 'M.d(EEE)', { locale: ko })} {incoming.seat_number}번 {incoming.content}
+                                                        </div>
+                                                    );
+                                                }
+
+                                                return (
+                                                    <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
+                                                        {[1, 2, 3, 4, 5, 6, 7].map(p => (
+                                                            <AttendanceCell key={p} user={user} dateStr={format(date, 'yyyy-MM-dd')} period={p} isRowHighlighted={isRowHighlighted} attendanceData={attendanceData} statusData={statusData} vacationData={vacationData} toggleAttendance={toggleAttendance} onLongPress={handleLongPress} width={PERIOD_WIDTH} scale={scale} />
+                                                        ))}
+                                                    </div>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                     {/* Separator Row */}
@@ -1000,10 +1197,22 @@ const StaffDailyAttendance = ({ onBack }) => {
             )}
 
             {/* Status Selection Popup */}
+            {/* Status Selection Popup */}
             {statusPopup.open && (
                 <StatusPopup
                     onSelect={handleStatusSelect}
                     onClose={() => setStatusPopup({ open: false, user: null, dateStr: '', period: null })}
+                />
+            )}
+
+            {/* Incoming Employees Modal */}
+            {showIncomingModal && (
+                <IncomingEmployeeModal
+                    incomingEmployees={incomingEmployees}
+                    onAdd={addIncomingEmployee}
+                    onUpdate={updateIncomingEmployee}
+                    onDelete={deleteIncomingEmployee}
+                    onClose={() => setShowIncomingModal(false)}
                 />
             )}
         </div>
