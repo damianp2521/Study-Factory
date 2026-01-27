@@ -743,7 +743,7 @@ const StaffDailyAttendance = ({ onBack }) => {
         const found = displayRows.find(r => r.name && r.name.includes(searchTerm.trim()) && !r.isEmpty && !r.isUnassigned);
         if (found) {
             setHighlightedSeat(found.seat_number);
-            setIsPopupOpen(false); // Close popup if open, just highlight first
+            setIsPopupOpen(true); // Open popup when found
             setSearchTerm('');
             setIsSearchOpen(false);
         } else {
