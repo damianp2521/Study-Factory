@@ -1010,7 +1010,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                                 }}
                             >
                                 <Search size={14} />
-                                <span>이름검색</span>
+                                <span>이름 검색</span>
                             </button>
                         )}
                     </div>
@@ -1026,7 +1026,16 @@ const StaffDailyAttendance = ({ onBack }) => {
                             }}
                         >
                             <UserPlus size={14} style={{ flexShrink: 0 }} />
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>입사예정자관리</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>입사예정자 관리</span>
+                            {incomingEmployees.length > 0 && (
+                                <span style={{
+                                    color: '#267E82', background: 'white', width: '18px', height: '18px',
+                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '0.7rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', flexShrink: 0
+                                }}>
+                                    {incomingEmployees.length}
+                                </span>
+                            )}
                         </button>
 
                         <button
@@ -1038,7 +1047,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                                 height: '32px', whiteSpace: 'nowrap', flexShrink: 1, minWidth: 0
                             }}
                         >
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>오늘출석참고사항</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>오늘 출석 참고사항</span>
                             {dailyMemos.length > 0 && (
                                 <span style={{
                                     color: '#38a169', background: 'white', width: '18px', height: '18px',
