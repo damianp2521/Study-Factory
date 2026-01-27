@@ -972,9 +972,9 @@ const StaffDailyAttendance = ({ onBack }) => {
                 </div>
 
                 {/* Row 2: Search (Left) & Memo (Right) */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 10px 10px 10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 10px 10px 10px', gap: '8px', flexWrap: 'nowrap' }}>
                     {/* Search Button/Input */}
-                    <div>
+                    <div style={{ flexShrink: 0 }}>
                         {isSearchOpen ? (
                             <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                 <div style={{
@@ -1004,46 +1004,46 @@ const StaffDailyAttendance = ({ onBack }) => {
                                 onClick={() => setIsSearchOpen(true)}
                                 style={{
                                     background: 'white', border: '1px solid #e2e8f0', borderRadius: '20px',
-                                    padding: '6px 12px', fontSize: '0.85rem', color: '#718096', fontWeight: 'bold',
-                                    display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px'
+                                    padding: '6px 10px', fontSize: 'clamp(0.65rem, 2.5vw, 0.85rem)', color: '#718096', fontWeight: 'bold',
+                                    display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px', whiteSpace: 'nowrap'
                                 }}
                             >
-                                <Search size={16} />
-                                <span>이름 검색</span>
+                                <Search size={14} />
+                                <span>이름검색</span>
                             </button>
                         )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, minWidth: 0 }}>
                         <button
                             onClick={() => setShowIncomingModal(true)}
                             style={{
                                 background: '#e6fffa', border: '1px solid #b2f5ea', borderRadius: '16px',
-                                padding: '6px 12px', fontSize: '0.85rem', color: '#267E82', fontWeight: 'bold',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                                height: '32px'
+                                padding: '6px 10px', fontSize: 'clamp(0.6rem, 2.5vw, 0.85rem)', color: '#267E82', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer',
+                                height: '32px', whiteSpace: 'nowrap', flexShrink: 1, minWidth: 0
                             }}
                         >
-                            <UserPlus size={16} />
-                            입사예정자 관리
+                            <UserPlus size={14} style={{ flexShrink: 0 }} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>입사예정자관리</span>
                         </button>
 
                         <button
                             onClick={() => setShowMemoModal(true)}
                             style={{
                                 background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
-                                padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                                height: '32px'
+                                padding: '6px 10px', fontSize: 'clamp(0.6rem, 2.5vw, 0.85rem)', color: '#2b6cb0', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer',
+                                height: '32px', whiteSpace: 'nowrap', flexShrink: 1, minWidth: 0
                             }}
                         >
-                            오늘 출석 참고사항
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>오늘출석참고사항</span>
                             {dailyMemos.length > 0 && (
                                 <span style={{
-                                    color: '#38a169', background: 'white', width: '20px', height: '20px',
+                                    color: '#38a169', background: 'white', width: '18px', height: '18px',
                                     borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                    fontSize: '0.7rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', flexShrink: 0
                                 }}>
                                     {dailyMemos.length}
                                 </span>
