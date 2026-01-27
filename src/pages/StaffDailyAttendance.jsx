@@ -1134,14 +1134,24 @@ const StaffDailyAttendance = ({ onBack }) => {
                                                 }
 
                                                 if (showIncoming) {
+                                                    const incomingText = `${format(new Date(incoming.entry_date), 'M.d(EEE)', { locale: ko })} ${incoming.seat_number}번 ${incoming.content}`;
+                                                    // Calculate font size based on text length to fit in one line
+                                                    const baseFontSize = 0.9 * scale;
+                                                    const textLen = incomingText.length;
+                                                    // Reduce font size for longer text
+                                                    const adjustedFontSize = textLen > 25 ? Math.max(baseFontSize * (25 / textLen), baseFontSize * 0.5) : baseFontSize;
+
                                                     return (
                                                         <div key={format(date, 'yyyy-MM-dd')} style={{
                                                             display: 'flex', height: ROW_HEIGHT, width: DAY_WIDTH,
                                                             background: incomingColor, color: incomingTextColor,
-                                                            alignItems: 'center', paddingLeft: '10px', fontWeight: 'bold', fontSize: `${0.9 * scale}rem`,
-                                                            borderBottom: '1px solid #e2e8f0'
+                                                            alignItems: 'center', justifyContent: 'center',
+                                                            fontWeight: 'bold', fontSize: `${adjustedFontSize}rem`,
+                                                            borderBottom: '1px solid #e2e8f0',
+                                                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                                            padding: '0 5px', boxSizing: 'border-box'
                                                         }}>
-                                                            {format(new Date(incoming.entry_date), 'M.d(EEE)', { locale: ko })} {incoming.seat_number}번 {incoming.content}
+                                                            {incomingText}
                                                         </div>
                                                     );
                                                 }
