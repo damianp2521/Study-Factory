@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -838,6 +838,19 @@ const StaffDailyAttendance = ({ onBack }) => {
                             </button>
                         )}
                     </div>
+
+                    <button
+                        onClick={() => alert('입사예정자 관리 기능은 아직 구현되지 않았습니다.')}
+                        style={{
+                            background: '#e6fffa', border: '1px solid #b2f5ea', borderRadius: '16px',
+                            padding: '6px 12px', fontSize: '0.85rem', color: '#267E82', fontWeight: 'bold',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                            height: '32px'
+                        }}
+                    >
+                        <UserPlus size={16} />
+                        입사예정자 관리
+                    </button>
 
                     <button
                         onClick={() => setShowMemoModal(true)}
