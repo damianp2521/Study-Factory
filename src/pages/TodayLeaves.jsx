@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Calendar, User, AlertTriangle, Search, ChevronDown } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
+import { BRANCH_LIST } from '../constants/branches';
 
 const TodayLeaves = () => {
     const navigate = useNavigate();
@@ -10,6 +11,12 @@ const TodayLeaves = () => {
     const [showCalendar, setShowCalendar] = useState(false);
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // UI State
+    const [selectedBranch, setSelectedBranch] = useState('전체'); // '전체', '망미점', '화명점', ...
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState('전체'); // '전체', '월차', '오전', '오후'
 
     useEffect(() => {
         fetchLeaves();
@@ -39,14 +46,14 @@ const TodayLeaves = () => {
                     .from('vacation_requests')
                     .select(`
                         id, type, periods, reason, user_id,
-                        profiles (name, id)
+                        profiles (name, id, branch)
                     `)
                     .eq('date', date),
                 supabase
                     .from('attendance_logs')
                     .select(`
                         user_id, status, period,
-                        profiles (name, id)
+                        profiles (name, id, branch)
                     `)
                     .eq('date', date)
                     // .eq('period', 1) // Removed to fetch all periods
@@ -142,86 +149,225 @@ const TodayLeaves = () => {
         }
     };
 
+    // Filtering Logic
+    const filteredLeaves = leaves.filter(item => {
+        const userBranch = item.profiles?.branch || '미지정';
+        const userName = item.profiles?.name || '';
+
+        // 1. Branch Filter
+        if (selectedBranch !== '전체' && userBranch !== selectedBranch) return false;
+
+        // 2. Search Filter
+        if (searchTerm.trim() && !userName.includes(searchTerm.trim())) return false;
+
+        // 3. Tab Filter
+        if (activeTab === '월차') {
+            return item.type === 'full';
+        }
+        if (activeTab === '오전') {
+            // Half AM or Special Log AM
+            if (item.type === 'half') {
+                return (item.periods || []).some(p => p <= 4);
+            }
+            if (item.type === 'special_log') {
+                const p = item.periods ? item.periods[0] : 1;
+                return p <= 4;
+            }
+            return false;
+        }
+        if (activeTab === '오후') {
+            // Half PM or Special Log PM
+            if (item.type === 'half') {
+                return (item.periods || []).some(p => p > 4);
+            }
+            if (item.type === 'special_log') {
+                const p = item.periods ? item.periods[0] : 1;
+                return p > 4;
+            }
+            return false;
+        }
+
+        return true;
+    });
+
     return (
         <div style={{ padding: 'var(--spacing-lg) var(--spacing-md)' }}>
             {/* ... Header and DatePicker unchanged ... */}
-            <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: 'var(--spacing-xl)' }}>
+            <div className="flex-center" style={{ justifyContent: 'space-between', marginBottom: '15px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <button
-                        onClick={() => navigate('/manage-members')} // Change back link if needed
+                        onClick={() => navigate('/manage-members')}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                     >
                         <ArrowLeft size={24} color="var(--color-text-main)" />
                     </button>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                        금일 휴무 사원
+                        일별 사원 휴무 현황
                     </h2>
                 </div>
             </div>
 
-            {/* Date Picker Component (Toggleable) */}
-            <div style={{ marginBottom: '20px' }}>
-                <button
-                    onClick={() => setShowCalendar(!showCalendar)}
-                    style={{
-                        width: '100%',
-                        padding: '12px',
-                        background: 'white',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        cursor: 'pointer',
-                        marginBottom: showCalendar ? '10px' : '0'
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Calendar size={20} color="#718096" />
-                        <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
+            {/* Controls: Search, Branch, Date, Tabs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px' }}>
+
+                {/* 1. Top Row: Search (Left) & Branch (Right) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {/* Search */}
+                    <div>
+                        {isSearchOpen ? (
+                            <form style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <div style={{
+                                    display: 'flex', alignItems: 'center',
+                                    background: 'white', border: '1px solid #cbd5e0', borderRadius: '20px',
+                                    padding: '6px 12px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}>
+                                    <Search size={18} color="#a0aec0" style={{ marginRight: '5px' }} />
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="이름 검색"
+                                        style={{
+                                            border: 'none', outline: 'none', fontSize: '0.9rem', width: '100px', color: '#4a5568'
+                                        }}
+                                        autoFocus
+                                        onBlur={() => {
+                                            if (!searchTerm) setIsSearchOpen(false);
+                                        }}
+                                    />
+                                </div>
+                            </form>
+                        ) : (
+                            <button
+                                onClick={() => setIsSearchOpen(true)}
+                                style={{
+                                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '20px',
+                                    padding: '8px 14px', fontSize: '0.9rem', color: '#718096', fontWeight: 'bold',
+                                    display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}
+                            >
+                                <Search size={18} />
+                                <span>이름 검색</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Branch Dropdown */}
+                    <div style={{ position: 'relative' }}>
+                        <select
+                            value={selectedBranch}
+                            onChange={(e) => setSelectedBranch(e.target.value)}
+                            style={{
+                                appearance: 'none',
+                                background: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '20px',
+                                padding: '8px 32px 8px 16px',
+                                fontSize: '0.9rem',
+                                color: '#2d3748',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                outline: 'none'
+                            }}
+                        >
+                            <option value="전체">전체 지점</option>
+                            {BRANCH_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                        <ChevronDown size={16} color="#718096" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                    </div>
+                </div>
+
+                {/* 2. Date Picker */}
+                <div style={{ position: 'relative' }}>
+                    <button
+                        onClick={() => setShowCalendar(!showCalendar)}
+                        style={{
+                            width: '100%', padding: '12px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer',
+                            fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', fontFamily: 'monospace' // Monospace for date look
+                        }}
+                    >
+                        <span>
                             {(() => {
                                 const [y, m, d] = date.split('-');
                                 const dateObj = new Date(date);
                                 const days = ['일', '월', '화', '수', '목', '금', '토'];
                                 const dayName = days[dateObj.getDay()];
-                                return `${y}. ${m}. ${d}. (${dayName})`;
+                                return `${y}. ${parseInt(m)}. ${parseInt(d)}. (${dayName})`;
                             })()}
                         </span>
-                    </div>
-                    <span style={{ fontSize: '0.8rem', color: '#718096' }}>
-                        {showCalendar ? '닫기' : '변경'}
-                    </span>
-                </button>
+                        <Calendar size={22} color="#718096" />
+                    </button>
+                    {showCalendar && (
+                        <div style={{
+                            position: 'absolute', top: '110%', left: 0, right: 0, zIndex: 10,
+                            background: 'white', padding: '15px', borderRadius: '16px',
+                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0'
+                        }}>
+                            <EmbeddedCalendar
+                                selectedDate={date}
+                                onSelectDate={(val) => {
+                                    setDate(val);
+                                    setShowCalendar(false);
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
 
-                {showCalendar && (
-                    <div className="fade-in" style={{
-                        background: 'white',
-                        padding: '15px',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                        border: '1px solid #e2e8f0'
-                    }}>
-                        <EmbeddedCalendar
-                            selectedDate={date}
-                            onSelectDate={(val) => {
-                                setDate(val);
-                                setShowCalendar(false); // Auto close on select
-                            }}
-                        />
-                    </div>
-                )}
+                {/* 3. Filter Tabs */}
+                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '2px' }}>
+                    {['전체', '월차', '오전', '오후'].map(tab => {
+                        const confirmColor = tab === '월차' ? '#e53e3e' : tab === '오전' ? '#e53e3e' : tab === '오후' ? '#3182ce' : '#2d3748'; // Colors based on screenshot roughly
+                        // Actually screenshot: 월차(Red text?), 오전(Red text?), 오후(Blue text?)
+
+                        // Active Style
+                        const isActive = activeTab === tab;
+                        let activeBorder = '#e53e3e';
+                        let activeText = '#e53e3e';
+
+                        if (tab === '전체') { activeBorder = '#718096'; activeText = '#2d3748'; }
+                        if (tab === '월차') { activeBorder = '#e53e3e'; activeText = '#e53e3e'; }
+                        if (tab === '오전') { activeBorder = '#e53e3e'; activeText = '#e53e3e'; }
+                        if (tab === '오후') { activeBorder = '#3182ce'; activeText = '#3182ce'; }
+
+                        return (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                style={{
+                                    flex: 1,
+                                    padding: '10px',
+                                    borderRadius: '8px',
+                                    border: isActive ? `2px solid ${activeBorder}` : '1px solid #e2e8f0',
+                                    background: isActive ? '#fff' : '#f7fafc',
+                                    color: isActive ? activeText : '#a0aec0',
+                                    fontWeight: 'bold',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {tab}
+                            </button>
+                        );
+                    })}
+                </div>
+
             </div>
 
             {/* List */}
             <div className="flex-col" style={{ gap: '15px' }}>
                 {loading ? (
                     <div style={{ textAlign: 'center', color: '#999' }}>로딩 중...</div>
-                ) : leaves.length === 0 ? (
+                ) : filteredLeaves.length === 0 ? (
                     <div style={{ textAlign: 'center', color: '#999', marginTop: '30px' }}>
-                        해당 날짜에 휴무 내역이 없습니다.
+                        내역이 없습니다.
                     </div>
                 ) : (
-                    leaves.map((item) => {
+                    filteredLeaves.map((item) => {
                         // Determine Style
                         // Full -> Purple
                         // Low priority / Half -> Blue
