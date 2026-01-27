@@ -84,12 +84,32 @@ const VacationRequest = () => {
     const mergedList = useMemo(() => {
         // 1. Tag items
         const requests = myRequests.map(r => ({ ...r, category: 'vacation' }));
-        const attendances = specialAttendance.map(a => ({ ...a, category: 'attendance', id: `att_${a.date}_${a.period}` }));
 
-        // 2. Merge
-        const all = [...requests, ...attendances];
+        // 2. Group attendance records by date + status
+        const attendanceGroups = {};
+        specialAttendance.forEach(a => {
+            const key = `${a.date}_${a.status}`;
+            if (!attendanceGroups[key]) {
+                attendanceGroups[key] = {
+                    date: a.date,
+                    status: a.status,
+                    periods: [],
+                    category: 'attendance',
+                    id: `att_${a.date}_${a.status}`
+                };
+            }
+            attendanceGroups[key].periods.push(a.period);
+        });
+        // Sort periods within each group
+        Object.values(attendanceGroups).forEach(group => {
+            group.periods.sort((a, b) => a - b);
+        });
+        const groupedAttendances = Object.values(attendanceGroups);
 
-        // 3. Filter by month (Strict Date Object Comparison)
+        // 3. Merge
+        const all = [...requests, ...groupedAttendances];
+
+        // 4. Filter by month (Strict Date Object Comparison)
         const targetYear = selectedMonth.getFullYear();
         const targetMonth = selectedMonth.getMonth();
 
@@ -98,11 +118,9 @@ const VacationRequest = () => {
             return d.getFullYear() === targetYear && d.getMonth() === targetMonth;
         });
 
-        // 4. Sort by date desc, then period asc
+        // 5. Sort by date desc
         return filtered.sort((a, b) => {
             if (a.date !== b.date) return new Date(b.date) - new Date(a.date);
-            // Same date: period logic if available
-            if (a.periods && b.period) return a.periods[0] - b.period;
             return 0;
         });
     }, [myRequests, specialAttendance, selectedMonth]);
@@ -608,7 +626,7 @@ const VacationRequest = () => {
                                             </span>
                                         </div>
                                         <div style={{ color: '#718096', fontSize: '0.9rem', fontWeight: '600' }}>
-                                            {item.period}교시
+                                            {item.periods.join(', ')}교시
                                         </div>
                                     </div>
                                 );
