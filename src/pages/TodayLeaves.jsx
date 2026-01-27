@@ -75,39 +75,40 @@ const TodayLeaves = () => {
 
             let results = [...dailyData];
 
-            // 3. Transform Logs to Leaf Format and Merge
-            const logItems = dailyLogs.map(log => ({
-                id: `log_${log.user_id}_${log.period}`,
-                type: 'special_log', // Custom type
-                reason: log.status,
-                periods: [log.period], // Use actual period
-                user_id: log.user_id,
-                profiles: log.profiles,
-                weeklyUsage: 0 // Logs don't trigger warning usually
-            }));
+            // 3. Group Logs by User and Status (to combine periods)
+            const logGroups = {};
+            dailyLogs.forEach(log => {
+                const key = `${log.user_id}_${log.status}`;
+                if (!logGroups[key]) {
+                    logGroups[key] = {
+                        id: `log_${log.user_id}_${log.status}`,
+                        type: 'special_log',
+                        reason: log.status,
+                        periods: [],
+                        user_id: log.user_id,
+                        profiles: log.profiles,
+                        weeklyUsage: 0
+                    };
+                }
+                logGroups[key].periods.push(log.period);
+            });
+            // Sort periods within each group
+            Object.values(logGroups).forEach(group => {
+                group.periods.sort((a, b) => a - b);
+            });
+            const logItems = Object.values(logGroups);
 
-            // Merge: avoid duplicates?
-            // If user has both (unlikely given logic), show both or prefer Vacation?
-            // Vacation Request Full Day overrides Log?
-            // I'll show both for now to be safe, or filter.
-            // Filter: If user is in dailyData (as Full/Half), don't show log?
-            // Actually, "Special" is now ONLY in logs.
-            // "Full/Half" is in requests.
-            // So they should be distinct sets mostly.
-
-            // Improved Merge Logic:
-            // Allow logs to appear even if user has vacation, UNLESS it's a redundant label (e.g. '월차', '반차').
-            // This ensures specific statuses like '병원', '지각' appear alongside or independent of vacations.
+            // Merge: avoid duplicates based on vacation request
             const vacationUserIds = new Set(results.map(r => r.user_id));
             const newLogItems = logItems.filter(item => {
                 const hasVacation = vacationUserIds.has(item.user_id);
-                if (!hasVacation) return true; // Show if no vacation
+                if (!hasVacation) return true;
 
                 // If user has vacation, filter out generic/redundant statuses
                 const redundantStatuses = ['월차', '반차', '오전', '오후', '출석', '결석', 'O', 'X'];
                 if (redundantStatuses.includes(item.reason)) return false;
 
-                return true; // Show specific statuses (Late, Hospital, etc.)
+                return true;
             });
 
             results = [...results, ...newLogItems];
@@ -392,13 +393,11 @@ const TodayLeaves = () => {
                             badgeColor = '#c53030';
                             label = '특별휴가';
                         } else if (item.type === 'special_log') {
-                            // New Attendance Log Special
-                            // User wants it to look like Month or Morning Leave.
-                            // Let's use Blue (Morning) style but custom label
-                            // 1교시 -> Same as before (Red)
-                            // 2~7교시 -> Blue
-                            const p = item.periods ? item.periods[0] : 1;
-                            if (p === 1) {
+                            // New Attendance Log Special - now grouped by user+status
+                            const periods = item.periods || [1];
+                            const firstPeriod = periods[0];
+                            // Color based on first period (AM/PM distinction)
+                            if (firstPeriod <= 4) {
                                 borderColor = '#e53e3e';
                                 badgeBg = '#fed7d7';
                                 badgeColor = '#c53030';
@@ -407,7 +406,8 @@ const TodayLeaves = () => {
                                 badgeBg = '#ebf8ff';
                                 badgeColor = '#2c5282';
                             }
-                            label = `${p}교시 ${item.reason}`;
+                            // Combined periods label
+                            label = `${periods.join(', ')}교시 ${item.reason}`;
                         }
 
                         return (
