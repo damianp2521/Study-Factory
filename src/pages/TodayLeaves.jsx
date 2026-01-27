@@ -75,28 +75,48 @@ const TodayLeaves = () => {
 
             let results = [...dailyData];
 
-            // 3. Group Logs by User and Status (to combine periods)
-            const logGroups = {};
+            // 3. Group Logs by User and Status
+            // RULE: Period 1 stays separate (red), Periods 2-7 are grouped by user+status
+            const period1Logs = [];
+            const otherLogGroups = {};
+
             dailyLogs.forEach(log => {
-                const key = `${log.user_id}_${log.status}`;
-                if (!logGroups[key]) {
-                    logGroups[key] = {
-                        id: `log_${log.user_id}_${log.status}`,
+                if (log.period === 1) {
+                    // Keep period 1 separate
+                    period1Logs.push({
+                        id: `log_${log.user_id}_${log.period}`,
                         type: 'special_log',
                         reason: log.status,
-                        periods: [],
+                        periods: [1],
                         user_id: log.user_id,
                         profiles: log.profiles,
                         weeklyUsage: 0
-                    };
+                    });
+                } else {
+                    // Group periods 2-7 by user + status
+                    const key = `${log.user_id}_${log.status}`;
+                    if (!otherLogGroups[key]) {
+                        otherLogGroups[key] = {
+                            id: `log_${log.user_id}_${log.status}_other`,
+                            type: 'special_log',
+                            reason: log.status,
+                            periods: [],
+                            user_id: log.user_id,
+                            profiles: log.profiles,
+                            weeklyUsage: 0
+                        };
+                    }
+                    otherLogGroups[key].periods.push(log.period);
                 }
-                logGroups[key].periods.push(log.period);
             });
+
             // Sort periods within each group
-            Object.values(logGroups).forEach(group => {
+            Object.values(otherLogGroups).forEach(group => {
                 group.periods.sort((a, b) => a - b);
             });
-            const logItems = Object.values(logGroups);
+
+            // Combine: period 1 logs + grouped other logs
+            const logItems = [...period1Logs, ...Object.values(otherLogGroups)];
 
             // Merge: avoid duplicates based on vacation request
             const vacationUserIds = new Set(results.map(r => r.user_id));
