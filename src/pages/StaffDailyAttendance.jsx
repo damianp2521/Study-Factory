@@ -396,7 +396,11 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                                 type="date"
                                 value={format(entryDate, 'yyyy-MM-dd')}
                                 onChange={(e) => setEntryDate(new Date(e.target.value))}
-                                style={{ width: '100%', height: '38px', padding: '0 8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                style={{
+                                    width: '100%', height: '38px', padding: '0 8px', borderRadius: '8px',
+                                    border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box',
+                                    backgroundColor: 'white', WebkitAppearance: 'none', appearance: 'none', lineHeight: '36px'
+                                }}
                             />
                         </div>
                         <div>
@@ -406,7 +410,11 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                                 value={seatNumber}
                                 onChange={(e) => setSeatNumber(e.target.value)}
                                 placeholder="번호"
-                                style={{ width: '100%', height: '38px', padding: '0 8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                                style={{
+                                    width: '100%', height: '38px', padding: '0 8px', borderRadius: '8px',
+                                    border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box',
+                                    backgroundColor: 'white', lineHeight: '36px'
+                                }}
                             />
                         </div>
                     </div>
