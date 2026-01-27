@@ -246,11 +246,17 @@ div::-webkit-scrollbar {
                                     <div>
                                         <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             {req.profiles?.name || '알 수 없음'}
-                                            {weeklyUsage[req.user_id] > 1.5 && (
-                                                <span style={{ fontSize: '0.8rem', color: '#e53e3e', fontWeight: 'bold' }}>
-                                                    휴가 초과 사용
-                                                </span>
-                                            )}
+                                            {(() => {
+                                                // Staff: limit is 2, Members: limit is 1.5
+                                                const userRole = req.profiles?.role;
+                                                const limit = (userRole === 'staff' || userRole === 'admin') ? 2 : 1.5;
+                                                const usage = weeklyUsage[req.user_id] || 0;
+                                                return usage > limit ? (
+                                                    <span style={{ fontSize: '0.8rem', color: '#e53e3e', fontWeight: 'bold' }}>
+                                                        휴가 초과 사용
+                                                    </span>
+                                                ) : null;
+                                            })()}
                                         </div>
                                         <div style={{ fontSize: '0.8rem', color: '#718096' }}>
                                             {req.profiles?.branch || '지점 미정'}

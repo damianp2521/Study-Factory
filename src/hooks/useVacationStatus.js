@@ -71,12 +71,12 @@ export const useVacationStatus = () => {
             const [vacRes, logRes] = await Promise.all([
                 supabase
                     .from('vacation_requests')
-                    .select('*, profiles:user_id(name, branch), reason')
+                    .select('*, profiles:user_id(name, branch, role), reason')
                     .eq('date', selectedDate)
                     .order('created_at', { ascending: false }),
                 supabase
                     .from('attendance_logs')
-                    .select('user_id, status, period, created_at, profiles:user_id(name, branch)')
+                    .select('user_id, status, period, created_at, profiles:user_id(name, branch, role)')
                     .eq('date', selectedDate)
                     // .eq('period', 1) // Removed to fetch all periods
                     .not('status', 'is', null)
