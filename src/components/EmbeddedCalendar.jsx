@@ -146,62 +146,74 @@ const EmbeddedCalendar = ({
                     }}
                 >
                     <span style={{ marginBottom: '2px', lineHeight: 1 }}>{d}</span>
-                    {dayEvents.length > 0 && !isSelected && (
-                        <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '2px',
-                            width: '100%'
-                        }}>
-                            {dayEvents.map((event, idx) => {
-                                let label = '';
-                                let itemBgColor = 'transparent';
-                                let itemTextColor = '#2d3748';
-                                let itemBorderColor = 'transparent';
+                    {dayEvents.length > 0 && !isSelected && (() => {
+                        // Group events by unique labels to avoid duplicates on calendar
+                        const uniqueLabels = [];
+                        const seenLabels = new Set();
 
-                                const isAm = (event.periods || []).includes(1);
+                        dayEvents.forEach(event => {
+                            let label = '';
+                            let itemBgColor = 'transparent';
+                            let itemTextColor = '#2d3748';
+                            let itemBorderColor = 'transparent';
 
-                                // 1. Base Label
-                                if (event.type === 'full') {
-                                    label = '월차';
+                            const isAm = (event.periods || []).includes(1);
+
+                            // 1. Base Label
+                            if (event.type === 'full') {
+                                label = '월차';
+                                itemBgColor = '#fff5f5';
+                                itemTextColor = '#c53030';
+                                itemBorderColor = '#feb2b2';
+                            } else if (event.type === 'half') {
+                                if (isAm) {
+                                    label = '오전';
                                     itemBgColor = '#fff5f5';
                                     itemTextColor = '#c53030';
                                     itemBorderColor = '#feb2b2';
-                                } else if (event.type === 'half') {
-                                    if (isAm) {
-                                        label = '오전';
-                                        itemBgColor = '#fff5f5';
-                                        itemTextColor = '#c53030';
-                                        itemBorderColor = '#feb2b2';
-                                    } else {
-                                        label = '오후';
-                                        itemBgColor = '#ebf8ff';
-                                        itemTextColor = '#2c5282';
-                                        itemBorderColor = '#90cdf4';
-                                    }
-                                } else if (event.type === 'special') {
-                                    label = '특휴';
-                                    itemBgColor = '#faf5ff';
-                                    itemTextColor = '#553c9a';
-                                    itemBorderColor = '#d6bcfa';
+                                } else {
+                                    label = '오후';
+                                    itemBgColor = '#ebf8ff';
+                                    itemTextColor = '#2c5282';
+                                    itemBorderColor = '#90cdf4';
                                 }
+                            } else if (event.type === 'special') {
+                                label = '특휴';
+                                itemBgColor = '#faf5ff';
+                                itemTextColor = '#553c9a';
+                                itemBorderColor = '#d6bcfa';
+                            }
 
-                                // 2. Reason Override
-                                if (event.reason) {
-                                    label = event.reason;
-                                    // Default Gray Style for other reasons
-                                    itemBgColor = '#F7FAFC';
-                                    itemTextColor = '#4A5568';
-                                    itemBorderColor = '#CBD5E0';
-                                }
+                            // 2. Reason Override
+                            if (event.reason) {
+                                label = event.reason;
+                                // Default Gray Style for other reasons
+                                itemBgColor = '#F7FAFC';
+                                itemTextColor = '#4A5568';
+                                itemBorderColor = '#CBD5E0';
+                            }
 
-                                return (
+                            // Only add if we haven't seen this label
+                            if (!seenLabels.has(label)) {
+                                seenLabels.add(label);
+                                uniqueLabels.push({ label, itemBgColor, itemTextColor, itemBorderColor });
+                            }
+                        });
+
+                        return (
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '2px',
+                                width: '100%'
+                            }}>
+                                {uniqueLabels.map((item, idx) => (
                                     <div key={idx} style={{
                                         fontSize: '0.7rem',
                                         fontWeight: 'bold',
-                                        color: itemTextColor,
-                                        backgroundColor: itemBgColor,
-                                        border: `1px solid ${itemBorderColor}`,
+                                        color: item.itemTextColor,
+                                        backgroundColor: item.itemBgColor,
+                                        border: `1px solid ${item.itemBorderColor}`,
                                         borderRadius: '6px',
                                         padding: '2px 0',
                                         width: '100%',
@@ -211,12 +223,12 @@ const EmbeddedCalendar = ({
                                         overflow: 'hidden',
                                         textOverflow: 'ellipsis'
                                     }}>
-                                        {label}
+                                        {item.label}
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        );
+                    })()}
                 </div>
             );
         }
