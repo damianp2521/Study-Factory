@@ -7,6 +7,7 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
     const [lastGenerated, setLastGenerated] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         fetchRequests();
@@ -101,11 +102,10 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
         groupedRequests[uid].items.push(req);
     });
 
-    // Sort users by name (optional) or keep creation order? 
-    // Let's convert to array and sort by Name
-    const groupedArray = Object.values(groupedRequests).sort((a, b) => {
-        return (a.user?.name || '').localeCompare(b.user?.name || '');
-    });
+    // Convert to array and filter
+    const groupedArray = Object.values(groupedRequests)
+        .filter(group => (group.user?.name || '').toLowerCase().includes(searchTerm.toLowerCase()))
+        .sort((a, b) => (a.user?.name || '').localeCompare(b.user?.name || ''));
 
     // Sort items within user: Day -> Start Period
     groupedArray.forEach(group => {
@@ -121,72 +121,87 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', marginLeft: '-8px' }}>
-                        <ChevronLeft size={26} color="#2d3748" />
-                    </button>
-                    <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px' }}>고정 기타 휴무 관리</h2>
+            {/* Header Area */}
+            <div style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px', marginLeft: '-8px' }}>
+                            <ChevronLeft size={26} color="#2d3748" />
+                        </button>
+                        <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px' }}>고정 기타 휴무 관리</h2>
+                    </div>
+
+                    {/* Manual Generation Button & Info */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+                        <button
+                            onClick={handleGenerateNextWeek}
+                            style={{
+                                padding: '6px 10px', borderRadius: '6px',
+                                background: '#38a169', color: 'white', border: 'none',
+                                fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px',
+                                cursor: 'pointer', fontSize: '0.85rem'
+                            }}
+                        >
+                            <Play size={14} />
+                            다음주 자동 생성
+                        </button>
+                        {lastGenerated && (
+                            <div style={{ fontSize: '0.7rem', color: '#718096' }}>
+                                {lastGenerated} 생성됨
+                            </div>
+                        )}
+                    </div>
                 </div>
 
-                {/* Manual Generation Button & Info */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                    <button
-                        onClick={handleGenerateNextWeek}
-                        style={{
-                            padding: '8px 12px', borderRadius: '8px',
-                            background: '#38a169', color: 'white', border: 'none',
-                            fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px',
-                            cursor: 'pointer', fontSize: '0.9rem'
-                        }}
-                    >
-                        <Play size={16} />
-                        다음주 자동 생성
-                    </button>
-                    {lastGenerated && (
-                        <div style={{ fontSize: '0.75rem', color: '#718096' }}>
-                            {lastGenerated} 생성됨
-                        </div>
-                    )}
-                </div>
+                {/* Search Bar */}
+                <input
+                    type="text"
+                    placeholder="이름 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                        width: '100%', padding: '10px', borderRadius: '8px',
+                        border: '1px solid #e2e8f0', fontSize: '0.95rem',
+                        background: '#f7fafc', outline: 'none', boxSizing: 'border-box'
+                    }}
+                />
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '20px' }}>
                 {groupedArray.length === 0 ? (
                     <div style={{ textAlign: 'center', marginTop: '50px', color: '#a0aec0' }}>
-                        등록된 고정 휴무가 없습니다.
+                        {searchTerm ? '검색 결과가 없습니다.' : '등록된 고정 휴무가 없습니다.'}
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {groupedArray.map((group, idx) => (
                             <div key={idx} style={{
-                                padding: '20px', background: 'white', borderRadius: '16px',
-                                border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                padding: '15px', background: 'white', borderRadius: '12px',
+                                border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                             }}>
                                 {/* Header: Branch + Name */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px', borderBottom: '1px solid #f7fafc', paddingBottom: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #f7fafc' }}>
                                     <span style={{
-                                        background: '#ebf8ff', color: '#2b6cb0', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem'
+                                        background: '#ebf8ff', color: '#2b6cb0', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.85rem'
                                     }}>
                                         {group.user?.branch}
                                     </span>
-                                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#2d3748' }}>
+                                    <span style={{ fontWeight: 'bold', fontSize: '1rem', color: '#2d3748' }}>
                                         {group.user?.name}
                                     </span>
                                 </div>
 
                                 {/* Items List */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     {group.items.map(req => (
                                         <div key={req.id} style={{
-                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                            padding: '8px 0'
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                                         }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem' }}>
-                                                <span style={{ color: '#718096', minWidth: '80px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.95rem' }}>
+                                                <span style={{ color: '#718096', width: '80px' }}>
                                                     매주 {daysMap[req.day_of_week]}요일
                                                 </span>
-                                                <span style={{ fontWeight: 'bold', color: '#2f855a' }}>
+                                                <span style={{ fontWeight: 'bold', color: '#2f855a', width: '40px' }}>
                                                     {req.reason}
                                                 </span>
                                                 <span style={{ color: '#4a5568' }}>
@@ -202,7 +217,7 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
                                                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                                                 }}
                                             >
-                                                <Trash2 size={18} />
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
                                     ))}
