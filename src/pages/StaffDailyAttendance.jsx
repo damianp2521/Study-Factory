@@ -396,7 +396,7 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                                 type="date"
                                 value={format(entryDate, 'yyyy-MM-dd')}
                                 onChange={(e) => setEntryDate(new Date(e.target.value))}
-                                style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
+                                style={{ width: '100%', height: '40px', padding: '0 8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
                             />
                         </div>
                         <div>
@@ -406,7 +406,7 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                                 value={seatNumber}
                                 onChange={(e) => setSeatNumber(e.target.value)}
                                 placeholder="번호"
-                                style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
+                                style={{ width: '100%', height: '40px', padding: '0 8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
                             />
                         </div>
                     </div>
@@ -417,7 +417,7 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             placeholder="예: 김회원 / 회계사 / 선식, 뜨아"
-                            style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
+                            style={{ width: '100%', height: '40px', padding: '0 8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
                         />
                     </div>
                     <button
@@ -963,9 +963,9 @@ const StaffDailyAttendance = ({ onBack }) => {
                         {isSearchOpen ? (
                             <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                 <div style={{
-                                    display: 'flex', alignItems: 'center',
+                                    display: 'flex', alignItems: 'center', height: '32px', boxSizing: 'border-box',
                                     background: 'white', border: '1px solid #cbd5e0', borderRadius: '20px',
-                                    padding: '4px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                    padding: '0 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                 }}>
                                     <Search size={16} color="#a0aec0" style={{ marginRight: '5px' }} />
                                     <input
