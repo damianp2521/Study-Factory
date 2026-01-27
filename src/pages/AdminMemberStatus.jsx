@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Trash2, Edit2, Save, X } from 'lucide-react';
+import { ChevronLeft, Trash2, Edit2, Save, X, Search } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS, BRANCH_LIST } from '../constants/branches';
 
@@ -9,6 +9,8 @@ const AdminMemberStatus = ({ onBack }) => {
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({ branch: '', role: '', seat_number: '' });
     const [selectedBranch, setSelectedBranch] = useState('전체');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     const branches = BRANCH_OPTIONS;
 
@@ -117,9 +119,13 @@ const AdminMemberStatus = ({ onBack }) => {
         }
     };
 
-    const filteredUsers = selectedBranch === '전체'
-        ? users
-        : users.filter(user => user.branch === selectedBranch);
+    const filteredUsers = users.filter(user => {
+        // Branch filter
+        const branchMatch = selectedBranch === '전체' || user.branch === selectedBranch;
+        // Name search filter
+        const nameMatch = !searchTerm.trim() || user.name.toLowerCase().includes(searchTerm.toLowerCase());
+        return branchMatch && nameMatch;
+    });
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -152,27 +158,73 @@ const AdminMemberStatus = ({ onBack }) => {
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>사원 현황</h2>
                 </div>
 
-                {/* Branch Filter */}
-                <select
-                    value={selectedBranch}
-                    onChange={(e) => setSelectedBranch(e.target.value)}
-                    style={{
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
-                        fontSize: '0.9rem',
-                        color: '#4a5568',
-                        backgroundColor: 'white',
-                        outline: 'none',
-                        cursor: 'pointer'
-                    }}
-                >
-                    {branches.map(branch => (
-                        <option key={branch} value={branch}>
-                            {branch === '전체' ? '전체 지점' : branch}
-                        </option>
-                    ))}
-                </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Name Search */}
+                    {isSearchOpen ? (
+                        <div style={{
+                            display: 'flex', alignItems: 'center',
+                            background: 'white', border: '1px solid #cbd5e0', borderRadius: '20px',
+                            padding: '4px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                        }}>
+                            <Search size={16} color="#a0aec0" style={{ marginRight: '5px', flexShrink: 0 }} />
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="이름 검색"
+                                style={{
+                                    border: 'none', outline: 'none', fontSize: '0.85rem', width: '80px', color: '#4a5568'
+                                }}
+                                autoFocus
+                                onBlur={() => {
+                                    if (!searchTerm) setIsSearchOpen(false);
+                                }}
+                            />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => { setSearchTerm(''); setIsSearchOpen(false); }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                                >
+                                    <X size={14} color="#a0aec0" />
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setIsSearchOpen(true)}
+                            style={{
+                                background: 'white', border: '1px solid #e2e8f0', borderRadius: '20px',
+                                padding: '6px 10px', fontSize: '0.85rem', color: '#718096', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '34px'
+                            }}
+                        >
+                            <Search size={16} />
+                        </button>
+                    )}
+
+                    {/* Branch Filter */}
+                    <select
+                        value={selectedBranch}
+                        onChange={(e) => setSelectedBranch(e.target.value)}
+                        style={{
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '0.9rem',
+                            color: '#4a5568',
+                            backgroundColor: 'white',
+                            outline: 'none',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        {branches.map(branch => (
+                            <option key={branch} value={branch}>
+                                {branch === '전체' ? '전체 지점' : branch}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* List */}
