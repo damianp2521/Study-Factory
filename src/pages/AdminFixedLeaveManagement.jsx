@@ -6,9 +6,12 @@ import { addDays, startOfWeek, endOfWeek, format, nextMonday } from 'date-fns';
 const AdminFixedLeaveManagement = ({ onBack }) => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [lastGenerated, setLastGenerated] = useState(null);
 
     useEffect(() => {
         fetchRequests();
+        const saved = localStorage.getItem('fixed_leave_last_generated');
+        if (saved) setLastGenerated(saved);
     }, []);
 
     const fetchRequests = async () => {
@@ -51,15 +54,16 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
     };
 
     const handleGenerateNextWeek = async () => {
-        // Calculate next Week's Monday to Sunday
+        // Calculate Range: This Week Monday ~ Next Week Sunday
         const today = new Date();
+        const thisMon = startOfWeek(today, { weekStartsOn: 1 }); // Monday
         const nextMon = nextMonday(today);
         const nextSun = addDays(nextMon, 6);
 
-        const startDateStr = format(nextMon, 'yyyy-MM-dd');
+        const startDateStr = format(thisMon, 'yyyy-MM-dd');
         const endDateStr = format(nextSun, 'yyyy-MM-dd');
 
-        if (!confirm(`다음 주(${startDateStr} ~ ${endDateStr})의 휴무를 자동 생성하시겠습니까?`)) return;
+        if (!confirm(`이번 주 + 다음 주(${startDateStr} ~ ${endDateStr})의 고정 휴무를 생성하시겠습니까?\n(이미 존재하는 기록은 덮어씌워질 수 있습니다.)`)) return;
 
         setLoading(true);
         try {
@@ -71,7 +75,11 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
 
             if (error) throw error;
 
-            alert(`생성 완료! 총 ${data}건의 출석 기록이 생성/갱신되었습니다.`);
+            const nowStr = format(new Date(), 'yy.MM.dd(eee) HH:mm', { locale: (await import('date-fns/locale')).ko });
+            setLastGenerated(nowStr);
+            localStorage.setItem('fixed_leave_last_generated', nowStr);
+
+            alert(`생성 완료! 총 ${data}건의 기록이 처리되었습니다.`);
         } catch (err) {
             console.error(err);
             alert('생성 실패: ' + err.message);
@@ -92,19 +100,26 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: '0 0 0 4px' }}>고정 기타 휴무 관리</h2>
                 </div>
 
-                {/* Manual Generation Button */}
-                <button
-                    onClick={handleGenerateNextWeek}
-                    style={{
-                        padding: '8px 12px', borderRadius: '8px',
-                        background: '#38a169', color: 'white', border: 'none',
-                        fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px',
-                        cursor: 'pointer', fontSize: '0.9rem'
-                    }}
-                >
-                    <Play size={16} />
-                    다음주 자동 생성
-                </button>
+                {/* Manual Generation Button & Info */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <button
+                        onClick={handleGenerateNextWeek}
+                        style={{
+                            padding: '8px 12px', borderRadius: '8px',
+                            background: '#38a169', color: 'white', border: 'none',
+                            fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px',
+                            cursor: 'pointer', fontSize: '0.9rem'
+                        }}
+                    >
+                        <Play size={16} />
+                        자동 생성 (이번주+다음주)
+                    </button>
+                    {lastGenerated && (
+                        <div style={{ fontSize: '0.75rem', color: '#718096' }}>
+                            {lastGenerated} 생성됨
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
