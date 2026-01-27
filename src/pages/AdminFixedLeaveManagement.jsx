@@ -88,6 +88,35 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
         }
     };
 
+    // Group requests by User
+    const groupedRequests = {};
+    requests.forEach(req => {
+        const uid = req.user_id;
+        if (!groupedRequests[uid]) {
+            groupedRequests[uid] = {
+                user: req.profiles,
+                items: []
+            };
+        }
+        groupedRequests[uid].items.push(req);
+    });
+
+    // Sort users by name (optional) or keep creation order? 
+    // Let's convert to array and sort by Name
+    const groupedArray = Object.values(groupedRequests).sort((a, b) => {
+        return (a.user?.name || '').localeCompare(b.user?.name || '');
+    });
+
+    // Sort items within user: Day -> Start Period
+    groupedArray.forEach(group => {
+        group.items.sort((a, b) => {
+            if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
+            const periodA = a.periods[0] || 0;
+            const periodB = b.periods[0] || 0;
+            return periodA - periodB;
+        });
+    });
+
     const daysMap = ['일', '월', '화', '수', '목', '금', '토'];
 
     return (
@@ -112,7 +141,7 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
                         }}
                     >
                         <Play size={16} />
-                        자동 생성 (이번주+다음주)
+                        다음주 자동 생성
                     </button>
                     {lastGenerated && (
                         <div style={{ fontSize: '0.75rem', color: '#718096' }}>
@@ -123,51 +152,61 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
-                {requests.length === 0 ? (
+                {groupedArray.length === 0 ? (
                     <div style={{ textAlign: 'center', marginTop: '50px', color: '#a0aec0' }}>
                         등록된 고정 휴무가 없습니다.
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        {requests.map(req => (
-                            <div key={req.id} style={{
-                                padding: '15px', background: 'white', borderRadius: '12px',
-                                border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {groupedArray.map((group, idx) => (
+                            <div key={idx} style={{
+                                padding: '20px', background: 'white', borderRadius: '16px',
+                                border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
                             }}>
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                        <span style={{
-                                            background: '#ebf8ff', color: '#2b6cb0', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold', fontSize: '0.85rem'
-                                        }}>
-                                            {req.profiles?.branch}
-                                        </span>
-                                        <span style={{ fontWeight: 'bold', fontSize: '1rem', color: '#2d3748' }}>
-                                            {req.profiles?.name}
-                                        </span>
-                                        <span style={{ color: '#718096', fontSize: '0.9rem' }}>
-                                            매주 {daysMap[req.day_of_week]}요일
-                                        </span>
-                                    </div>
-                                    <div style={{ fontSize: '0.9rem', color: '#4a5568' }}>
-                                        <span style={{ fontWeight: 'bold', color: '#2f855a', marginRight: '5px' }}>
-                                            {req.reason}
-                                        </span>
-                                        <span>
-                                            ({req.periods.join(', ')}교시)
-                                        </span>
-                                    </div>
+                                {/* Header: Branch + Name */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px', borderBottom: '1px solid #f7fafc', paddingBottom: '10px' }}>
+                                    <span style={{
+                                        background: '#ebf8ff', color: '#2b6cb0', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem'
+                                    }}>
+                                        {group.user?.branch}
+                                    </span>
+                                    <span style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#2d3748' }}>
+                                        {group.user?.name}
+                                    </span>
                                 </div>
 
-                                <button
-                                    onClick={() => handleDelete(req.id)}
-                                    style={{
-                                        background: '#fff5f5', color: '#c53030', border: 'none',
-                                        padding: '8px', borderRadius: '8px', cursor: 'pointer'
-                                    }}
-                                >
-                                    <Trash2 size={20} />
-                                </button>
+                                {/* Items List */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {group.items.map(req => (
+                                        <div key={req.id} style={{
+                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                            padding: '8px 0'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem' }}>
+                                                <span style={{ color: '#718096', minWidth: '80px' }}>
+                                                    매주 {daysMap[req.day_of_week]}요일
+                                                </span>
+                                                <span style={{ fontWeight: 'bold', color: '#2f855a' }}>
+                                                    {req.reason}
+                                                </span>
+                                                <span style={{ color: '#4a5568' }}>
+                                                    ({req.periods.join(', ')}교시)
+                                                </span>
+                                            </div>
+
+                                            <button
+                                                onClick={() => handleDelete(req.id)}
+                                                style={{
+                                                    background: '#fff5f5', color: '#c53030', border: 'none',
+                                                    padding: '6px', borderRadius: '6px', cursor: 'pointer',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ))}
                     </div>
