@@ -277,7 +277,10 @@ const UserMemoPopup = ({ user, memberMemos, onAdd, onDelete, onClose }) => {
                     </span>
                 </div>
                 <button
-                    onClick={onClose}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                    }}
                     style={{
                         padding: '8px', borderRadius: '50%', border: 'none', background: 'white',
                         cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
@@ -879,7 +882,16 @@ const StaffDailyAttendance = ({ onBack }) => {
             {/* Bottom Popup Section */}
             {isPopupOpen && selectedUser && (
                 <div style={{ height: '50%', flexShrink: 0, zIndex: 50 }}>
-                    <UserMemoPopup user={selectedUser} memberMemos={memberMemos} onAdd={addMemberMemo} onDelete={deleteMemberMemo} onClose={() => setIsPopupOpen(false)} />
+                    <UserMemoPopup
+                        user={selectedUser}
+                        memberMemos={memberMemos}
+                        onAdd={addMemberMemo}
+                        onDelete={deleteMemberMemo}
+                        onClose={() => {
+                            setIsPopupOpen(false);
+                            setHighlightedSeat(null);
+                        }}
+                    />
                 </div>
             )}
 
