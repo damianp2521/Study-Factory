@@ -784,39 +784,6 @@ const StaffDailyAttendance = ({ onBack }) => {
             <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
                 {/* Row 1: Centered Date Navigator (Top) - Adjusted Padding */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', padding: '15px 10px 0 10px', position: 'relative' }}>
-                    {/* Search Button (Absolute Left) */}
-                    <div style={{ position: 'absolute', left: '20px', display: 'flex', alignItems: 'center' }}>
-                        {isSearchOpen ? (
-                            <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <input
-                                    type="text"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="이름..."
-                                    style={{
-                                        width: '80px', padding: '4px', borderRadius: '4px', border: '1px solid #cbd5e0', fontSize: '0.8rem'
-                                    }}
-                                    autoFocus
-                                    onBlur={() => {
-                                        // Optional: close on blur if empty
-                                        if (!searchTerm) setIsSearchOpen(false);
-                                    }}
-                                />
-                                <button type="submit" style={{ display: 'none' }}></button>
-                            </form>
-                        ) : (
-                            <button
-                                onClick={() => setIsSearchOpen(true)}
-                                style={{
-                                    border: 'none', background: 'none', cursor: 'pointer', padding: '5px',
-                                    color: '#718096', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                }}
-                            >
-                                <Search size={20} />
-                            </button>
-                        )}
-                    </div>
-
                     <button onClick={() => changeDate(-1)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
                         <ChevronLeft size={24} color="#4a5568" />
                     </button>
@@ -828,8 +795,50 @@ const StaffDailyAttendance = ({ onBack }) => {
                     </button>
                 </div>
 
-                {/* Row 2: Right Aligned Memo Button (Bottom) */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '5px 10px 10px 10px' }}>
+                {/* Row 2: Search (Left) & Memo (Right) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 10px 10px 10px' }}>
+                    {/* Search Button/Input */}
+                    <div>
+                        {isSearchOpen ? (
+                            <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <div style={{
+                                    display: 'flex', alignItems: 'center',
+                                    background: 'white', border: '1px solid #cbd5e0', borderRadius: '20px',
+                                    padding: '4px 10px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                }}>
+                                    <Search size={16} color="#a0aec0" style={{ marginRight: '5px' }} />
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="이름 검색"
+                                        style={{
+                                            border: 'none', outline: 'none', fontSize: '0.85rem', width: '80px', color: '#4a5568'
+                                        }}
+                                        autoFocus
+                                        onBlur={() => {
+                                            if (!searchTerm) setIsSearchOpen(false);
+                                        }}
+                                    />
+                                </div>
+                                <button type="submit" style={{ display: 'none' }}></button>
+                            </form>
+                        ) : (
+                            <button
+                                onClick={() => setIsSearchOpen(true)}
+                                style={{
+                                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '20px',
+                                    padding: '6px 12px', fontSize: '0.85rem', color: '#718096', fontWeight: 'bold',
+                                    display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+                                    boxShadow: '0 1px 2px rgba(0,0,0,0.05)', height: '32px'
+                                }}
+                            >
+                                <Search size={16} />
+                                <span>이름 검색</span>
+                            </button>
+                        )}
+                    </div>
+
                     <button
                         onClick={() => setShowMemoModal(true)}
                         style={{
