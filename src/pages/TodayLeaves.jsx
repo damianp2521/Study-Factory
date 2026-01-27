@@ -202,7 +202,7 @@ const TodayLeaves = () => {
                         <ArrowLeft size={24} color="var(--color-text-main)" />
                     </button>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
-                        일별 사원 휴무 현황
+                        일별 사원 휴무 현황 (Update)
                     </h2>
                 </div>
             </div>
