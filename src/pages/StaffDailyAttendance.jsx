@@ -397,9 +397,9 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                                 value={format(entryDate, 'yyyy-MM-dd')}
                                 onChange={(e) => setEntryDate(new Date(e.target.value))}
                                 style={{
-                                    width: '100%', height: '38px', padding: '0 8px', borderRadius: '8px',
+                                    width: '100%', height: '35px', padding: '0 8px', borderRadius: '8px',
                                     border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box',
-                                    backgroundColor: 'white', WebkitAppearance: 'none', appearance: 'none', lineHeight: '36px'
+                                    backgroundColor: 'white', WebkitAppearance: 'none', appearance: 'none', lineHeight: '33px'
                                 }}
                             />
                         </div>
@@ -411,9 +411,9 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                                 onChange={(e) => setSeatNumber(e.target.value)}
                                 placeholder="번호"
                                 style={{
-                                    width: '100%', height: '38px', padding: '0 8px', borderRadius: '8px',
+                                    width: '100%', height: '35px', padding: '0 8px', borderRadius: '8px',
                                     border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box',
-                                    backgroundColor: 'white', lineHeight: '36px'
+                                    backgroundColor: 'white', lineHeight: '33px'
                                 }}
                             />
                         </div>
@@ -425,7 +425,10 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             placeholder="예: 김회원 / 회계사 / 선식, 뜨아"
-                            style={{ width: '100%', height: '38px', padding: '0 8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box' }}
+                            style={{
+                                width: '100%', height: '35px', padding: '0 8px', borderRadius: '8px',
+                                border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box'
+                            }}
                         />
                     </div>
                     <button
