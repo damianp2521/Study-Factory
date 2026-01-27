@@ -1153,7 +1153,10 @@ const StaffAttendance = ({ onBack }) => {
                         memberMemos={memberMemos}
                         onAdd={addMemberMemo}
                         onDelete={deleteMemberMemo}
-                        onClose={() => setIsPopupOpen(false)} // Close only, keep highlight
+                        onClose={() => {
+                            setIsPopupOpen(false);
+                            setHighlightedSeat(null);
+                        }}
                     />
                 </div>
             )}
