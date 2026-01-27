@@ -161,6 +161,78 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
         }
     };
 
+    const handleFixedSubmit = async () => {
+        if (selectedDates.length === 0) {
+            alert('날짜를 선택해주세요.');
+            return;
+        }
+        if (selectedPeriods.length === 0) {
+            alert('교시를 선택해주세요.');
+            return;
+        }
+
+        // Determine reason
+        let finalReason = reasonType;
+        if (reasonType === '기타') {
+            if (!customReason.trim()) {
+                alert('기타 사유를 입력해주세요.');
+                return;
+            }
+            finalReason = customReason.trim();
+        }
+
+        // Get Days of Week from selected dates
+        // We only care about UNIQUE days of week.
+        const daysOfWeekMap = {
+            0: '일요일', 1: '월요일', 2: '화요일', 3: '수요일', 4: '목요일', 5: '금요일', 6: '토요일'
+        };
+
+        const daysToRegister = new Set();
+        selectedDates.forEach(dateStr => {
+            const date = new Date(dateStr);
+            daysToRegister.add(date.getDay()); // 0-6
+        });
+
+        const dayNames = Array.from(daysToRegister).map(d => daysOfWeekMap[d]).join(', ');
+
+        const msg = `${selectedUser.name}님의 [매주 고정 일정]을 등록하시겠습니까?\n\n` +
+            `요일: ${dayNames}\n` +
+            `사유: ${finalReason}\n` +
+            `교시: ${selectedPeriods.join(', ')}`;
+
+        if (confirm(msg)) {
+            setLoading(true);
+            try {
+                const inserts = [];
+                daysToRegister.forEach(day => {
+                    inserts.push({
+                        user_id: selectedUser.id,
+                        day_of_week: day,
+                        periods: selectedPeriods,
+                        reason: finalReason
+                    });
+                });
+
+                const { error } = await supabase
+                    .from('fixed_leave_requests')
+                    .insert(inserts);
+
+                if (error) throw error;
+
+                alert('매주 고정 일정이 등록되었습니다.\n[고정 기타 휴무 관리] 메뉴에서 확인 및 자동 생성을 할 수 있습니다.');
+                // Don't clear form immediately? Or clear it? user might want to apply one-off too?
+                // Clear for safety
+                setSelectedDates([]);
+                setSelectedPeriods([]);
+            } catch (err) {
+                console.error(err);
+                alert('고정 등록 실패: ' + err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     const handleDeleteHistory = async (id) => {
         if (!confirm('정말 삭제하시겠습니까?')) return;
         try {
@@ -331,20 +403,36 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
                 </div>
             </div>
 
-            <button
-                onClick={handleSubmit}
-                disabled={loading || selectedDates.length === 0}
-                style={{
-                    width: '100%', padding: '16px', borderRadius: '12px',
-                    background: 'var(--color-primary)', color: 'white',
-                    border: 'none', fontSize: '1.1rem', fontWeight: 'bold',
-                    cursor: loading ? 'wait' : 'pointer',
-                    opacity: (loading || selectedDates.length === 0) ? 0.7 : 1,
-                    marginBottom: '30px'
-                }}
-            >
-                {loading ? '처리 중...' : '신청하기'}
-            </button>
+            {/* Button Group */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
+                <button
+                    onClick={handleSubmit}
+                    disabled={loading || selectedDates.length === 0}
+                    style={{
+                        flex: 1, padding: '16px', borderRadius: '12px',
+                        background: 'var(--color-primary)', color: 'white',
+                        border: 'none', fontSize: '1.1rem', fontWeight: 'bold',
+                        cursor: loading ? 'wait' : 'pointer',
+                        opacity: (loading || selectedDates.length === 0) ? 0.7 : 1,
+                    }}
+                >
+                    {loading ? '처리 중...' : '신청하기'}
+                </button>
+
+                <button
+                    onClick={handleFixedSubmit}
+                    disabled={loading || selectedDates.length === 0}
+                    style={{
+                        flex: 1, padding: '16px', borderRadius: '12px',
+                        background: '#805ad5', color: 'white', // Purple for distinction
+                        border: 'none', fontSize: '1.1rem', fontWeight: 'bold',
+                        cursor: loading ? 'wait' : 'pointer',
+                        opacity: (loading || selectedDates.length === 0) ? 0.7 : 1,
+                    }}
+                >
+                    매주 고정 신청
+                </button>
+            </div>
 
             {/* History Section */}
             <div>
