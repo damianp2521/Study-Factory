@@ -839,39 +839,41 @@ const StaffDailyAttendance = ({ onBack }) => {
                         )}
                     </div>
 
-                    <button
-                        onClick={() => alert('입사예정자 관리 기능은 아직 구현되지 않았습니다.')}
-                        style={{
-                            background: '#e6fffa', border: '1px solid #b2f5ea', borderRadius: '16px',
-                            padding: '6px 12px', fontSize: '0.85rem', color: '#267E82', fontWeight: 'bold',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                            height: '32px'
-                        }}
-                    >
-                        <UserPlus size={16} />
-                        입사예정자 관리
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <button
+                            onClick={() => alert('입사예정자 관리 기능은 아직 구현되지 않았습니다.')}
+                            style={{
+                                background: '#e6fffa', border: '1px solid #b2f5ea', borderRadius: '16px',
+                                padding: '6px 12px', fontSize: '0.85rem', color: '#267E82', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                                height: '32px'
+                            }}
+                        >
+                            <UserPlus size={16} />
+                            입사예정자 관리
+                        </button>
 
-                    <button
-                        onClick={() => setShowMemoModal(true)}
-                        style={{
-                            background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
-                            padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
-                            height: '32px'
-                        }}
-                    >
-                        오늘 출석 참고사항
-                        {dailyMemos.length > 0 && (
-                            <span style={{
-                                color: '#38a169', background: 'white', width: '20px', height: '20px',
-                                borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                            }}>
-                                {dailyMemos.length}
-                            </span>
-                        )}
-                    </button>
+                        <button
+                            onClick={() => setShowMemoModal(true)}
+                            style={{
+                                background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
+                                padding: '6px 12px', fontSize: '0.85rem', color: '#2b6cb0', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer',
+                                height: '32px'
+                            }}
+                        >
+                            오늘 출석 참고사항
+                            {dailyMemos.length > 0 && (
+                                <span style={{
+                                    color: '#38a169', background: 'white', width: '20px', height: '20px',
+                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '0.8rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                                }}>
+                                    {dailyMemos.length}
+                                </span>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
 
