@@ -138,14 +138,9 @@ const StaffBeverageOrderList = ({ onBack }) => {
         }
     };
 
-    // Color palette for cards to distinct them
+    // Unified color for all cards (matches logout button / primary color)
     const cardColors = [
-        { header: '#38b2ac', body: '#e6fffa', text: '#234e52' }, // Teal
-        { header: '#4299e1', body: '#ebf8ff', text: '#2c5282' }, // Blue
-        { header: '#ed8936', body: '#fffaf0', text: '#7b341e' }, // Orange
-        { header: '#9f7aea', body: '#faf5ff', text: '#553c9a' }, // Purple
-        { header: '#f56565', body: '#fff5f5', text: '#742a2a' }, // Red
-        { header: '#48bb78', body: '#f0fff4', text: '#22543d' }, // Green
+        { header: '#387679', body: '#e6fffa', text: '#234e52' }, // Teal (Primary)
     ];
 
     return (
