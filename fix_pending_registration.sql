@@ -38,13 +38,55 @@ CREATE POLICY "Anon can read pending_registrations"
     TO anon
     USING (true);
 
--- 5. 회원가입 완료 시 pending_registrations에서 삭제하는 함수
-CREATE OR REPLACE FUNCTION public.complete_registration(
-    user_name TEXT
-)
+-- 5. 회원가입 완료 시 pending_registrations에서 삭제하는 함수 (SECURITY DEFINER로 RLS 우회)
+CREATE OR REPLACE FUNCTION public.complete_registration(user_name TEXT)
 RETURNS VOID AS $$
 BEGIN
     DELETE FROM public.pending_registrations
     WHERE name = user_name;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. handle_new_user 트리거 함수 업데이트 - pending_registrations에서 정보 조회 및 자동 삭제
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+DECLARE
+    pre_assigned_branch TEXT;
+    pre_assigned_role TEXT;
+    user_name TEXT;
+BEGIN
+    user_name := new.raw_user_meta_data->>'name';
+    
+    -- pending_registrations에서 사전 등록 정보 조회
+    SELECT branch, role 
+    INTO pre_assigned_branch, pre_assigned_role
+    FROM public.pending_registrations 
+    WHERE name = user_name;
+
+    -- profiles 테이블에 사용자 정보 삽입
+    INSERT INTO public.profiles (id, name, branch, role, email)
+    VALUES (
+        new.id,
+        user_name,
+        COALESCE(pre_assigned_branch, new.raw_user_meta_data->>'branch'),
+        COALESCE(pre_assigned_role, new.raw_user_meta_data->>'role', 'member'),
+        new.email
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET 
+        email = EXCLUDED.email,
+        branch = COALESCE(public.profiles.branch, EXCLUDED.branch),
+        role = COALESCE(public.profiles.role, EXCLUDED.role);
+
+    -- 가입 완료 후 pending_registrations에서 자동 삭제
+    DELETE FROM public.pending_registrations WHERE name = user_name;
+
+    RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. 트리거가 없으면 생성
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
