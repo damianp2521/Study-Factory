@@ -20,10 +20,10 @@ const AdminMemberRegister = ({ onBack }) => {
 
     const fetchList = async () => {
         try {
+            // pending_registrations 테이블에서 대기 중인 사용자 목록 조회
             const { data, error } = await supabase
-                .from('authorized_users')
+                .from('pending_registrations')
                 .select('*')
-                .eq('is_registered', false) // Only show pending users
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -40,25 +40,39 @@ const AdminMemberRegister = ({ onBack }) => {
         setError('');
 
         try {
-            // Check for duplicates
-            const { data: existing } = await supabase
-                .from('authorized_users')
+            // Check for duplicates in pending_registrations
+            const { data: pendingExisting } = await supabase
+                .from('pending_registrations')
                 .select('id')
                 .eq('name', name.trim())
                 .single();
 
-            if (existing) {
-                setError('이미 등록된 이름입니다.');
+            if (pendingExisting) {
+                setError('이미 등록 대기 중인 이름입니다.');
                 setLoading(false);
                 return;
             }
 
+            // Also check if already registered in profiles
+            const { data: registeredExisting } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('name', name.trim())
+                .single();
+
+            if (registeredExisting) {
+                setError('이미 가입된 사용자입니다.');
+                setLoading(false);
+                return;
+            }
+
+            // Insert into pending_registrations table
             const { error } = await supabase
-                .from('authorized_users')
+                .from('pending_registrations')
                 .insert([{
                     name: name.trim(),
                     branch,
-                    role // Insert Selected Role
+                    role
                 }]);
 
             if (error) throw error;
@@ -74,12 +88,13 @@ const AdminMemberRegister = ({ onBack }) => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('정말 삭제하시겠습니까? 계정 정보가 완전히 제거됩니다.')) return;
+        if (!window.confirm('정말 삭제하시겠습니까?')) return;
         try {
-            // Use the RPC to delete from both authorized_users and auth.users
-            const { error } = await supabase.rpc('delete_user_completely', {
-                target_user_id: id
-            });
+            // Delete from pending_registrations table
+            const { error } = await supabase
+                .from('pending_registrations')
+                .delete()
+                .eq('id', id);
 
             if (error) throw error;
             fetchList();

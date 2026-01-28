@@ -119,9 +119,20 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // Check authorized_users
+            // Check if already registered in profiles
+            const { data: existingUser } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('name', name.trim())
+                .single();
+
+            if (existingUser) {
+                throw new Error('이미 가입된 회원입니다. 로그인해 주세요.');
+            }
+
+            // Check pending_registrations for pre-registered user
             const { data, error: fetchError } = await supabase
-                .from('authorized_users')
+                .from('pending_registrations')
                 .select('*')
                 .eq('name', name.trim())
                 .eq('branch', branch)
@@ -131,12 +142,7 @@ const Login = () => {
                 throw new Error('사전 등록된 정보가 없습니다. 관리자에게 문의하세요.');
             }
 
-            if (data.is_registered) {
-                throw new Error('이미 가입된 회원입니다. 로그인해 주세요.');
-            }
-
             // Success: Move to PIN setup
-            // setFoundRole(data.role || 'member'); // Unused
             setPin('');
             setConfirmPin('');
             setMode('register_setup');
@@ -162,18 +168,17 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // CRITICAL: Re-verify user info to get the DEFINITIVE role before creating account
-            // This prevents stale state (e.g. if page was left open)
-            const { data: authData, error: authError } = await supabase
-                .from('authorized_users')
+            // Re-verify user info from pending_registrations to get the role
+            const { data: pendingData, error: pendingError } = await supabase
+                .from('pending_registrations')
                 .select('role')
                 .eq('name', name.trim())
                 .eq('branch', branch)
                 .single();
 
-            if (authError) throw new Error('사원 정보를 다시 확인할 수 없습니다.');
+            if (pendingError) throw new Error('사원 정보를 다시 확인할 수 없습니다.');
 
-            const finalRole = authData?.role || 'member';
+            const finalRole = pendingData?.role || 'member';
             const email = nameToEmail(name);
             const password = `${pin}00`;
 
@@ -184,21 +189,21 @@ const Login = () => {
                     data: {
                         name: name.trim(),
                         branch: branch,
-                        role: finalRole // Use the re-verified role
+                        role: finalRole
                     }
                 }
             });
 
             if (signUpError) throw signUpError;
 
-            // Update authorized_users to is_registered = true
-            // Using the Name to match since we might not have ID link easily yet
-            // Use RPC to bypass RLS and mark as registered
-            const { error: updateError } = await supabase
-                .rpc('mark_user_registered', { user_name: name.trim() });
+            // Delete from pending_registrations after successful signup
+            const { error: deleteError } = await supabase
+                .from('pending_registrations')
+                .delete()
+                .eq('name', name.trim());
 
-            if (updateError) {
-                console.error("Failed to mark as registered", updateError);
+            if (deleteError) {
+                console.error("Failed to remove from pending_registrations", deleteError);
             }
 
             alert('가입이 완료되었습니다! 로그인해 주세요.');
