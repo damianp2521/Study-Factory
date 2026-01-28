@@ -389,22 +389,22 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                 </div>
 
                 <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', background: '#f7fafc' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '0.9fr 1.1fr', gap: '10px', marginBottom: '10px' }}>
-                        <div>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                        <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>입사예정일</label>
                             <input
                                 type="date"
                                 value={format(entryDate, 'yyyy-MM-dd')}
                                 onChange={(e) => setEntryDate(new Date(e.target.value))}
                                 style={{
-                                    width: '100%', height: '44px', minHeight: '44px', maxHeight: '44px',
-                                    padding: '0 8px', borderRadius: '8px',
-                                    border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box',
-                                    backgroundColor: 'white'
+                                    width: '100%', height: '44px',
+                                    padding: '0 10px', borderRadius: '8px',
+                                    border: '1px solid #cbd5e0', fontSize: '0.9rem',
+                                    boxSizing: 'border-box', backgroundColor: 'white'
                                 }}
                             />
                         </div>
-                        <div>
+                        <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>좌석번호</label>
                             <input
                                 type="number"
@@ -412,10 +412,10 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                                 onChange={(e) => setSeatNumber(e.target.value)}
                                 placeholder="번호"
                                 style={{
-                                    width: '100%', height: '44px', minHeight: '44px', maxHeight: '44px',
-                                    padding: '0 8px', borderRadius: '8px',
-                                    border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box',
-                                    backgroundColor: 'white'
+                                    width: '100%', height: '44px',
+                                    padding: '0 10px', borderRadius: '8px',
+                                    border: '1px solid #cbd5e0', fontSize: '0.9rem',
+                                    boxSizing: 'border-box', backgroundColor: 'white'
                                 }}
                             />
                         </div>
