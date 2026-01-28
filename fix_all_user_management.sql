@@ -152,50 +152,50 @@ BEGIN
     RAISE EXCEPTION 'User not found';
   END IF;
 
-  -- Delete related records (check if table exists first)
+  -- Delete related records (check if table exists first using EXECUTE)
   -- A. Vacation Requests
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'vacation_requests' AND table_schema = 'public') THEN
-      DELETE FROM public.vacation_requests WHERE user_id = target_user_id;
+      EXECUTE 'DELETE FROM public.vacation_requests WHERE user_id = $1' USING target_user_id;
   END IF;
 
   -- B. Weekly Reports
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'weekly_reports' AND table_schema = 'public') THEN
-      DELETE FROM public.weekly_reports WHERE user_id = target_user_id;
+      EXECUTE 'DELETE FROM public.weekly_reports WHERE user_id = $1' USING target_user_id;
   END IF;
 
   -- C. Inquiries
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'inquiries' AND table_schema = 'public') THEN
-      DELETE FROM public.inquiries WHERE user_id = target_user_id;
+      EXECUTE 'DELETE FROM public.inquiries WHERE user_id = $1' USING target_user_id;
   END IF;
 
   -- D. Suggestions
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'suggestions' AND table_schema = 'public') THEN
-      DELETE FROM public.suggestions WHERE user_id = target_user_id;
+      EXECUTE 'DELETE FROM public.suggestions WHERE user_id = $1' USING target_user_id;
   END IF;
 
   -- E. Staff Todos
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'staff_todos' AND table_schema = 'public') THEN
-      DELETE FROM public.staff_todos WHERE created_by = target_user_id OR completed_by = target_user_id;
+      EXECUTE 'DELETE FROM public.staff_todos WHERE created_by = $1 OR completed_by = $1' USING target_user_id;
   END IF;
 
   -- F. Beverage Selections
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'user_beverage_selections' AND table_schema = 'public') THEN
-      DELETE FROM public.user_beverage_selections WHERE user_id = target_user_id;
+      EXECUTE 'DELETE FROM public.user_beverage_selections WHERE user_id = $1' USING target_user_id;
   END IF;
 
   -- G. Attendance Records
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'attendance' AND table_schema = 'public') THEN
-      DELETE FROM public.attendance WHERE user_id = target_user_id;
+      EXECUTE 'DELETE FROM public.attendance WHERE user_id = $1' USING target_user_id;
   END IF;
 
   -- H. Attendance Memos
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'attendance_memos' AND table_schema = 'public') THEN
-      DELETE FROM public.attendance_memos WHERE user_id = target_user_id;
+      EXECUTE 'DELETE FROM public.attendance_memos WHERE user_id = $1' USING target_user_id;
   END IF;
 
   -- I. Member Memos
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'member_memos' AND table_schema = 'public') THEN
-      DELETE FROM public.member_memos WHERE user_id = target_user_id;
+      EXECUTE 'DELETE FROM public.member_memos WHERE user_id = $1' USING target_user_id;
   END IF;
 
   -- J. Delete from profiles
