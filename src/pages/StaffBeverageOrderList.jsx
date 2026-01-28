@@ -252,19 +252,23 @@ const BeverageCard = ({ order, theme }) => {
                 style={{
                     background: theme.header,
                     color: 'white',
-                    padding: '10px',
+                    padding: '10px 35px 10px 12px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 'bold',
-                    fontSize: '1rem',
+                    fontSize: '0.85rem',
                     cursor: 'pointer',
-                    position: 'relative'
+                    position: 'relative',
+                    minHeight: '40px',
+                    textAlign: 'center',
+                    lineHeight: '1.3',
+                    wordBreak: 'keep-all'
                 }}>
-                <span>{order.name} <span style={{ fontSize: '1.1rem', marginLeft: '5px' }}>({order.count})</span></span>
-                <div style={{ position: 'absolute', right: '10px', display: 'flex', alignItems: 'center' }}>
+                <span>{order.name} <span style={{ fontSize: '0.9rem', marginLeft: '3px' }}>({order.count})</span></span>
+                <div style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
                     <svg
-                        width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                         style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
                     >
                         <polyline points="6 9 12 15 18 9"></polyline>
