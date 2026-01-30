@@ -242,19 +242,15 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
     );
 });
 
-// Memo Block for Popup (Full Width)
-const UserMemoPopup = ({ user, memberMemos, onAdd, onDelete, onClose }) => {
-    const [text, setText] = useState('');
+// Memo Block for Popup (Single Text Area)
+const UserMemoPopup = ({ user, memberMemos, onSave, onClose }) => {
     const userMemos = memberMemos.filter(m => m.user_id === user.id);
-    const scrollRef = useRef(null);
+    // Join existing memos with newlines if there are multiple (migration/fallback)
+    const initialText = userMemos.map(m => m.content).join('\n');
+    const [text, setText] = useState(initialText);
 
-    const handleAdd = () => {
-        if (!text.trim()) return;
-        onAdd(user.id, text.trim());
-        setText('');
-        setTimeout(() => {
-            if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }, 100);
+    const handleSave = () => {
+        onSave(user.id, text.trim());
     };
 
     return (
@@ -270,10 +266,10 @@ const UserMemoPopup = ({ user, memberMemos, onAdd, onDelete, onClose }) => {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                        {user.name} <span style={{ fontSize: '0.9rem', color: '#718096', fontWeight: 'normal' }}>(좌석 {user.seat_number})</span>
+                        {user.name} <span style={{ fontSize: '0.9rem', color: '#718096', fontWeight: 'normal' }}>(좌석 {user.seat_number || '-'})</span>
                     </span>
                     <span style={{ fontSize: '0.9rem', color: '#4a5568', background: '#edf2f7', padding: '2px 8px', borderRadius: '4px' }}>
-                        참고사항 {userMemos.length}건
+                        참고사항
                     </span>
                 </div>
                 <button
@@ -292,58 +288,37 @@ const UserMemoPopup = ({ user, memberMemos, onAdd, onDelete, onClose }) => {
                 </button>
             </div>
 
-            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#f8fafc' }}>
-                {userMemos.length === 0 && (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a0aec0' }}>
-                        등록된 참고사항이 없습니다.
-                    </div>
-                )}
-                {userMemos.map(m => (
-                    <div key={m.id} style={{
-                        background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
-                        padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                    }}>
-                        <span style={{ fontSize: '0.95rem', color: '#2d3748', flex: 1, wordBreak: 'break-all', lineHeight: 1.5 }}>
-                            {m.content}
-                        </span>
-                        <button
-                            onClick={() => onDelete(m.id)}
-                            style={{
-                                background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px',
-                                padding: '4px 8px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px',
-                                whiteSpace: 'nowrap', fontWeight: 'bold'
-                            }}
-                        >
-                            삭제
-                        </button>
-                    </div>
-                ))}
-            </div>
-
-            <div style={{ padding: '15px 20px', borderTop: '1px solid #edf2f7', backgroundColor: 'white', display: 'flex', gap: '10px' }}>
-                <input
-                    type="text"
+            <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', backgroundColor: '#fff' }}>
+                <textarea
                     value={text}
                     onChange={e => setText(e.target.value)}
-                    placeholder="새로운 참고사항을 입력하세요..."
+                    placeholder="참고사항을 입력하세요..."
                     style={{
-                        flex: 1, border: '1px solid #cbd5e0', borderRadius: '8px',
-                        padding: '10px 12px', fontSize: '0.95rem', outline: 'none'
-                    }}
-                    onKeyDown={e => {
-                        if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAdd();
+                        flex: 1,
+                        width: '100%',
+                        resize: 'none',
+                        border: '1px solid #cbd5e0',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        fontSize: '1rem',
+                        lineHeight: '1.5',
+                        outline: 'none',
+                        fontFamily: 'inherit'
                     }}
                 />
+            </div>
+
+            <div style={{ padding: '15px 20px', borderTop: '1px solid #edf2f7', backgroundColor: 'white', display: 'flex', justifyContent: 'flex-end' }}>
                 <button
-                    onClick={handleAdd}
+                    onClick={handleSave}
                     style={{
                         background: '#3182ce', color: 'white', border: 'none', borderRadius: '8px',
-                        padding: '0 20px', fontSize: '0.95rem', fontWeight: 'bold', cursor: 'pointer',
-                        whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '5px'
+                        padding: '10px 24px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                     }}
                 >
-                    <Plus size={18} /> 등록
+                    <Save size={18} /> 저장
                 </button>
             </div>
         </div>
@@ -849,19 +824,40 @@ const StaffDailyAttendance = ({ onBack }) => {
             setDailyMemos(prev => prev.filter(m => m.id !== id));
         } catch (e) { alert('삭제 실패'); }
     };
-    const addMemberMemo = async (userId, content) => {
+
+    const handleSaveMemo = async (userId, content) => {
         try {
-            const { data, error } = await supabase.from('member_memos').insert({ user_id: userId, content }).select().single();
-            if (error) throw error;
-            setMemberMemos(prev => [...prev, data]);
-        } catch (e) { alert('메모 등록 실패'); }
-    };
-    const deleteMemberMemo = async (id) => {
-        if (!confirm('삭제하시겠습니까?')) return;
-        try {
-            await supabase.from('member_memos').delete().eq('id', id);
-            setMemberMemos(prev => prev.filter(m => m.id !== id));
-        } catch (e) { alert('삭제 실패'); }
+            // 1. Delete existing memos for this user
+            const { error: deleteError } = await supabase
+                .from('member_memos')
+                .delete()
+                .eq('user_id', userId);
+
+            if (deleteError) throw deleteError;
+
+            // 2. Insert new memo if content exists
+            if (content) {
+                const { error: insertError } = await supabase
+                    .from('member_memos')
+                    .insert({ user_id: userId, content: content });
+
+                if (insertError) throw insertError;
+            }
+
+            // 3. Refresh memos locally
+            // We could just refetch but let's try to update state optimistically or re-fetch all
+            // Simple: Re-fetch all memos to be safe and consistent
+            const { data, error } = await supabase.from('member_memos').select('*').order('created_at', { ascending: true });
+            if (!error) {
+                setMemberMemos(data || []);
+                alert('저장되었습니다.');
+                setIsPopupOpen(false);
+                setHighlightedUserId(null); // Deselect
+            }
+        } catch (e) {
+            console.error('Error saving memo:', e);
+            alert('저장에 실패했습니다.');
+        }
     };
 
     // Incoming Employee Functions
@@ -1207,9 +1203,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                 <div style={{ height: '50%', flexShrink: 0, zIndex: 50 }}>
                     <UserMemoPopup
                         user={selectedUser}
-                        memberMemos={memberMemos}
-                        onAdd={addMemberMemo}
-                        onDelete={deleteMemberMemo}
+                        onSave={handleSaveMemo}
                         onClose={() => {
                             setIsPopupOpen(false);
                             setHighlightedUserId(null);
