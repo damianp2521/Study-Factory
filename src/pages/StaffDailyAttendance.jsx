@@ -506,7 +506,7 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [incomingEmployees, setIncomingEmployees] = useState([]);
 
     const [loading, setLoading] = useState(false);
-    const [highlightedSeat, setHighlightedSeat] = useState(null);
+    const [highlightedUserId, setHighlightedUserId] = useState(null);
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [showMemoModal, setShowMemoModal] = useState(false);
     const [showIncomingModal, setShowIncomingModal] = useState(false);
@@ -548,8 +548,8 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     // Auto Scroll to Highlighted Row
     useEffect(() => {
-        if (highlightedSeat && rowRefs.current[highlightedSeat]) {
-            const rowEl = rowRefs.current[highlightedSeat];
+        if (highlightedUserId && rowRefs.current[highlightedUserId]) {
+            const rowEl = rowRefs.current[highlightedUserId];
             if (rowEl && scrollContainerRef.current) {
                 // Scroll to top (under header)
                 const container = scrollContainerRef.current;
@@ -561,11 +561,11 @@ const StaffDailyAttendance = ({ onBack }) => {
                 });
             }
         }
-    }, [highlightedSeat, HEADER_TOTAL_HEIGHT]);
+    }, [highlightedUserId, HEADER_TOTAL_HEIGHT]);
 
     const selectedUser = useMemo(() => {
-        return displayRows.find(r => r.seat_number === highlightedSeat);
-    }, [displayRows, highlightedSeat]);
+        return displayRows.find(r => r.id === highlightedUserId);
+    }, [displayRows, highlightedUserId]);
 
     // Fetch on Date Change
     useEffect(() => {
@@ -902,15 +902,15 @@ const StaffDailyAttendance = ({ onBack }) => {
         setCurrentViewDate(prev => addDays(prev, days));
     };
 
-    const handleNameClick = (seatNum) => {
-        if (!seatNum) return;
-        if (highlightedSeat === seatNum) {
+    const handleNameClick = (userId) => {
+        if (!userId) return;
+        if (highlightedUserId === userId) {
             // Toggle OFF
-            setHighlightedSeat(null);
+            setHighlightedUserId(null);
             setIsPopupOpen(false);
         } else {
             // Select New
-            setHighlightedSeat(seatNum);
+            setHighlightedUserId(userId);
             setIsPopupOpen(true);
         }
     };
@@ -919,15 +919,26 @@ const StaffDailyAttendance = ({ onBack }) => {
         e.preventDefault();
         if (!searchTerm.trim()) return;
 
-        const found = displayRows.find(r => r.name && r.name.includes(searchTerm.trim()) && !r.isEmpty && !r.isUnassigned);
+        const found = displayRows.find(r => r.name && r.name.includes(searchTerm.trim()) && !r.isEmpty);
         if (found) {
-            setHighlightedSeat(found.seat_number);
+            setHighlightedUserId(found.id);
             setIsPopupOpen(true); // Open popup when found
             setSearchTerm('');
             setIsSearchOpen(false);
         } else {
             alert('사용자를 찾을 수 없습니다.');
         }
+        // Ensure scroll happens after state update and render
+        setTimeout(() => {
+            if (found && rowRefs.current[found.id]) {
+                const rowEl = rowRefs.current[found.id];
+                if (scrollContainerRef.current) {
+                    const container = scrollContainerRef.current;
+                    const targetScrollTop = rowEl.offsetTop - HEADER_TOTAL_HEIGHT;
+                    container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+                }
+            }
+        }, 100);
     };
 
     // Separator row configuration
@@ -1100,25 +1111,27 @@ const StaffDailyAttendance = ({ onBack }) => {
                     {/* Rows */}
                     <div style={{ width: 'max-content', paddingBottom: '20px' }}>
                         {sortedRows.map(user => {
-                            const isDeactivated = user.isEmpty || user.isUnassigned;
-                            const isRowHighlighted = highlightedSeat === user.seat_number && !isDeactivated;
-                            const isAnyHighlighted = highlightedSeat !== null;
+                            const isDeactivated = user.isEmpty;
+                            // Allow highlighting for unassigned users too (user.isUnassigned)
+                            const isRowHighlighted = highlightedUserId === user.id && !user.isEmpty;
+                            const isAnyHighlighted = highlightedUserId !== null;
                             const { bgColor } = getSeatStyle(user.seat_number);
                             let rowOpacity = isAnyHighlighted ? (isRowHighlighted ? 1 : 0.4) : 1;
-                            let stickyBg = isRowHighlighted ? '#ebf8ff' : (isDeactivated ? '#f7fafc' : bgColor);
+                            // Use distinct background for unassigned users if not highlighted
+                            let stickyBg = isRowHighlighted ? '#ebf8ff' : (user.isEmpty ? '#f7fafc' : (user.isUnassigned ? 'white' : bgColor));
                             const separatorStyle = getSeparatorStyle(user.seat_number);
 
                             return (
                                 <React.Fragment key={user.id}>
                                     <div
-                                        ref={el => rowRefs.current[user.seat_number] = el}
+                                        ref={el => rowRefs.current[user.id] = el}
                                         style={{ display: 'flex', height: ROW_HEIGHT, borderBottom: '1px solid #edf2f7', opacity: rowOpacity, transition: 'opacity 0.2s, transform 0.3s' }}
                                     >
                                         {/* Sticky Name/Seat */}
                                         <div style={{ position: 'sticky', left: 0, zIndex: 10, display: 'flex', boxShadow: '2px 0 5px -2px rgba(0,0,0,0.1)', alignItems: 'flex-start', backgroundColor: stickyBg, height: '100%' }}>
                                             {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', borderLeft: '2px solid #3182ce', pointerEvents: 'none', zIndex: 20 }} />}
-                                            <div style={{ width: SEAT_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: isDeactivated ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem` }}>{user.seat_number || '-'}</div>
-                                            <div onClick={() => handleNameClick(user.seat_number)} style={{ width: NAME_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: '#2d3748', fontSize: `${0.9 * scale}rem`, fontWeight: isDeactivated ? 'normal' : 'bold', cursor: isDeactivated ? 'default' : 'pointer' }}>{user.name}</div>
+                                            <div style={{ width: SEAT_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: user.isEmpty ? '#cbd5e0' : '#a0aec0', fontSize: `${0.8 * scale}rem` }}>{user.seat_number || '-'}</div>
+                                            <div onClick={() => handleNameClick(user.id)} style={{ width: NAME_WIDTH, height: ROW_HEIGHT, borderRight: '1px solid #edf2f7', display: 'flex', alignItems: 'center', justifyContent: 'center', background: stickyBg, color: '#2d3748', fontSize: `${0.9 * scale}rem`, fontWeight: user.isEmpty ? 'normal' : 'bold', cursor: user.isEmpty ? 'default' : 'pointer' }}>{user.name}</div>
                                         </div>
                                         {/* Scrollable Day Data */}
                                         <div style={{ display: 'flex', position: 'relative' }}>
@@ -1199,7 +1212,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                         onDelete={deleteMemberMemo}
                         onClose={() => {
                             setIsPopupOpen(false);
-                            setHighlightedSeat(null);
+                            setHighlightedUserId(null);
                         }}
                     />
                 </div>
