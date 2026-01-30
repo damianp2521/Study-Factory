@@ -58,20 +58,29 @@ const StaffBeverageManagement = ({ onBack }) => {
 
             if (userError) throw userError;
 
-            // Filter only seated users? or show all? 
-            // User request: "Member list from Seat 1..." implies seated users primarily, 
-            // but unseated might need beverages too? Let's show all but sort by seat.
-            // Actually, usually beverage is for people PRESENT or with SEATS.
-            // Let's filter to those with seat_number for now to match "Seat 1 ~" request.
-            const seatedUsers = (userData || []).filter(u => u.seat_number);
+            // 2. Filter & Sort
+            // Show all users. Sort by seat number (ascending), with unseated users at the end.
+            const sortedUsers = (userData || []).sort((a, b) => {
+                const seatA = a.seat_number;
+                const seatB = b.seat_number;
 
-            // Sort reliably by integer seat number
-            seatedUsers.sort((a, b) => (a.seat_number || 999) - (b.seat_number || 999));
-            setUsers(seatedUsers);
+                // If both have seats, compare them
+                if (seatA && seatB) return seatA - seatB;
+
+                // If only A has seat, A comes first
+                if (seatA) return -1;
+
+                // If only B has seat, B comes first
+                if (seatB) return 1;
+
+                // If neither has seat, sort by name or keep order
+                return (a.name || '').localeCompare(b.name || '');
+            });
+            setUsers(sortedUsers);
 
             // 2. Fetch Selections for these users
-            if (seatedUsers.length > 0) {
-                const userIds = seatedUsers.map(u => u.id);
+            if (sortedUsers.length > 0) {
+                const userIds = sortedUsers.map(u => u.id);
                 const { data: selectionData, error: selectionError } = await supabase
                     .from('user_beverage_selections')
                     .select('*')
@@ -286,7 +295,7 @@ const StaffBeverageManagement = ({ onBack }) => {
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                 fontWeight: 'bold', fontSize: '0.9rem'
                                             }}>
-                                                {user.seat_number}
+                                                {user.seat_number || '-'}
                                             </div>
                                             <div>
                                                 <div style={{ fontWeight: 'bold', color: '#2d3748' }}>{user.name}</div>
