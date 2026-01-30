@@ -7,16 +7,37 @@ const AdminMemberStatus = ({ onBack }) => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [editForm, setEditForm] = useState({ branch: '', role: '', seat_number: '' });
+    const [editForm, setEditForm] = useState({
+        branch: '',
+        role: '',
+        seat_number: '',
+        selection_1: null,
+        selection_2: null,
+        selection_3: null,
+        selection_4: null,
+        selection_5: null
+    });
     const [selectedBranch, setSelectedBranch] = useState('전체');
     const [searchTerm, setSearchTerm] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [beverageOptions, setBeverageOptions] = useState([]);
 
     const branches = BRANCH_OPTIONS;
 
     useEffect(() => {
         fetchUsers();
+        fetchBeverageOptions();
     }, []);
+
+    const fetchBeverageOptions = async () => {
+        try {
+            const { data, error } = await supabase.from('beverage_options').select('*').order('created_at', { ascending: true });
+            if (error) throw error;
+            setBeverageOptions(data || []);
+        } catch (e) {
+            console.error('Error fetching beverage options:', e);
+        }
+    };
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -60,13 +81,45 @@ const AdminMemberStatus = ({ onBack }) => {
         setEditForm({
             branch: user.branch,
             role: user.role,
-            seat_number: user.seat_number || ''
+            seat_number: user.seat_number || '',
+            selection_1: null,
+            selection_2: null,
+            selection_3: null,
+            selection_4: null,
+            selection_5: null
         });
+
+        // Fetch current beverage selections for this user
+        supabase.from('user_beverage_selections')
+            .select('*')
+            .eq('user_id', user.id)
+            .single()
+            .then(({ data, error }) => {
+                if (data) {
+                    setEditForm(prev => ({
+                        ...prev,
+                        selection_1: data.selection_1,
+                        selection_2: data.selection_2,
+                        selection_3: data.selection_3,
+                        selection_4: data.selection_4,
+                        selection_5: data.selection_5
+                    }));
+                }
+            });
     };
 
     const cancelEdit = () => {
         setEditingId(null);
-        setEditForm({ branch: '', role: '', seat_number: '' });
+        setEditForm({
+            branch: '',
+            role: '',
+            seat_number: '',
+            selection_1: null,
+            selection_2: null,
+            selection_3: null,
+            selection_4: null,
+            selection_5: null
+        });
     };
 
     const saveEdit = async (id) => {
@@ -85,6 +138,22 @@ const AdminMemberStatus = ({ onBack }) => {
             });
 
             if (error) throw error;
+
+            // Save Beverage Selections
+            const beverageData = {
+                user_id: id,
+                selection_1: editForm.selection_1,
+                selection_2: editForm.selection_2,
+                selection_3: editForm.selection_3,
+                selection_4: editForm.selection_4,
+                selection_5: editForm.selection_5
+            };
+
+            const { error: bevError } = await supabase
+                .from('user_beverage_selections')
+                .upsert(beverageData, { onConflict: 'user_id' });
+
+            if (bevError) throw bevError;
 
             console.log('Update result:', data);
 
@@ -308,6 +377,28 @@ const AdminMemberStatus = ({ onBack }) => {
                                             *좌석 지정은 망미점만 가능합니다.
                                         </div>
                                     )}
+                                </div>
+
+                                {/* Beverage Selection */}
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '8px' }}>음료 설정 (최대 5개)</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {[1, 2, 3, 4, 5].map(idx => (
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ fontSize: '0.8rem', color: '#a0aec0', width: '20px' }}>{idx}.</span>
+                                                <select
+                                                    value={editForm[`selection_${idx}`] || ''}
+                                                    onChange={(e) => setEditForm({ ...editForm, [`selection_${idx}`]: e.target.value || null })}
+                                                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
+                                                >
+                                                    <option value="">(선택 안함)</option>
+                                                    {beverageOptions.map(opt => (
+                                                        <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         ) : (
