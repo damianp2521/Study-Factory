@@ -190,44 +190,15 @@ const Login = () => {
                         name: name.trim(),
                         branch: branch,
                         role: finalRole,
-                        seat_number: pendingData.seat_number // Pass seat number to metadata (trigger handles profile update)
+                        // seat_number, beverages, memos are handled by the 'handle_new_user' database trigger
                     }
                 }
             });
 
             if (signUpError) throw signUpError;
 
-            if (authData?.user) {
-                const userId = authData.user.id;
-
-                // 1. Insert Beverage Selections
-                if (pendingData.selection_1 || pendingData.selection_2 || pendingData.selection_3) {
-                    await supabase.from('user_beverage_selections').insert([{
-                        user_id: userId,
-                        selection_1: pendingData.selection_1,
-                        selection_2: pendingData.selection_2,
-                        selection_3: pendingData.selection_3
-                    }]);
-                }
-
-                // 2. Insert Mmeo
-                if (pendingData.memo) {
-                    await supabase.from('member_memos').insert([{
-                        user_id: userId,
-                        content: pendingData.memo
-                    }]);
-                }
-            }
-
-            // Delete from pending_registrations after successful signup
-            const { error: deleteError } = await supabase
-                .from('pending_registrations')
-                .delete()
-                .eq('id', pendingData.id);
-
-            if (deleteError) {
-                console.error("Failed to remove from pending_registrations", deleteError);
-            }
+            // Wait briefly to ensure trigger processing completes
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             alert('가입이 완료되었습니다! 로그인해 주세요.');
             setMode('login');
