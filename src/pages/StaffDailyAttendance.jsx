@@ -1203,6 +1203,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                 <div style={{ height: '50%', flexShrink: 0, zIndex: 50 }}>
                     <UserMemoPopup
                         user={selectedUser}
+                        memberMemos={memberMemos}
                         onSave={handleSaveMemo}
                         onClose={() => {
                             setIsPopupOpen(false);
