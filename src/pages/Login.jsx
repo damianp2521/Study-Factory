@@ -168,10 +168,10 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // Re-verify user info from pending_registrations to get the role
+            // Re-verify user info from pending_registrations to get the role and other details
             const { data: pendingData, error: pendingError } = await supabase
                 .from('pending_registrations')
-                .select('role')
+                .select('*')
                 .eq('name', name.trim())
                 .eq('branch', branch)
                 .single();
@@ -182,25 +182,48 @@ const Login = () => {
             const email = nameToEmail(name);
             const password = `${pin}00`;
 
-            const { error: signUpError } = await supabase.auth.signUp({
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     data: {
                         name: name.trim(),
                         branch: branch,
-                        role: finalRole
+                        role: finalRole,
+                        seat_number: pendingData.seat_number // Pass seat number to metadata (trigger handles profile update)
                     }
                 }
             });
 
             if (signUpError) throw signUpError;
 
+            if (authData?.user) {
+                const userId = authData.user.id;
+
+                // 1. Insert Beverage Selections
+                if (pendingData.selection_1 || pendingData.selection_2 || pendingData.selection_3) {
+                    await supabase.from('user_beverage_selections').insert([{
+                        user_id: userId,
+                        selection_1: pendingData.selection_1,
+                        selection_2: pendingData.selection_2,
+                        selection_3: pendingData.selection_3
+                    }]);
+                }
+
+                // 2. Insert Mmeo
+                if (pendingData.memo) {
+                    await supabase.from('member_memos').insert([{
+                        user_id: userId,
+                        content: pendingData.memo
+                    }]);
+                }
+            }
+
             // Delete from pending_registrations after successful signup
             const { error: deleteError } = await supabase
                 .from('pending_registrations')
                 .delete()
-                .eq('name', name.trim());
+                .eq('id', pendingData.id);
 
             if (deleteError) {
                 console.error("Failed to remove from pending_registrations", deleteError);

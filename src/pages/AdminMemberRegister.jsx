@@ -8,7 +8,14 @@ const AdminMemberRegister = ({ onBack }) => {
     const [name, setName] = useState('');
     const [branch, setBranch] = useState('망미점');
     const [role, setRole] = useState('member'); // Default to member
+    const [seatNumber, setSeatNumber] = useState('');
+    const [selection1, setSelection1] = useState('');
+    const [selection2, setSelection2] = useState('');
+    const [selection3, setSelection3] = useState('');
+    const [memo, setMemo] = useState('');
+
     const [list, setList] = useState([]);
+    const [beverageOptions, setBeverageOptions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -16,7 +23,15 @@ const AdminMemberRegister = ({ onBack }) => {
 
     useEffect(() => {
         fetchList();
+        fetchBeverageOptions();
     }, []);
+
+    const fetchBeverageOptions = async () => {
+        try {
+            const { data } = await supabase.from('beverage_options').select('*').order('name');
+            setBeverageOptions(data || []);
+        } catch (e) { console.error('Error fetching beverage options:', e); }
+    };
 
     const fetchList = async () => {
         try {
@@ -72,12 +87,22 @@ const AdminMemberRegister = ({ onBack }) => {
                 .insert([{
                     name: name.trim(),
                     branch,
-                    role
+                    role,
+                    seat_number: seatNumber ? parseInt(seatNumber) : null,
+                    selection_1: selection1 || null,
+                    selection_2: selection2 || null,
+                    selection_3: selection3 || null,
+                    memo: memo.trim() || null
                 }]);
 
             if (error) throw error;
 
             setName('');
+            setSeatNumber('');
+            setSelection1('');
+            setSelection2('');
+            setSelection3('');
+            setMemo('');
             fetchList();
         } catch (err) {
             console.error('Add error:', err);
@@ -155,14 +180,59 @@ const AdminMemberRegister = ({ onBack }) => {
                     </div>
                 </div>
 
+                <div style={{ marginBottom: '15px', display: 'flex', gap: '10px' }}>
+                    <div style={{ flex: 2 }}>
+                        <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>이름 (로그인 ID)</label>
+                        <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="이름을 입력하여 주세요."
+                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', fontWeight: 'bold' }}
+                        />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>좌석 번호</label>
+                        <input
+                            type="number"
+                            value={seatNumber}
+                            onChange={(e) => setSeatNumber(e.target.value)}
+                            placeholder="번호"
+                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }}
+                        />
+                    </div>
+                </div>
+
                 <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>이름 (로그인 ID)</label>
-                    <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="이름을 입력하여 주세요."
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', fontWeight: 'bold' }}
+                    <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>음료 설정 (선택사항)</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                        {[
+                            { val: selection1, set: setSelection1, label: '1' },
+                            { val: selection2, set: setSelection2, label: '2' },
+                            { val: selection3, set: setSelection3, label: '3' },
+                        ].map((item, idx) => (
+                            <select
+                                key={idx}
+                                value={item.val}
+                                onChange={(e) => item.set(e.target.value)}
+                                style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem', background: 'white' }}
+                            >
+                                <option value="">(선택 안함)</option>
+                                {beverageOptions.map(opt => (
+                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                ))}
+                            </select>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>회원 참고사항</label>
+                    <textarea
+                        value={memo}
+                        onChange={(e) => setMemo(e.target.value)}
+                        placeholder="참고사항을 입력하세요."
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.95rem', resize: 'vertical', minHeight: '60px' }}
                     />
                 </div>
 
@@ -200,6 +270,8 @@ const AdminMemberRegister = ({ onBack }) => {
                                 {user.branch} · <span style={{ color: user.role === 'admin' ? '#e53e3e' : (user.role === 'staff' ? '#805ad5' : '#4299e1'), fontWeight: 'bold' }}>
                                     {user.role === 'admin' ? '관리자' : (user.role === 'staff' ? '스탭' : '회원')}
                                 </span>
+                                {user.seat_number && <span style={{ marginLeft: '6px', color: '#718096' }}>| 좌석 {user.seat_number}</span>}
+                                {user.memo && <div style={{ fontSize: '0.8rem', color: '#a0aec0', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{user.memo}</div>}
                             </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

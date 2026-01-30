@@ -40,13 +40,20 @@ const AdminMemberStatus = ({ onBack }) => {
     const fetchUsers = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('authorized_users')
-                .select('*')
-                .order('name', { ascending: true });
+            const [usersRes, pendingRes] = await Promise.all([
+                supabase.from('authorized_users').select('*').order('name', { ascending: true }),
+                supabase.from('pending_registrations').select('*').order('name', { ascending: true })
+            ]);
 
-            if (error) throw error;
-            setUsers(data || []);
+            if (usersRes.error) throw usersRes.error;
+            if (pendingRes.error) throw pendingRes.error;
+
+            const activeUsers = (usersRes.data || []).map(u => ({ ...u, type: 'active' }));
+            const pendingUsers = (pendingRes.data || []).map(u => ({ ...u, type: 'pending' }));
+
+            // Merge and sort by Name
+            const allUsers = [...activeUsers, ...pendingUsers].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+            setUsers(allUsers);
         } catch (error) {
             console.error('Error fetching users:', error);
             alert('사원 목록을 불러오지 못했습니다.');
@@ -55,7 +62,21 @@ const AdminMemberStatus = ({ onBack }) => {
         }
     };
 
-    const handleDelete = async (id, name) => {
+    const handleDelete = async (id, name, type) => {
+        if (type === 'pending') {
+            if (!window.confirm(`${name} (가입대기) 님을 삭제하시겠습니까?`)) return;
+            try {
+                const { error } = await supabase.from('pending_registrations').delete().eq('id', id);
+                if (error) throw error;
+                fetchUsers();
+                alert('삭제되었습니다.');
+            } catch (e) {
+                console.error('Delete pending error:', e);
+                alert(`삭제 실패: ${e.message}`);
+            }
+            return;
+        }
+
         if (!window.confirm(`${name} 님을 정말 삭제하시겠습니까?\n삭제 후에는 로그인이 불가능하며, 계정 정보가 완전히 제거됩니다.`)) return;
 
         try {
@@ -398,11 +419,16 @@ const AdminMemberStatus = ({ onBack }) => {
                                 </div>
                             </div>
                         ) : (
-                            // View Mode
+                            // View Mode (Active & Pending)
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div>
-                                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '4px' }}>
-                                        {user.name}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                        <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>{user.name}</span>
+                                        {user.type === 'pending' && (
+                                            <span style={{ fontSize: '0.8rem', color: '#e53e3e', background: '#fff5f5', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                                가입대기중
+                                            </span>
+                                        )}
                                     </div>
                                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                                         <span style={{ fontSize: '0.85rem', color: '#718096' }}>{user.branch}</span>
@@ -414,7 +440,7 @@ const AdminMemberStatus = ({ onBack }) => {
                                         }}>
                                             {getRoleLabel(user.role)}
                                         </span>
-                                        {user.seat_number && (
+                                        {(user.seat_number || (user.type === 'pending' && user.seat_number)) && (
                                             <>
                                                 <span style={{ width: '1px', height: '12px', background: '#cbd5e0' }}></span>
                                                 <span style={{
@@ -427,27 +453,35 @@ const AdminMemberStatus = ({ onBack }) => {
                                             </>
                                         )}
                                     </div>
+                                    {user.memo && (
+                                        <div style={{ fontSize: '0.85rem', color: '#718096', marginTop: '4px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {user.memo}
+                                        </div>
+                                    )}
                                 </div>
                                 <div style={{ display: 'flex', gap: '10px' }}>
+                                    {user.type === 'active' && (
+                                        <button
+                                            onClick={() => startEdit(user)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', color: '#718096' }}
+                                        >
+                                            <Edit2 size={20} />
+                                        </button>
+                                    )}
                                     <button
-                                        onClick={() => startEdit(user)}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', color: '#718096' }}
+                                        onClick={() => handleDelete(user.id, user.name, user.type)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', color: '#e53e3e' }}
                                     >
-                                        <Edit2 size={20} />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(user.id, user.name)}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', color: '#feb2b2' }}
-                                    >
-                                        <Trash2 size={20} color="#e53e3e" />
+                                        <Trash2 size={20} />
                                     </button>
                                 </div>
                             </div>
                         )}
                     </div>
                 ))}
-            </div>
-        </div>
+
+            </div >
+        </div >
     );
 };
 
