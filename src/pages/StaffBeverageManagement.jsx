@@ -260,7 +260,7 @@ const StaffBeverageManagement = ({ onBack }) => {
 
                             // Create summary string of selections
                             const selectionNames = [];
-                            [1, 2, 3, 4, 5].forEach(i => {
+                            [1, 2, 3].forEach(i => {
                                 const optId = selection[`selection_${i}`];
                                 const opt = beverageOptions.find(o => o.id === optId);
                                 if (opt) selectionNames.push(opt.name);
@@ -312,9 +312,9 @@ const StaffBeverageManagement = ({ onBack }) => {
                                     {/* Expanded Selection Area */}
                                     {isExpanded && (
                                         <div style={{ padding: '15px', borderTop: '1px solid #e2e8f0', background: '#fcfcfc' }}>
-                                            <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#4a5568', marginBottom: '10px' }}>음료 선택 (최대 5개)</div>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#4a5568', marginBottom: '10px' }}>음료 선택 (최대 3개)</div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                {[1, 2, 3, 4, 5].map(i => (
+                                                {[1, 2, 3].map(i => (
                                                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                         <span style={{ fontSize: '0.9rem', color: '#a0aec0', width: '20px' }}>{i}.</span>
                                                         <select

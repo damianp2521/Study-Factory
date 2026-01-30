@@ -13,9 +13,7 @@ const AdminMemberStatus = ({ onBack }) => {
         seat_number: '',
         selection_1: null,
         selection_2: null,
-        selection_3: null,
-        selection_4: null,
-        selection_5: null
+        selection_3: null
     });
     const [selectedBranch, setSelectedBranch] = useState('전체');
     const [searchTerm, setSearchTerm] = useState('');
@@ -84,9 +82,7 @@ const AdminMemberStatus = ({ onBack }) => {
             seat_number: user.seat_number || '',
             selection_1: null,
             selection_2: null,
-            selection_3: null,
-            selection_4: null,
-            selection_5: null
+            selection_3: null
         });
 
         // Fetch current beverage selections for this user
@@ -100,9 +96,7 @@ const AdminMemberStatus = ({ onBack }) => {
                         ...prev,
                         selection_1: data.selection_1,
                         selection_2: data.selection_2,
-                        selection_3: data.selection_3,
-                        selection_4: data.selection_4,
-                        selection_5: data.selection_5
+                        selection_3: data.selection_3
                     }));
                 }
             });
@@ -145,8 +139,10 @@ const AdminMemberStatus = ({ onBack }) => {
                 selection_1: editForm.selection_1,
                 selection_2: editForm.selection_2,
                 selection_3: editForm.selection_3,
-                selection_4: editForm.selection_4,
-                selection_5: editForm.selection_5
+                // Ensure unused slots are nulled out if desired, or just ignored. 
+                // Since we want to display only 3, saving only 3 is sufficient.
+                selection_4: null,
+                selection_5: null
             };
 
             const { error: bevError } = await supabase
@@ -381,9 +377,9 @@ const AdminMemberStatus = ({ onBack }) => {
 
                                 {/* Beverage Selection */}
                                 <div>
-                                    <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '8px' }}>음료 설정 (최대 5개)</label>
+                                    <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '8px' }}>음료 설정 (최대 3개)</label>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        {[1, 2, 3, 4, 5].map(idx => (
+                                        {[1, 2, 3].map(idx => (
                                             <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 <span style={{ fontSize: '0.8rem', color: '#a0aec0', width: '20px' }}>{idx}.</span>
                                                 <select
