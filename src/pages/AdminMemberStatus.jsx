@@ -454,12 +454,18 @@ const AdminMemberStatus = ({ onBack }) => {
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') handleAddCert(user.id);
                                                 }}
+                                                onFocus={(e) => {
+                                                    // This helps some browsers show the list more easily
+                                                    e.target.setAttribute('placeholder', '입력하거나 선택하세요');
+                                                }}
                                                 placeholder="자격증 입력 or 선택"
                                                 list="cert-options"
                                                 style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }}
                                             />
                                             <datalist id="cert-options">
-                                                {certOptions.map(opt => <option key={opt.id} value={opt.name} />)}
+                                                {certOptions.map(opt => (
+                                                    <option key={opt.id} value={opt.name} />
+                                                ))}
                                             </datalist>
                                         </div>
                                         <button
@@ -472,22 +478,6 @@ const AdminMemberStatus = ({ onBack }) => {
                                         >
                                             <Plus size={18} />
                                         </button>
-                                    </div>
-                                    <div style={{ marginTop: '5px', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                                        {certOptions.slice(0, 5).map(opt => (
-                                            !activeUserCerts.find(c => c.name === opt.name) && (
-                                                <button
-                                                    key={opt.id}
-                                                    onClick={() => handleSelectCert(user.id, opt.name)}
-                                                    style={{
-                                                        fontSize: '0.75rem', padding: '2px 8px', borderRadius: '10px',
-                                                        background: '#edf2f7', color: '#4a5568', border: 'none', cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    + {opt.name}
-                                                </button>
-                                            )
-                                        ))}
                                     </div>
                                 </div>
 
