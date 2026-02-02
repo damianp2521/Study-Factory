@@ -1,4 +1,4 @@
--- Create a type for the response if needed, or just return TABLE
+ -- Create a type for the response if needed, or just return TABLE
 CREATE OR REPLACE FUNCTION get_public_members()
 RETURNS TABLE (
     id UUID,

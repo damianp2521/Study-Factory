@@ -13,8 +13,40 @@ const SharedTodoModal = ({ onClose }) => {
     const [certOptions, setCertOptions] = useState([]);
     const [selectedMember, setSelectedMember] = useState(null); // Track viewing user
 
-    // Fetch members with is_public_todo = true
+    // Fetch current user's profile to set default filters
     useEffect(() => {
+        const fetchCurrentUserProfile = async () => {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    // Get user's branch from profiles
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('branch')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (profile?.branch) {
+                        setSelectedBranch(profile.branch);
+                    }
+
+                    // Get user's certificates
+                    const { data: userCerts } = await supabase
+                        .from('user_certificates')
+                        .select('certificate_id, certificate_options(name)')
+                        .eq('user_id', user.id);
+
+                    if (userCerts && userCerts.length > 0 && userCerts[0].certificate_options) {
+                        // Set the first certificate as default
+                        setSelectedCert(userCerts[0].certificate_options.name);
+                    }
+                }
+            } catch (e) {
+                console.error('Error fetching user profile for defaults:', e);
+            }
+        };
+
+        fetchCurrentUserProfile();
         fetchPublicMembers();
         fetchCertOptions();
 
@@ -48,6 +80,7 @@ const SharedTodoModal = ({ onClose }) => {
             setLoading(false);
         }
     };
+
 
     // Filter Logic
     const filteredMembers = members.filter(m => {
