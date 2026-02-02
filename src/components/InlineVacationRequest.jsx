@@ -188,8 +188,13 @@ const InlineVacationRequest = () => {
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
 
             height: '100%',
-            overflowY: 'auto'
+            overflowY: 'auto',
+            scrollbarWidth: 'none', // Firefox
+            msOverflowStyle: 'none',  // IE/Edge
         }}>
+            <style>{`
+                div::-webkit-scrollbar { display: none; }
+            `}</style>
             {/* Embedded Calendar - Controlled Month */}
             <div style={{ marginBottom: '20px' }}>
                 <EmbeddedCalendar

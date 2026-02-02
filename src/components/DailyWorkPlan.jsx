@@ -372,7 +372,16 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
             </div>
 
             {/* Scrollable Content Area (List + Calendar) */}
-            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '2px' }}>
+            <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                paddingRight: '2px',
+                scrollbarWidth: 'none', // Firefox
+                msOverflowStyle: 'none',  // IE/Edge
+            }}>
+                <style>{`
+                    div::-webkit-scrollbar { display: none; }
+                `}</style>
                 {/* To-Do List Section */}
                 <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
