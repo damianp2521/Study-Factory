@@ -50,29 +50,26 @@ const AdminWorkPlanCheck = ({ onBack }) => {
 
     if (selectedMember) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'white', margin: '-20px' }}>
                 {/* Header for Detail View */}
                 <div style={{
                     padding: '15px 20px',
                     borderBottom: '1px solid #e2e8f0',
                     display: 'flex',
-                    justifyContent: 'space-between',
                     alignItems: 'center',
                     flexShrink: 0
                 }}>
                     <button
                         onClick={() => setSelectedMember(null)}
                         style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: '5px',
-                            color: '#4a5568', fontWeight: 'bold'
+                            background: 'none', border: 'none', cursor: 'pointer', padding: '8px',
+                            marginLeft: '-8px', borderRadius: '50%', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center', color: '#2d3748'
                         }}
                     >
-                        <ChevronLeft size={20} />
-                        <span>전체 목록</span>
+                        <ChevronLeft size={26} />
                     </button>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#2d3748' }}>{selectedMember.name} 님의 작업계획</h3>
-                    <div style={{ width: '40px' }} /> {/* Spacer */}
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>작업계획 확인</h2>
                 </div>
 
                 <div style={{ flex: 1, overflow: 'auto', padding: '0' }}>
@@ -87,13 +84,26 @@ const AdminWorkPlanCheck = ({ onBack }) => {
     }
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'white', margin: '-20px' }}>
             {/* Header */}
-            <div style={{ padding: '15px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '5px', display: 'flex' }}>
-                    <ChevronLeft size={24} color="#2d3748" />
+            <div style={{
+                padding: '15px 20px',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                alignItems: 'center',
+                flexShrink: 0
+            }}>
+                <button
+                    onClick={onBack}
+                    style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: '8px',
+                        marginLeft: '-8px', borderRadius: '50%', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center', color: '#2d3748'
+                    }}
+                >
+                    <ChevronLeft size={26} />
                 </button>
-                <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 'bold', color: '#2d3748' }}>작업계획 확인</h2>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: '0 0 0 4px', lineHeight: 1 }}>작업계획 확인</h2>
             </div>
 
             {/* Filters */}
