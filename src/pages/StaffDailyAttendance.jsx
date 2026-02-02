@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search, UserPlus, CheckSquare, Square, Trash, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search, UserPlus, CheckSquare, Square, Trash, Save, CornerDownLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -1374,18 +1374,16 @@ const StaffDailyAttendance = ({ onBack }) => {
             }}>
                 {/* Left Side: Selected User Info */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    {selectedCell ? (() => {
+                    {selectedCell && (() => {
                         const activeUser = displayRows.find(u => u.id === selectedCell.userId);
-                        if (!activeUser) return <span style={{ color: '#a0aec0', fontSize: '0.9rem' }}>선택해주세요</span>;
+                        if (!activeUser) return null;
                         return (
                             <>
                                 <span style={{ fontSize: '0.8rem', color: '#718096' }}>{activeUser.seat_number ? `좌석 ${activeUser.seat_number}` : '-'}</span>
                                 <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>{activeUser.name}</span>
                             </>
                         );
-                    })() : (
-                        <span style={{ color: '#a0aec0', fontSize: '0.9rem' }}>선택해주세요</span>
-                    )}
+                    })()}
                 </div>
 
                 {/* Right Side: Action Buttons */}
@@ -1393,7 +1391,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                     <button
                         onClick={() => handleActionInput('O')}
                         style={{
-                            width: '65px', height: '100%',
+                            width: '60px', height: '100%',
                             borderRadius: '12px', border: 'none',
                             background: '#c6f6d5', color: '#22543d',
                             fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
@@ -1406,7 +1404,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                     <button
                         onClick={() => handleActionInput('X')}
                         style={{
-                            width: '65px', height: '100%',
+                            width: '60px', height: '100%',
                             borderRadius: '12px', border: 'none',
                             background: '#fed7d7', color: '#c53030',
                             fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
@@ -1419,15 +1417,30 @@ const StaffDailyAttendance = ({ onBack }) => {
                     <button
                         onClick={() => handleActionInput('OTHER')}
                         style={{
-                            width: '65px', height: '100%',
+                            width: '60px', height: '100%',
                             borderRadius: '12px', border: '1px solid #cbd5e0',
                             background: 'white', color: '#4a5568',
-                            fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer',
+                            fontSize: '0.95rem', fontWeight: 'bold', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}
                     >
                         기타
+                    </button>
+                    <button
+                        onClick={() => {
+                            if (selectedCell) autoAdvanceSelection(selectedCell.userId);
+                        }}
+                        style={{
+                            width: '60px', height: '100%',
+                            borderRadius: '12px', border: 'none',
+                            background: '#edf2f7', color: '#4a5568',
+                            fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                    >
+                        <CornerDownLeft size={24} />
                     </button>
                 </div>
             </div>
