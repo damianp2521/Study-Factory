@@ -275,16 +275,13 @@ const MemberDashboard = () => {
                             {/* Make this specific white box scrollable */}
                             <div style={{
                                 flex: 1,
-                                overflowY: 'auto',
+                                overflowY: 'hidden', // Prevent parent scroll, let child handle it
                                 paddingBottom: '20px',
                                 marginBottom: '60px', /* Make dots appear outside */
-                                // Hide scrollbar for cleaner look
-                                scrollbarWidth: 'none',
-                                msOverflowStyle: 'none'
                             }}>
-                                <style>{`
+                                {/* <style>{`
                                     div::-webkit-scrollbar { display: none; }
-                                `}</style>
+                                `}</style> */}
                                 {slide.component}
                             </div>
                         </div>

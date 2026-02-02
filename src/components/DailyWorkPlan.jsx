@@ -327,13 +327,13 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
             borderRadius: '16px',
             padding: '20px',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            minHeight: '600px', // Ensure height
+            height: '100%', // Fixed height matching parent
             display: 'flex',
             flexDirection: 'column',
-            height: '100%' // Fill for modal
+            overflow: 'hidden' // Main container no scroll
         }}>
-            {/* Top Bar handles */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+            {/* Top Bar handles - Fixed */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', flexShrink: 0 }}>
                 {isReadOnly ? (
                     // Read Only Header: Just the name
                     <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748' }}>
@@ -371,125 +371,128 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                 )}
             </div>
 
-            {/* To-Do List (Now on Top) */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
-                        {format(selectedDate, 'M월 d일')} 계획
-                    </h3>
-                    <div style={{ fontSize: '0.9rem', color: '#718096' }}>
-                        <span style={{ color: '#48bb78', fontWeight: 'bold' }}>{todayStats.completed}</span>
-                        <span style={{ margin: '0 4px' }}>/</span>
-                        <span>{todayStats.total}</span>
-                        <span style={{ marginLeft: '8px', fontSize: '0.8rem', background: '#f7fafc', padding: '2px 6px', borderRadius: '4px' }}>
-                            {completionRate}%
-                        </span>
-                    </div>
-                </div>
-
-                {/* Input - Hide if Read Only */}
-                {!isReadOnly && (
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                        <input
-                            type="text"
-                            value={newTask}
-                            onChange={(e) => setNewTask(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
-                            placeholder="할 일을 입력하세요..."
-                            style={{
-                                flex: 1,
-                                padding: '12px',
-                                borderRadius: '8px',
-                                border: '1px solid #e2e8f0',
-                                fontSize: '1rem',
-                                outline: 'none'
-                            }}
-                        />
-                        <button
-                            onClick={handleAddTask}
-                            disabled={!newTask.trim()}
-                            style={{
-                                background: 'var(--color-primary)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                width: '45px',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: newTask.trim() ? 'pointer' : 'default',
-                                opacity: newTask.trim() ? 1 : 0.5
-                            }}
-                        >
-                            <Plus size={24} />
-                        </button>
-                    </div>
-                )}
-
-                {/* List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
-                    {loading ? (
-                        <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>로딩 중...</div>
-                    ) : todos.length === 0 ? (
-                        <div style={{ textAlign: 'center', color: '#cbd5e0', padding: '20px', fontSize: '0.9rem' }}>
-                            등록된 할 일이 없습니다.
+            {/* Scrollable Content Area (List + Calendar) */}
+            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '2px' }}>
+                {/* To-Do List Section */}
+                <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
+                            {format(selectedDate, 'M월 d일')} 계획
+                        </h3>
+                        <div style={{ fontSize: '0.9rem', color: '#718096' }}>
+                            <span style={{ color: '#48bb78', fontWeight: 'bold' }}>{todayStats.completed}</span>
+                            <span style={{ margin: '0 4px' }}>/</span>
+                            <span>{todayStats.total}</span>
+                            <span style={{ marginLeft: '8px', fontSize: '0.8rem', background: '#f7fafc', padding: '2px 6px', borderRadius: '4px' }}>
+                                {completionRate}%
+                            </span>
                         </div>
-                    ) : (
-                        todos.map(todo => (
-                            <div key={todo.id} style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '12px',
-                                padding: '12px',
-                                background: '#f8fafc',
-                                borderRadius: '10px',
-                                transition: 'all 0.2s',
-                                borderLeft: todo.is_completed ? '4px solid #48bb78' : '4px solid #cbd5e0'
-                            }}>
-                                <button
-                                    onClick={() => toggleTodo(todo)}
-                                    style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: isReadOnly ? 'default' : 'pointer', // No pointer if read only
-                                        padding: 0,
-                                        display: 'flex',
-                                        flexShrink: 0
-                                    }}
-                                    disabled={isReadOnly}
-                                >
-                                    {todo.is_completed ?
-                                        <CheckCircle size={22} color="#48bb78" fill="#e6fffa" /> :
-                                        <Circle size={22} color="#cbd5e0" />
-                                    }
-                                </button>
-                                <span style={{
-                                    flex: 1,
-                                    fontSize: '1rem',
-                                    color: todo.is_completed ? '#a0aec0' : '#2d3748',
-                                    textDecoration: todo.is_completed ? 'line-through' : 'none',
-                                    wordBreak: 'break-all'
-                                }}>
-                                    {todo.content}
-                                </span>
-                                {/* Hide delete button if read only */}
-                                {!isReadOnly && (
-                                    <button
-                                        onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                )}
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
+                    </div>
 
-            {/* Calendar (Now on Bottom) */}
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
-                {renderHeader()}
-                {renderDays()}
-                {renderCells()}
+                    {/* Input - Hide if Read Only */}
+                    {!isReadOnly && (
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                            <input
+                                type="text"
+                                value={newTask}
+                                onChange={(e) => setNewTask(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+                                placeholder="할 일을 입력하세요..."
+                                style={{
+                                    flex: 1,
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #e2e8f0',
+                                    fontSize: '1rem',
+                                    outline: 'none'
+                                }}
+                            />
+                            <button
+                                onClick={handleAddTask}
+                                disabled={!newTask.trim()}
+                                style={{
+                                    background: 'var(--color-primary)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    width: '45px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    cursor: newTask.trim() ? 'pointer' : 'default',
+                                    opacity: newTask.trim() ? 1 : 0.5
+                                }}
+                            >
+                                <Plus size={24} />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* List */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {loading ? (
+                            <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>로딩 중...</div>
+                        ) : todos.length === 0 ? (
+                            <div style={{ textAlign: 'center', color: '#cbd5e0', padding: '20px', fontSize: '0.9rem' }}>
+                                등록된 할 일이 없습니다.
+                            </div>
+                        ) : (
+                            todos.map(todo => (
+                                <div key={todo.id} style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    padding: '12px',
+                                    background: '#f8fafc',
+                                    borderRadius: '10px',
+                                    transition: 'all 0.2s',
+                                    borderLeft: todo.is_completed ? '4px solid #48bb78' : '4px solid #cbd5e0'
+                                }}>
+                                    <button
+                                        onClick={() => toggleTodo(todo)}
+                                        style={{
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: isReadOnly ? 'default' : 'pointer', // No pointer if read only
+                                            padding: 0,
+                                            display: 'flex',
+                                            flexShrink: 0
+                                        }}
+                                        disabled={isReadOnly}
+                                    >
+                                        {todo.is_completed ?
+                                            <CheckCircle size={22} color="#48bb78" fill="#e6fffa" /> :
+                                            <Circle size={22} color="#cbd5e0" />
+                                        }
+                                    </button>
+                                    <span style={{
+                                        flex: 1,
+                                        fontSize: '1rem',
+                                        color: todo.is_completed ? '#a0aec0' : '#2d3748',
+                                        textDecoration: todo.is_completed ? 'line-through' : 'none',
+                                        wordBreak: 'break-all'
+                                    }}>
+                                        {todo.content}
+                                    </span>
+                                    {/* Hide delete button if read only */}
+                                    {!isReadOnly && (
+                                        <button
+                                            onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* Calendar (Scrolls with list) */}
+                <div style={{}}>
+                    {renderHeader()}
+                    {renderDays()}
+                    {renderCells()}
+                </div>
             </div>
 
             {/* Modal - Only render if not in read only mode (prevent recursion) */}

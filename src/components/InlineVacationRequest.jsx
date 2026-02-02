@@ -186,7 +186,7 @@ const InlineVacationRequest = () => {
             borderRadius: '16px',
             padding: '20px',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            marginBottom: '20px',
+
             height: '100%',
             overflowY: 'auto'
         }}>
