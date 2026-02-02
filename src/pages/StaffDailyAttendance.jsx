@@ -978,105 +978,68 @@ const StaffDailyAttendance = ({ onBack }) => {
         const user = displayRows.find(u => u.id === userId);
         if (!user) return;
 
-        if (type === 'O') {
-            const key = `${userId}_${dateStr}_${period}`;
-            // If already O, do nothing? Or ensure it is O.
-            // Toggle logic toggles it OFF if present.
-            // We want to SET to O.
-            // Check current status
-            const isAttended = attendanceData.has(key);
-            const status = statusData[key];
+        // 1. Perform UI Logic (Auto-Advance) IMMEDIATELY
+        if (type === 'O' || type === 'X') {
+            const currentIndex = sortedRows.findIndex(u => u.id === userId);
+            if (currentIndex !== -1 && currentIndex < sortedRows.length - 1) {
+                let nextIndex = currentIndex + 1;
+                const nextUser = sortedRows[nextIndex];
+                setSelectedCell({ userId: nextUser.id, dateStr, period });
 
-            // If not attended or specific status, set to O (which is attended with null status)
-            // If already O (attended=true, status=null), just move on?
-            // User asked "Change status to O", implying if it's X (not attended) make it O.
-            // If it's Other, make it O.
+                // Scroll if needed
+                if (rowRefs.current[nextUser.id]) {
+                    const rowEl = rowRefs.current[nextUser.id];
+                    if (scrollContainerRef.current) {
+                        const container = scrollContainerRef.current;
+                        const rowTop = rowEl.offsetTop;
+                        const rowBottom = rowTop + rowEl.offsetHeight;
+                        const containerTop = container.scrollTop + HEADER_TOTAL_HEIGHT;
+                        const containerBottom = container.scrollTop + container.clientHeight;
 
-            if (!isAttended || status) {
-                await toggleAttendance(user, dateStr, period); // This helper toggles.
-                // Wait, toggleAttendance removes if present.
-                // If isAttended is FALSE, it adds it (Default O).
-                // If isAttended is TRUE, it removes it.
-                // To force O:
-                // If isAttended is False -> Call toggle (becomes O).
-                // If isAttended is True and Status is Set -> Need to clear status.
-                // If isAttended is True and Status is Null -> Already O.
-
-                // However, toggleAttendance implementation:
-                // if (isAttended) delete... else insert...
-                // This is a generic toggle.
-                // If I want to FORCE 'O', I should probably direct manipulate or modify toggleAttendance.
-                // But for now, let's use the existing logic but be smart.
-
-                if (isAttended) {
-                    // It is attended. If it has a status (e.g. Late), we want to make it normal O.
-                    // The current toggleAttendance deletes row if attended.
-                    // So calling it will make it X.
-                    // Accessing the DB directly might be safer OR modify toggleAttendance to accept 'force' param.
-                    // Let's modify toggleAttendance logic here locally?
-                    // Or just call it twice if needed? No that's bad.
-
-                    // Let's look at toggleAttendance again.
-                    // It deletes if attended.
-                    // Ideally we want to UPDATE to status=null if attended, or INSERT if not.
-
-                    // To implement "Set to O":
-                    // If !isAttended: insert...
-                    // If isAttended && status: update to status=null.
-                    // If isAttended && !status: doing nothing is fine.
-
-                    if (status) {
-                        // Update to O
-                        setAttendanceData(prev => prev.add(key)); // Ensure key exists
-                        setStatusData(prev => { const n = { ...prev }; delete n[key]; return n; });
-                        await supabase.from('attendance_logs').update({ status: null }).eq('user_id', user.id).eq('date', dateStr).eq('period', period);
+                        if (rowBottom > containerBottom) {
+                            container.scrollTo({ top: container.scrollTop + rowEl.offsetHeight, behavior: 'smooth' });
+                        } else if (rowTop < containerTop) {
+                            container.scrollTo({ top: rowTop - HEADER_TOTAL_HEIGHT, behavior: 'smooth' });
+                        }
                     }
-                } else {
-                    // Not attended, make it O
-                    await toggleAttendance(user, dateStr, period);
                 }
-            }
-
-        } else if (type === 'X') {
-            const key = `${userId}_${dateStr}_${period}`;
-            const isAttended = attendanceData.has(key);
-            if (isAttended) {
-                await toggleAttendance(user, dateStr, period); // Removes it -> X
             }
         } else if (type === 'OTHER') {
             setStatusPopup({ open: true, user, dateStr, period });
-            return; // Don't auto advance
+            return; // Don't auto advance for OTHER
         }
 
-        // Auto Advance
-        // Find current user index
-        const currentIndex = sortedRows.findIndex(u => u.id === userId);
-        if (currentIndex !== -1 && currentIndex < sortedRows.length - 1) {
-            let nextIndex = currentIndex + 1;
-            // Skip empty rows if desired? User didn't specify, but usually yes.
-            // Let's just go to next row for now.
-            const nextUser = sortedRows[nextIndex];
-            setSelectedCell({ userId: nextUser.id, dateStr, period });
+        // 2. Perform Business Logic (State/DB Update) in Background
+        // We do NOT await this to prevent blocking UI
+        (async () => {
+            if (type === 'O') {
+                const key = `${userId}_${dateStr}_${period}`;
+                const isAttended = attendanceData.has(key);
+                const status = statusData[key];
 
-            // Scroll if needed
-            if (rowRefs.current[nextUser.id]) {
-                const rowEl = rowRefs.current[nextUser.id];
-                if (scrollContainerRef.current) {
-                    const container = scrollContainerRef.current;
-                    const rowTop = rowEl.offsetTop;
-                    const rowBottom = rowTop + rowEl.offsetHeight;
-                    const containerTop = container.scrollTop + HEADER_TOTAL_HEIGHT;
-                    const containerBottom = container.scrollTop + container.clientHeight;
-
-                    if (rowBottom > containerBottom) {
-                        container.scrollTo({ top: container.scrollTop + rowEl.offsetHeight, behavior: 'smooth' });
-                    } else if (rowTop < containerTop) {
-                        // Should not happen when going down usually
-                        container.scrollTo({ top: rowTop - HEADER_TOTAL_HEIGHT, behavior: 'smooth' });
+                if (!isAttended || status) {
+                    if (isAttended) {
+                        if (status) {
+                            // Optimistic Update to O (Clear Status)
+                            setAttendanceData(prev => prev.add(key));
+                            setStatusData(prev => { const n = { ...prev }; delete n[key]; return n; });
+                            try {
+                                await supabase.from('attendance_logs').update({ status: null }).eq('user_id', user.id).eq('date', dateStr).eq('period', period);
+                            } catch (e) { fetchData(); }
+                        }
+                    } else {
+                        // Optimistic Toggle (Insert)
+                        await toggleAttendance(user, dateStr, period);
                     }
                 }
+            } else if (type === 'X') {
+                const key = `${userId}_${dateStr}_${period}`;
+                const isAttended = attendanceData.has(key);
+                if (isAttended) {
+                    await toggleAttendance(user, dateStr, period);
+                }
             }
-        }
+        })();
     };
 
     return (
