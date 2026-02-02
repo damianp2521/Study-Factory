@@ -1361,40 +1361,49 @@ const StaffDailyAttendance = ({ onBack }) => {
             {/* Bottom Control Bar - Restored and Optimized */}
             <div style={{
                 flexShrink: 0,
-                height: '70px',
+                height: '60px',
                 backgroundColor: 'white',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '10px 20px',
+                padding: '5px 15px',
                 zIndex: 100,
                 boxShadow: '0 -2px 10px rgba(0,0,0,0.08)',
                 borderTop: '1px solid #e2e8f0',
-                gap: '15px'
+                gap: '10px'
             }}>
                 {/* Left Side: Selected User Info */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     {selectedCell && (() => {
                         const activeUser = displayRows.find(u => u.id === selectedCell.userId);
                         if (!activeUser) return null;
                         return (
                             <>
-                                <span style={{ fontSize: '0.8rem', color: '#718096' }}>{activeUser.seat_number ? `좌석 ${activeUser.seat_number}` : '-'}</span>
-                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>{activeUser.name}</span>
+                                <span style={{ fontSize: '0.75rem', color: '#718096' }}>{activeUser.seat_number ? `좌석 ${activeUser.seat_number}` : '-'}</span>
+                                <span style={{
+                                    fontSize: '1rem',
+                                    fontWeight: 'bold',
+                                    color: '#2d3748',
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}>
+                                    {activeUser.name}
+                                </span>
                             </>
                         );
                     })()}
                 </div>
 
                 {/* Right Side: Action Buttons */}
-                <div style={{ display: 'flex', gap: '8px', height: '50px' }}>
+                <div style={{ display: 'flex', gap: '6px', height: '44px' }}>
                     <button
                         onClick={() => handleActionInput('O')}
                         style={{
-                            width: '60px', height: '100%',
-                            borderRadius: '12px', border: 'none',
+                            width: '55px', height: '100%',
+                            borderRadius: '10px', border: 'none',
                             background: '#c6f6d5', color: '#22543d',
-                            fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                            fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}
@@ -1404,10 +1413,10 @@ const StaffDailyAttendance = ({ onBack }) => {
                     <button
                         onClick={() => handleActionInput('X')}
                         style={{
-                            width: '60px', height: '100%',
-                            borderRadius: '12px', border: 'none',
+                            width: '55px', height: '100%',
+                            borderRadius: '10px', border: 'none',
                             background: '#fed7d7', color: '#c53030',
-                            fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                            fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}
@@ -1417,10 +1426,10 @@ const StaffDailyAttendance = ({ onBack }) => {
                     <button
                         onClick={() => handleActionInput('OTHER')}
                         style={{
-                            width: '60px', height: '100%',
-                            borderRadius: '12px', border: '1px solid #cbd5e0',
+                            width: '55px', height: '100%',
+                            borderRadius: '10px', border: '1px solid #cbd5e0',
                             background: 'white', color: '#4a5568',
-                            fontSize: '0.95rem', fontWeight: 'bold', cursor: 'pointer',
+                            fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}
@@ -1432,15 +1441,15 @@ const StaffDailyAttendance = ({ onBack }) => {
                             if (selectedCell) autoAdvanceSelection(selectedCell.userId);
                         }}
                         style={{
-                            width: '60px', height: '100%',
-                            borderRadius: '12px', border: 'none',
+                            width: '55px', height: '100%',
+                            borderRadius: '10px', border: 'none',
                             background: '#edf2f7', color: '#4a5568',
-                            fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                            fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                         }}
                     >
-                        <CornerDownLeft size={24} />
+                        <CornerDownLeft size={20} />
                     </button>
                 </div>
             </div>
