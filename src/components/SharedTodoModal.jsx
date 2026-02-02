@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { X, User, ChevronDown, ChevronUp, Calendar, BookOpen } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { format } from 'date-fns';
-import { BRANCH_OPTIONS } from '../constants/branches'; // Assuming this exists or I'll recreate list
 
 const SharedTodoModal = ({ onClose }) => {
     const [members, setMembers] = useState([]);
@@ -17,6 +17,12 @@ const SharedTodoModal = ({ onClose }) => {
     useEffect(() => {
         fetchPublicMembers();
         fetchCertOptions();
+
+        // Disable body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
     }, []);
 
     const fetchCertOptions = async () => {
@@ -83,7 +89,7 @@ const SharedTodoModal = ({ onClose }) => {
         return branchMatch && certMatch;
     });
 
-    return (
+    const modalContent = (
         <div style={{
             position: 'fixed',
             top: 0, left: 0, right: 0, bottom: 0,
@@ -91,7 +97,7 @@ const SharedTodoModal = ({ onClose }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 9999, // High z-index for portal
             padding: '20px'
         }}>
             <div style={{
@@ -102,7 +108,8 @@ const SharedTodoModal = ({ onClose }) => {
                 height: '80vh',
                 display: 'flex',
                 flexDirection: 'column',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
             }}>
                 {/* Header */}
                 <div style={{ padding: '15px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -214,6 +221,8 @@ const SharedTodoModal = ({ onClose }) => {
             </div>
         </div>
     );
+
+    return ReactDOM.createPortal(modalContent, document.body);
 };
 
 export default SharedTodoModal;
