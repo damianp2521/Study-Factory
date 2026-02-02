@@ -4,7 +4,7 @@ import PageTemplate from '../components/PageTemplate';
 import { LogOut, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react';
 import logo from '../assets/logo_new.png';
 import { useAuth } from '../context/AuthContext';
-import WorkPlanReport from '../components/WorkPlanReport';
+// import WorkPlanReport from '../components/WorkPlanReport'; // Deprecated
 import InlineVacationRequest from '../components/InlineVacationRequest';
 import InlineSuggestion from '../components/InlineSuggestion';
 import DailyWorkPlan from '../components/DailyWorkPlan';
@@ -28,8 +28,7 @@ const MemberDashboard = () => {
     const [touchEnd, setTouchEnd] = useState(0);
 
     const slides = [
-        { title: 'NEW작업계획', component: <DailyWorkPlan /> },
-        { title: '기존작업계획', component: <WorkPlanReport /> },
+        { title: '작업계획', component: <DailyWorkPlan /> },
         { title: '휴무계획', component: <InlineVacationRequest /> },
         { title: '건의사항', component: <InlineSuggestion /> },
     ];
