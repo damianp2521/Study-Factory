@@ -810,7 +810,11 @@ const StaffDailyAttendance = ({ onBack }) => {
             }
         }
 
+
+
         setStatusPopup({ open: false, user: null, dateStr: '', period: null });
+        // Auto-advance after status selection (except specifically handled cases if any, but general rule apply)
+        autoAdvanceSelection(user.id);
     };
 
     const addDailyMemo = async (content) => {
@@ -972,6 +976,33 @@ const StaffDailyAttendance = ({ onBack }) => {
         setSelectedCell({ userId: user.id, dateStr, period });
     };
 
+    const autoAdvanceSelection = (currentUserId) => {
+        const currentIndex = sortedRows.findIndex(u => u.id === currentUserId);
+        if (currentIndex !== -1 && currentIndex < sortedRows.length - 1) {
+            let nextIndex = currentIndex + 1;
+            const nextUser = sortedRows[nextIndex];
+            setSelectedCell(prev => ({ ...prev, userId: nextUser.id }));
+
+            // Scroll if needed
+            if (rowRefs.current[nextUser.id]) {
+                const rowEl = rowRefs.current[nextUser.id];
+                if (scrollContainerRef.current) {
+                    const container = scrollContainerRef.current;
+                    const rowTop = rowEl.offsetTop;
+                    const rowBottom = rowTop + rowEl.offsetHeight;
+                    const containerTop = container.scrollTop + HEADER_TOTAL_HEIGHT;
+                    const containerBottom = container.scrollTop + container.clientHeight;
+
+                    if (rowBottom > containerBottom) {
+                        container.scrollTo({ top: container.scrollTop + rowEl.offsetHeight, behavior: 'smooth' });
+                    } else if (rowTop < containerTop) {
+                        container.scrollTo({ top: rowTop - HEADER_TOTAL_HEIGHT, behavior: 'smooth' });
+                    }
+                }
+            }
+        }
+    };
+
     const handleActionInput = async (type) => {
         if (!selectedCell) return;
         const { userId, dateStr, period } = selectedCell;
@@ -980,37 +1011,13 @@ const StaffDailyAttendance = ({ onBack }) => {
 
         // 1. Perform UI Logic (Auto-Advance) IMMEDIATELY
         if (type === 'O' || type === 'X') {
-            const currentIndex = sortedRows.findIndex(u => u.id === userId);
-            if (currentIndex !== -1 && currentIndex < sortedRows.length - 1) {
-                let nextIndex = currentIndex + 1;
-                const nextUser = sortedRows[nextIndex];
-                setSelectedCell({ userId: nextUser.id, dateStr, period });
-
-                // Scroll if needed
-                if (rowRefs.current[nextUser.id]) {
-                    const rowEl = rowRefs.current[nextUser.id];
-                    if (scrollContainerRef.current) {
-                        const container = scrollContainerRef.current;
-                        const rowTop = rowEl.offsetTop;
-                        const rowBottom = rowTop + rowEl.offsetHeight;
-                        const containerTop = container.scrollTop + HEADER_TOTAL_HEIGHT;
-                        const containerBottom = container.scrollTop + container.clientHeight;
-
-                        if (rowBottom > containerBottom) {
-                            container.scrollTo({ top: container.scrollTop + rowEl.offsetHeight, behavior: 'smooth' });
-                        } else if (rowTop < containerTop) {
-                            container.scrollTo({ top: rowTop - HEADER_TOTAL_HEIGHT, behavior: 'smooth' });
-                        }
-                    }
-                }
-            }
+            autoAdvanceSelection(userId);
         } else if (type === 'OTHER') {
             setStatusPopup({ open: true, user, dateStr, period });
-            return; // Don't auto advance for OTHER
+            return; // Don't auto advance for OTHER (yet)
         }
 
         // 2. Perform Business Logic (State/DB Update) in Background
-        // We do NOT await this to prevent blocking UI
         (async () => {
             if (type === 'O') {
                 const key = `${userId}_${dateStr}_${period}`;
@@ -1020,7 +1027,6 @@ const StaffDailyAttendance = ({ onBack }) => {
                 if (!isAttended || status) {
                     if (isAttended) {
                         if (status) {
-                            // Optimistic Update to O (Clear Status)
                             setAttendanceData(prev => prev.add(key));
                             setStatusData(prev => { const n = { ...prev }; delete n[key]; return n; });
                             try {
@@ -1028,7 +1034,6 @@ const StaffDailyAttendance = ({ onBack }) => {
                             } catch (e) { fetchData(); }
                         }
                     } else {
-                        // Optimistic Toggle (Insert)
                         await toggleAttendance(user, dateStr, period);
                     }
                 }
