@@ -77,8 +77,9 @@ const SharedTodoModal = ({ onClose }) => {
 
     // Filter Logic
     const filteredMembers = members.filter(m => {
+        const memberCerts = m.certificates || []; // Handle null/undefined
         const branchMatch = selectedBranch === '전체' || m.branch === selectedBranch;
-        const certMatch = selectedCert === '전체' || m.certificates.includes(selectedCert);
+        const certMatch = selectedCert === '전체' || memberCerts.includes(selectedCert);
         return branchMatch && certMatch;
     });
 
@@ -171,7 +172,7 @@ const SharedTodoModal = ({ onClose }) => {
                                                 {member.branch && <span style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#718096', marginLeft: '6px' }}>{member.branch}</span>}
                                             </div>
                                             <div style={{ fontSize: '0.8rem', color: '#3182ce' }}>
-                                                {member.certificates.length > 0 ? member.certificates.join(', ') : '준비중인 자격증 없음'}
+                                                {(member.certificates && member.certificates.length > 0) ? member.certificates.join(', ') : '준비중인 자격증 없음'}
                                             </div>
                                         </div>
                                     </div>

@@ -290,9 +290,9 @@ const DailyWorkPlan = () => {
 
                         {/* Stats */}
                         {stat && stat.total > 0 && (
-                            <div style={{ marginTop: 'auto', marginBottom: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                <span style={{ fontSize: '0.7rem', color: '#48bb78', fontWeight: 'bold' }}>{stat.completed}</span>
-                                <span style={{ fontSize: '0.7rem', color: '#a0aec0' }}>/ {stat.total}</span>
+                            <div style={{ marginTop: 'auto', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span style={{ fontSize: '0.75rem', color: '#48bb78', fontWeight: 'bold' }}>{stat.completed}</span>
+                                <span style={{ fontSize: '0.75rem', color: '#a0aec0', fontWeight: 'normal' }}> / {stat.total}</span>
                             </div>
                         )}
                     </div>
