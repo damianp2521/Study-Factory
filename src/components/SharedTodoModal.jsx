@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { X, User, ChevronLeft } from 'lucide-react';
+import { X, User, ChevronLeft, Search } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import DailyWorkPlan from './DailyWorkPlan';
 
@@ -9,6 +9,7 @@ const SharedTodoModal = ({ onClose }) => {
     const [loading, setLoading] = useState(false);
     const [selectedBranch, setSelectedBranch] = useState('전체');
     const [selectedCert, setSelectedCert] = useState('전체');
+    const [searchName, setSearchName] = useState('');
     const [certOptions, setCertOptions] = useState([]);
     const [selectedMember, setSelectedMember] = useState(null); // Track viewing user
 
@@ -53,7 +54,8 @@ const SharedTodoModal = ({ onClose }) => {
         const memberCerts = m.certificates || []; // Handle null/undefined
         const branchMatch = selectedBranch === '전체' || m.branch === selectedBranch;
         const certMatch = selectedCert === '전체' || memberCerts.includes(selectedCert);
-        return branchMatch && certMatch;
+        const nameMatch = m.name.toLowerCase().includes(searchName.toLowerCase());
+        return branchMatch && certMatch && nameMatch;
     });
 
     const modalContent = (
@@ -126,27 +128,47 @@ const SharedTodoModal = ({ onClose }) => {
                         </div>
 
                         {/* Filters */}
-                        <div style={{ padding: '15px 20px', background: '#f8fafc', display: 'flex', gap: '10px', flexShrink: 0 }}>
-                            <select
-                                value={selectedBranch}
-                                onChange={(e) => setSelectedBranch(e.target.value)}
-                                style={{ padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem', flex: 1 }}
-                            >
-                                <option value="전체">전체 지점</option>
-                                {['망미점'].map(b => (
-                                    <option key={b} value={b}>{b}</option>
-                                ))}
-                            </select>
-                            <select
-                                value={selectedCert}
-                                onChange={(e) => setSelectedCert(e.target.value)}
-                                style={{ padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem', flex: 1 }}
-                            >
-                                <option value="전체">전체 자격증</option>
-                                {certOptions.map(c => (
-                                    <option key={c.id} value={c.name}>{c.name}</option>
-                                ))}
-                            </select>
+                        <div style={{ padding: '15px 20px', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '10px', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <select
+                                    value={selectedBranch}
+                                    onChange={(e) => setSelectedBranch(e.target.value)}
+                                    style={{ padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem', flex: 1 }}
+                                >
+                                    <option value="전체">전체 지점</option>
+                                    {['망미점'].map(b => (
+                                        <option key={b} value={b}>{b}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    value={selectedCert}
+                                    onChange={(e) => setSelectedCert(e.target.value)}
+                                    style={{ padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem', flex: 1 }}
+                                >
+                                    <option value="전체">전체 자격증</option>
+                                    {certOptions.map(c => (
+                                        <option key={c.id} value={c.name}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ position: 'relative' }}>
+                                <Search size={16} color="#a0aec0" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                                <input
+                                    type="text"
+                                    placeholder="이름으로 검색"
+                                    value={searchName}
+                                    onChange={(e) => setSearchName(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 8px 8px 32px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #cbd5e0',
+                                        fontSize: '0.9rem',
+                                        outline: 'none',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
                         </div>
 
                         {/* Member List */}

@@ -6,6 +6,7 @@ import AdminMemberRegister from '../../pages/AdminMemberRegister';
 import AdminMemberStatus from '../../pages/AdminMemberStatus';
 import AdminEmployeeVacationHistory from '../../pages/AdminEmployeeVacationHistory';
 import AdminWorkReport from '../../pages/AdminWorkReport';
+import AdminWorkPlanCheck from '../../pages/AdminWorkPlanCheck';
 import AdminOtherLeaveRequest from '../../pages/AdminOtherLeaveRequest';
 import AdminFixedLeaveManagement from '../../pages/AdminFixedLeaveManagement';
 import AdminAttendanceStatus from '../../pages/AdminAttendanceStatus';
@@ -34,6 +35,7 @@ const AdminQuickMenu = () => {
 
     // 3. Work Management Views
     if (currentView === 'work_report') return renderWithPadding(<AdminWorkReport onBack={() => navigateTo('grid')} />);
+    if (currentView === 'work_plan_check') return renderWithPadding(<AdminWorkPlanCheck onBack={() => navigateTo('grid')} />);
 
     // Main Grid Menu (Categorized Structure)
     return (
@@ -114,12 +116,12 @@ const AdminQuickMenu = () => {
             <div>
                 <h3 style={sectionHeaderStyle}>작업 관리</h3>
                 <div style={sectionGridStyle}>
-                    {/* 1. 작업 계획 및 결과 */}
-                    <button onClick={() => navigateTo('work_report')} style={menuButtonStyle}>
+                    {/* 1. 작업계획 확인 */}
+                    <button onClick={() => navigateTo('work_plan_check')} style={menuButtonStyle}>
                         <div style={{ ...iconContainerStyle, background: '#ebf8ff', color: '#2b6cb0' }}>
                             <ClipboardList size={24} />
                         </div>
-                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>작업 계획<br />및 결과</span>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>작업계획<br />확인</span>
                     </button>
                 </div>
             </div>
