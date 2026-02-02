@@ -127,7 +127,7 @@ const SharedTodoModal = ({ onClose }) => {
                         style={{ padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', fontSize: '0.9rem', flex: 1 }}
                     >
                         <option value="전체">전체 지점</option>
-                        {['망미점', '안락점', '연산점', '사직점', '마린시티점'].map(b => (
+                        {['망미점'].map(b => (
                             <option key={b} value={b}>{b}</option>
                         ))}
                     </select>
