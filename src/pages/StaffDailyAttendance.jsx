@@ -1358,15 +1358,18 @@ const StaffDailyAttendance = ({ onBack }) => {
                 />
             )}
 
-            {/* Floating Bottom Control Bar - Optimized for One-Handed Use */}
+            {/* Bottom Control Bar - Restored and Optimized */}
             <div style={{
-                position: 'fixed', bottom: '20px', right: '20px',
-                height: '60px',
-                borderRadius: '30px',
-                backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '5px 20px', zIndex: 100,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                border: '1px solid #e2e8f0',
+                flexShrink: 0,
+                height: '70px',
+                backgroundColor: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 20px',
+                zIndex: 100,
+                boxShadow: '0 -2px 10px rgba(0,0,0,0.08)',
+                borderTop: '1px solid #e2e8f0',
                 gap: '15px'
             }}>
                 {/* Left Side: Selected User Info */}
@@ -1385,12 +1388,12 @@ const StaffDailyAttendance = ({ onBack }) => {
                     )}
                 </div>
 
-                {/* Right Side: Compact Buttons */}
-                <div style={{ display: 'flex', gap: '8px', height: '44px' }}>
+                {/* Right Side: Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px', height: '50px' }}>
                     <button
                         onClick={() => handleActionInput('O')}
                         style={{
-                            width: '60px', height: '100%',
+                            width: '65px', height: '100%',
                             borderRadius: '12px', border: 'none',
                             background: '#c6f6d5', color: '#22543d',
                             fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
@@ -1403,7 +1406,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                     <button
                         onClick={() => handleActionInput('X')}
                         style={{
-                            width: '60px', height: '100%',
+                            width: '65px', height: '100%',
                             borderRadius: '12px', border: 'none',
                             background: '#fed7d7', color: '#c53030',
                             fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
@@ -1416,7 +1419,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                     <button
                         onClick={() => handleActionInput('OTHER')}
                         style={{
-                            width: '60px', height: '100%',
+                            width: '65px', height: '100%',
                             borderRadius: '12px', border: '1px solid #cbd5e0',
                             background: 'white', color: '#4a5568',
                             fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer',
