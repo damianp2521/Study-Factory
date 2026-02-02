@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import SharedTodoModal from './SharedTodoModal';
 
-const DailyWorkPlan = () => {
+const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName = null }) => {
     const { user } = useAuth();
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -17,35 +17,39 @@ const DailyWorkPlan = () => {
     const [showSharedModal, setShowSharedModal] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // If targetUserId is provided (viewing others), use it. Otherwise use logged-in user.
+    const effectiveUserId = targetUserId || user?.id;
+
     // Initial Fetch
     useEffect(() => {
-        if (user) {
-            fetchVisibility();
+        if (effectiveUserId) {
+            // Only fetch visibility if it's my own plan
+            if (!isReadOnly) fetchVisibility();
             fetchMonthStats(currentMonth);
             fetchTodos(selectedDate);
         }
-    }, [user]);
+    }, [effectiveUserId]);
 
     // Fetch stats when month changes
     useEffect(() => {
-        if (user) {
+        if (effectiveUserId) {
             fetchMonthStats(currentMonth);
         }
-    }, [currentMonth, user]);
+    }, [currentMonth, effectiveUserId]);
 
     // Fetch todos when date changes
     useEffect(() => {
-        if (user) {
+        if (effectiveUserId) {
             fetchTodos(selectedDate);
         }
-    }, [selectedDate, user]);
+    }, [selectedDate, effectiveUserId]);
 
     const fetchVisibility = async () => {
         try {
             const { data, error } = await supabase
                 .from('profiles')
                 .select('is_public_todo')
-                .eq('id', user.id)
+                .eq('id', effectiveUserId)
                 .single();
             if (data) setIsPublic(data.is_public_todo);
         } catch (error) {
@@ -54,6 +58,7 @@ const DailyWorkPlan = () => {
     };
 
     const toggleVisibility = async () => {
+        if (isReadOnly) return; // Guard
         try {
             const newValue = !isPublic;
             // Optimistic update
@@ -63,7 +68,7 @@ const DailyWorkPlan = () => {
             const { error } = await supabase
                 .from('profiles')
                 .update({ is_public_todo: newValue })
-                .eq('id', user.id);
+                .eq('id', effectiveUserId);
 
             if (error) throw error;
         } catch (error) {
@@ -81,7 +86,7 @@ const DailyWorkPlan = () => {
             const { data, error } = await supabase
                 .from('daily_todos')
                 .select('date, is_completed')
-                .eq('user_id', user.id)
+                .eq('user_id', effectiveUserId)
                 .gte('date', start)
                 .lte('date', end);
 
@@ -107,7 +112,7 @@ const DailyWorkPlan = () => {
             const { data, error } = await supabase
                 .from('daily_todos')
                 .select('*')
-                .eq('user_id', user.id)
+                .eq('user_id', effectiveUserId)
                 .eq('date', dateStr)
                 .order('created_at', { ascending: true });
 
@@ -121,14 +126,14 @@ const DailyWorkPlan = () => {
     };
 
     const handleAddTask = async () => {
-        if (!newTask.trim()) return;
+        if (isReadOnly || !newTask.trim()) return;
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
         try {
             const { data, error } = await supabase
                 .from('daily_todos')
                 .insert([{
-                    user_id: user.id,
+                    user_id: effectiveUserId,
                     content: newTask,
                     date: dateStr,
                     is_completed: false
@@ -156,6 +161,8 @@ const DailyWorkPlan = () => {
     };
 
     const toggleTodo = async (todo) => {
+        if (isReadOnly) return; // Prevent toggling in read-only mode
+
         try {
             const newCompleted = !todo.is_completed;
             const completedAt = newCompleted ? new Date().toISOString() : null;
@@ -185,6 +192,7 @@ const DailyWorkPlan = () => {
     };
 
     const deleteTodo = async (id, dateStr, isCompleted) => {
+        if (isReadOnly) return;
         if (!confirm('삭제하시겠습니까?')) return;
         try {
             const { error } = await supabase
@@ -321,36 +329,46 @@ const DailyWorkPlan = () => {
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
             minHeight: '600px', // Ensure height
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            height: '100%' // Fill for modal
         }}>
             {/* Top Bar handles */}
-            {/* Top Bar handles */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <button
-                    onClick={() => setShowSharedModal(true)}
-                    style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: '#edf2f7', border: 'none', padding: '10px', borderRadius: '50%', // Circle/Icon only
-                        color: '#4a5568', cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                    }}
-                    title="다른 회원 보기"
-                >
-                    <Users size={20} />
-                </button>
+                {isReadOnly ? (
+                    // Read Only Header: Just the name
+                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748' }}>
+                        {targetUserName ? `${targetUserName}님의 작업계획` : '회원님의 작업계획'}
+                    </div>
+                ) : (
+                    // My Work Plan Header: View Others + Toggle
+                    <>
+                        <button
+                            onClick={() => setShowSharedModal(true)}
+                            style={{
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: '#edf2f7', border: 'none', padding: '10px', borderRadius: '50%', // Circle/Icon only
+                                color: '#4a5568', cursor: 'pointer',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                            }}
+                            title="다른 회원 보기"
+                        >
+                            <Users size={20} />
+                        </button>
 
-                <button
-                    onClick={toggleVisibility}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        background: isPublic ? '#e6fffa' : '#edf2f7',
-                        border: '1px solid', borderColor: isPublic ? '#38b2ac' : 'transparent',
-                        padding: '8px 12px', borderRadius: '20px',
-                        color: isPublic ? '#319795' : '#718096', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer'
-                    }}>
-                    {isPublic ? <Unlock size={16} /> : <Lock size={16} />}
-                    <span>{isPublic ? '내 투두 공개중' : '비공개'}</span>
-                </button>
+                        <button
+                            onClick={toggleVisibility}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '5px',
+                                background: isPublic ? '#e6fffa' : '#edf2f7',
+                                border: '1px solid', borderColor: isPublic ? '#38b2ac' : 'transparent',
+                                padding: '8px 12px', borderRadius: '20px',
+                                color: isPublic ? '#319795' : '#718096', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer'
+                            }}>
+                            {isPublic ? <Unlock size={16} /> : <Lock size={16} />}
+                            <span>{isPublic ? '내 투두 공개중' : '비공개'}</span>
+                        </button>
+                    </>
+                )}
             </div>
 
             {/* To-Do List (Now on Top) */}
@@ -369,40 +387,42 @@ const DailyWorkPlan = () => {
                     </div>
                 </div>
 
-                {/* Input */}
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                    <input
-                        type="text"
-                        value={newTask}
-                        onChange={(e) => setNewTask(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
-                        placeholder="할 일을 입력하세요..."
-                        style={{
-                            flex: 1,
-                            padding: '12px',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0',
-                            fontSize: '1rem',
-                            outline: 'none'
-                        }}
-                    />
-                    <button
-                        onClick={handleAddTask}
-                        disabled={!newTask.trim()}
-                        style={{
-                            background: 'var(--color-primary)',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            width: '45px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: newTask.trim() ? 'pointer' : 'default',
-                            opacity: newTask.trim() ? 1 : 0.5
-                        }}
-                    >
-                        <Plus size={24} />
-                    </button>
-                </div>
+                {/* Input - Hide if Read Only */}
+                {!isReadOnly && (
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                        <input
+                            type="text"
+                            value={newTask}
+                            onChange={(e) => setNewTask(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
+                            placeholder="할 일을 입력하세요..."
+                            style={{
+                                flex: 1,
+                                padding: '12px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                fontSize: '1rem',
+                                outline: 'none'
+                            }}
+                        />
+                        <button
+                            onClick={handleAddTask}
+                            disabled={!newTask.trim()}
+                            style={{
+                                background: 'var(--color-primary)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                width: '45px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                cursor: newTask.trim() ? 'pointer' : 'default',
+                                opacity: newTask.trim() ? 1 : 0.5
+                            }}
+                        >
+                            <Plus size={24} />
+                        </button>
+                    </div>
+                )}
 
                 {/* List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '300px', overflowY: 'auto' }}>
@@ -426,7 +446,15 @@ const DailyWorkPlan = () => {
                             }}>
                                 <button
                                     onClick={() => toggleTodo(todo)}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', flexShrink: 0 }}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        cursor: isReadOnly ? 'default' : 'pointer', // No pointer if read only
+                                        padding: 0,
+                                        display: 'flex',
+                                        flexShrink: 0
+                                    }}
+                                    disabled={isReadOnly}
                                 >
                                     {todo.is_completed ?
                                         <CheckCircle size={22} color="#48bb78" fill="#e6fffa" /> :
@@ -442,12 +470,15 @@ const DailyWorkPlan = () => {
                                 }}>
                                     {todo.content}
                                 </span>
-                                <button
-                                    onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
-                                >
-                                    <Trash2 size={18} />
-                                </button>
+                                {/* Hide delete button if read only */}
+                                {!isReadOnly && (
+                                    <button
+                                        onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                )}
                             </div>
                         ))
                     )}
@@ -461,8 +492,8 @@ const DailyWorkPlan = () => {
                 {renderCells()}
             </div>
 
-            {/* Modal */}
-            {showSharedModal && (
+            {/* Modal - Only render if not in read only mode (prevent recursion) */}
+            {!isReadOnly && showSharedModal && (
                 <SharedTodoModal onClose={() => setShowSharedModal(false)} />
             )}
         </div>
