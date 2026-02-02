@@ -3,21 +3,21 @@ import { ChevronLeft, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
-import { formatDateWithDay } from '../utils/dateUtils';
+import { formatDateWithDay, getTodayString } from '../utils/dateUtils';
 
 const StaffBeverageOrderList = ({ onBack }) => {
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]); // [{ beverageName, count, users: [name, ...] }]
     const [absentUsers, setAbsentUsers] = useState([]); // List of names excluded
     const [selectedBranch, setSelectedBranch] = useState('망미점');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(getTodayString());
     const [showCalendar, setShowCalendar] = useState(false);
 
     const branches = BRANCH_OPTIONS.filter(b => b !== '전체');
 
     useEffect(() => {
         const updateDate = () => {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayString();
             setDate(today);
         };
         window.addEventListener('focus', updateDate);

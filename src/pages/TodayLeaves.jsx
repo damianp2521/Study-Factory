@@ -4,10 +4,11 @@ import { ArrowLeft, Calendar, User, AlertTriangle, Search, ChevronDown } from 'l
 import { supabase } from '../lib/supabaseClient';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
 import { BRANCH_LIST } from '../constants/branches';
+import { getTodayString } from '../utils/dateUtils';
 
 const TodayLeaves = () => {
     const navigate = useNavigate();
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // Default today
+    const [date, setDate] = useState(getTodayString()); // Default today
     const [showCalendar, setShowCalendar] = useState(false);
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(false);

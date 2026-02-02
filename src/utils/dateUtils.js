@@ -47,17 +47,12 @@ export const getWeekRange = (dateInput) => {
  * @returns {string}
  */
 export const getTodayString = () => {
-    // Note: This returns UTC date part if run in environment without timezone adjust, 
-    // but usually in browser it relies on local time if constructed this way, 
-    // though toISOString() uses UTC. 
-    // To be safe for Korean timezone (KST is UTC+9), we might want to offset.
-    // However, keeping consistent with existing logic: new Date().toISOString().split('T')[0]
-
-    // Better approach for local date string:
+    // Returns YYYY-MM-DD in local time (KST for the user)
     const d = new Date();
-    const offset = d.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(d - offset)).toISOString().slice(0, 10);
-    return localISOTime;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 };
 
 /**

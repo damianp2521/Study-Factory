@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import EmbeddedCalendar from './EmbeddedCalendar';
 import { format, addMonths, subMonths, parseISO } from 'date-fns';
+import { getTodayString } from '../utils/dateUtils';
 import { ko } from 'date-fns/locale';
 
 const InlineVacationRequest = () => {
@@ -174,10 +175,10 @@ const InlineVacationRequest = () => {
 
 
     // Date constraints
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getTodayString();
     const maxDate = new Date();
     maxDate.setDate(maxDate.getDate() + 14);
-    const maxDateStr = maxDate.toISOString().split('T')[0];
+    const maxDateStr = format(maxDate, 'yyyy-MM-dd');
 
     return (
         <div style={{

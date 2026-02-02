@@ -124,7 +124,7 @@ const StatusPopup = ({ onSelect, onClose }) => {
 };
 
 // Memoized Cell with Long Press Support
-const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, attendanceData, statusData, vacationData, toggleAttendance, onLongPress, width, scale }) => {
+const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, isSelected, onSelect, attendanceData, statusData, vacationData, onLongPress, width, scale }) => {
     const key = `${user.id}_${dateStr}_${period}`;
     const isAttended = attendanceData.has(key);
     const status = statusData[key] || null;
@@ -202,7 +202,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
     const handleClick = () => {
         if (isDeactivated) return;
         if (!isLongPress.current) {
-            toggleAttendance(user, dateStr, period);
+            onSelect(user, dateStr, period);
         }
         isLongPress.current = false;
     };
@@ -225,7 +225,9 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
                 cursor: isDeactivated ? 'default' : 'pointer',
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
-                WebkitTouchCallout: 'none'
+                WebkitTouchCallout: 'none',
+                boxShadow: isSelected ? 'inset 0 0 0 3px #3182ce' : 'none', // Blue highlight for selected
+                zIndex: isSelected ? 10 : 'auto'
             }}
         >
             {content}
@@ -236,6 +238,7 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, at
         prev.scale === next.scale &&
         prev.width === next.width &&
         prev.isRowHighlighted === next.isRowHighlighted &&
+        prev.isSelected === next.isSelected && // Check isSelected
         prev.attendanceData === next.attendanceData &&
         prev.statusData === next.statusData &&
         prev.vacationData === next.vacationData
@@ -491,6 +494,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     // Status popup state
     const [statusPopup, setStatusPopup] = useState({ open: false, user: null, dateStr: '', period: null });
+    const [selectedCell, setSelectedCell] = useState(null); // { userId, dateStr, period }
 
     const scrollContainerRef = useRef(null);
     const contentRef = useRef(null);
@@ -964,6 +968,117 @@ const StaffDailyAttendance = ({ onBack }) => {
         return { bgColor };
     };
 
+    const handleCellSelect = (user, dateStr, period) => {
+        setSelectedCell({ userId: user.id, dateStr, period });
+    };
+
+    const handleActionInput = async (type) => {
+        if (!selectedCell) return;
+        const { userId, dateStr, period } = selectedCell;
+        const user = displayRows.find(u => u.id === userId);
+        if (!user) return;
+
+        if (type === 'O') {
+            const key = `${userId}_${dateStr}_${period}`;
+            // If already O, do nothing? Or ensure it is O.
+            // Toggle logic toggles it OFF if present.
+            // We want to SET to O.
+            // Check current status
+            const isAttended = attendanceData.has(key);
+            const status = statusData[key];
+
+            // If not attended or specific status, set to O (which is attended with null status)
+            // If already O (attended=true, status=null), just move on?
+            // User asked "Change status to O", implying if it's X (not attended) make it O.
+            // If it's Other, make it O.
+
+            if (!isAttended || status) {
+                await toggleAttendance(user, dateStr, period); // This helper toggles.
+                // Wait, toggleAttendance removes if present.
+                // If isAttended is FALSE, it adds it (Default O).
+                // If isAttended is TRUE, it removes it.
+                // To force O:
+                // If isAttended is False -> Call toggle (becomes O).
+                // If isAttended is True and Status is Set -> Need to clear status.
+                // If isAttended is True and Status is Null -> Already O.
+
+                // However, toggleAttendance implementation:
+                // if (isAttended) delete... else insert...
+                // This is a generic toggle.
+                // If I want to FORCE 'O', I should probably direct manipulate or modify toggleAttendance.
+                // But for now, let's use the existing logic but be smart.
+
+                if (isAttended) {
+                    // It is attended. If it has a status (e.g. Late), we want to make it normal O.
+                    // The current toggleAttendance deletes row if attended.
+                    // So calling it will make it X.
+                    // Accessing the DB directly might be safer OR modify toggleAttendance to accept 'force' param.
+                    // Let's modify toggleAttendance logic here locally?
+                    // Or just call it twice if needed? No that's bad.
+
+                    // Let's look at toggleAttendance again.
+                    // It deletes if attended.
+                    // Ideally we want to UPDATE to status=null if attended, or INSERT if not.
+
+                    // To implement "Set to O":
+                    // If !isAttended: insert...
+                    // If isAttended && status: update to status=null.
+                    // If isAttended && !status: doing nothing is fine.
+
+                    if (status) {
+                        // Update to O
+                        setAttendanceData(prev => prev.add(key)); // Ensure key exists
+                        setStatusData(prev => { const n = { ...prev }; delete n[key]; return n; });
+                        await supabase.from('attendance_logs').update({ status: null }).eq('user_id', user.id).eq('date', dateStr).eq('period', period);
+                    }
+                } else {
+                    // Not attended, make it O
+                    await toggleAttendance(user, dateStr, period);
+                }
+            }
+
+        } else if (type === 'X') {
+            const key = `${userId}_${dateStr}_${period}`;
+            const isAttended = attendanceData.has(key);
+            if (isAttended) {
+                await toggleAttendance(user, dateStr, period); // Removes it -> X
+            }
+        } else if (type === 'OTHER') {
+            setStatusPopup({ open: true, user, dateStr, period });
+            return; // Don't auto advance
+        }
+
+        // Auto Advance
+        // Find current user index
+        const currentIndex = sortedRows.findIndex(u => u.id === userId);
+        if (currentIndex !== -1 && currentIndex < sortedRows.length - 1) {
+            let nextIndex = currentIndex + 1;
+            // Skip empty rows if desired? User didn't specify, but usually yes.
+            // Let's just go to next row for now.
+            const nextUser = sortedRows[nextIndex];
+            setSelectedCell({ userId: nextUser.id, dateStr, period });
+
+            // Scroll if needed
+            if (rowRefs.current[nextUser.id]) {
+                const rowEl = rowRefs.current[nextUser.id];
+                if (scrollContainerRef.current) {
+                    const container = scrollContainerRef.current;
+                    const rowTop = rowEl.offsetTop;
+                    const rowBottom = rowTop + rowEl.offsetHeight;
+                    const containerTop = container.scrollTop + HEADER_TOTAL_HEIGHT;
+                    const containerBottom = container.scrollTop + container.clientHeight;
+
+                    if (rowBottom > containerBottom) {
+                        container.scrollTo({ top: container.scrollTop + rowEl.offsetHeight, behavior: 'smooth' });
+                    } else if (rowTop < containerTop) {
+                        // Should not happen when going down usually
+                        container.scrollTo({ top: rowTop - HEADER_TOTAL_HEIGHT, behavior: 'smooth' });
+                    }
+                }
+            }
+        }
+    };
+
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
             {/* Header: Row 1 Date (Top), Row 2 Memo (Bottom) */}
@@ -1180,7 +1295,21 @@ const StaffDailyAttendance = ({ onBack }) => {
                                                 return (
                                                     <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
                                                         {[1, 2, 3, 4, 5, 6, 7].map(p => (
-                                                            <AttendanceCell key={p} user={user} dateStr={format(date, 'yyyy-MM-dd')} period={p} isRowHighlighted={isRowHighlighted} attendanceData={attendanceData} statusData={statusData} vacationData={vacationData} toggleAttendance={toggleAttendance} onLongPress={handleLongPress} width={PERIOD_WIDTH} scale={scale} />
+                                                            <AttendanceCell
+                                                                key={p}
+                                                                user={user}
+                                                                dateStr={format(date, 'yyyy-MM-dd')}
+                                                                period={p}
+                                                                isRowHighlighted={isRowHighlighted}
+                                                                isSelected={selectedCell?.userId === user.id && selectedCell?.dateStr === format(date, 'yyyy-MM-dd') && selectedCell?.period === p}
+                                                                onSelect={handleCellSelect}
+                                                                attendanceData={attendanceData}
+                                                                statusData={statusData}
+                                                                vacationData={vacationData}
+                                                                onLongPress={handleLongPress}
+                                                                width={PERIOD_WIDTH}
+                                                                scale={scale}
+                                                            />
                                                         ))}
                                                     </div>
                                                 )
@@ -1260,6 +1389,54 @@ const StaffDailyAttendance = ({ onBack }) => {
                     onClose={() => setShowIncomingModal(false)}
                 />
             )}
+
+            {/* Fixed Bottom Control Bar */}
+            <div style={{
+                height: '80px', flexShrink: 0, borderTop: '1px solid #e2e8f0',
+                backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+                padding: '10px 20px', zIndex: 100,
+                boxShadow: '0 -2px 10px rgba(0,0,0,0.05)'
+            }}>
+                <button
+                    onClick={() => handleActionInput('O')}
+                    style={{
+                        flex: 1, height: '100%', maxWidth: '120px', margin: '0 5px',
+                        borderRadius: '12px', border: 'none',
+                        background: '#c6f6d5', color: '#22543d',
+                        fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    O
+                </button>
+                <button
+                    onClick={() => handleActionInput('X')}
+                    style={{
+                        flex: 1, height: '100%', maxWidth: '120px', margin: '0 5px',
+                        borderRadius: '12px', border: 'none',
+                        background: '#fed7d7', color: '#c53030',
+                        fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    X
+                </button>
+                <button
+                    onClick={() => handleActionInput('OTHER')}
+                    style={{
+                        flex: 1, height: '100%', maxWidth: '120px', margin: '0 5px',
+                        borderRadius: '12px', border: '1px solid #cbd5e0',
+                        background: 'white', color: '#4a5568',
+                        fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    기타
+                </button>
+            </div>
         </div>
     );
 };

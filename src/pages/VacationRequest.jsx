@@ -7,6 +7,7 @@ import { format, addMonths, subMonths, isSameMonth, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
+import { getTodayString } from '../utils/dateUtils';
 
 const VacationRequest = () => {
     const navigate = useNavigate();
@@ -298,10 +299,10 @@ const VacationRequest = () => {
                                 selectedDate={date}
                                 onSelectDate={(val) => {
                                     // Basic validation
-                                    const todayStr = new Date().toISOString().split('T')[0];
+                                    const todayStr = getTodayString();
                                     const maxDate = new Date();
                                     maxDate.setDate(maxDate.getDate() + 14);
-                                    const maxDateStr = maxDate.toISOString().split('T')[0];
+                                    const maxDateStr = format(maxDate, 'yyyy-MM-dd');
 
                                     if (val < todayStr) {
                                         alert('지난 날짜는 신청할 수 없습니다.');
@@ -314,11 +315,11 @@ const VacationRequest = () => {
                                     setDate(val);
                                 }}
                                 events={myRequests}
-                                minDate={new Date().toISOString().split('T')[0]}
+                                minDate={getTodayString()}
                                 maxDate={(() => {
                                     const d = new Date();
                                     d.setDate(d.getDate() + 14);
-                                    return d.toISOString().split('T')[0];
+                                    return format(d, 'yyyy-MM-dd');
                                 })()}
                             />
                         </div>

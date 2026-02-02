@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Calendar, User, Search } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
+import { getTodayString } from '../utils/dateUtils';
 
 const AdminAttendanceStatus = ({ onBack }) => {
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(getTodayString());
     const [showCalendar, setShowCalendar] = useState(false);
     const [branch, setBranch] = useState('망미점'); // Default Mangmi
     const [users, setUsers] = useState([]);
@@ -14,7 +15,7 @@ const AdminAttendanceStatus = ({ onBack }) => {
 
     useEffect(() => {
         const updateDate = () => {
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayString();
             setSelectedDate(today);
         };
         window.addEventListener('focus', updateDate);
