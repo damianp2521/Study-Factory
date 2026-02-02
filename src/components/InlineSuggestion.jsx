@@ -1,20 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, X } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
+import { Package, BookOpen, MessageCircle, HeartHandshake } from 'lucide-react';
 
 const InlineSuggestion = () => {
     const navigate = useNavigate();
 
     const categories = [
-        { id: 'equipment', label: '비품관련' },
-        { id: 'study', label: '학습관련' },
-        { id: 'other', label: '기타건의' },
-        { id: 'counseling', label: '상담요청' }
+        { id: 'equipment', label: '비품관련', icon: <Package size={20} /> },
+        { id: 'study', label: '학습관련', icon: <BookOpen size={20} /> },
+        { id: 'other', label: '기타건의', icon: <MessageCircle size={20} /> },
+        { id: 'counseling', label: '상담요청', icon: <HeartHandshake size={20} /> }
     ];
 
     const handleCategoryClick = (id) => {
-        // Navigate to suggestion page with the selected category state
         navigate('/suggestion', { state: { category: id } });
     };
 
@@ -22,7 +20,7 @@ const InlineSuggestion = () => {
         <div style={{
             background: 'white',
             borderRadius: '16px',
-            padding: '20px',
+            padding: '16px',
             height: '100%',
             display: 'flex',
             flexDirection: 'column',
@@ -31,41 +29,59 @@ const InlineSuggestion = () => {
         }}>
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '10px',
-                alignContent: 'start', // Align grid content to top
-                height: '100%' // Use full height to allow top alignment
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '8px'
             }}>
                 {categories.map((cat, index) => (
                     <button
                         key={index}
                         onClick={() => handleCategoryClick(cat.id)}
                         style={{
-                            aspectRatio: '1', // Square buttons
-                            width: '100%', // Full width of grid cell
-                            padding: '10px',
-                            borderRadius: '16px',
+                            padding: '12px 8px',
+                            borderRadius: '12px',
                             border: 'none',
-                            background: '#f7fafc',
-                            color: '#2d3748',
-                            fontSize: '0.9rem',
-                            fontWeight: 'bold',
+                            background: 'linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%)',
+                            color: 'var(--color-text-main)',
+                            fontSize: '0.75rem',
+                            fontWeight: '600',
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                            transition: 'all 0.2s',
+                            gap: '6px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.04)',
+                            transition: 'all 0.2s ease',
                             wordBreak: 'keep-all',
-                            lineHeight: '1.2',
                             textAlign: 'center'
                         }}
-                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
-                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.08)';
+                            e.currentTarget.style.background = 'linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.04)';
+                            e.currentTarget.style.background = 'linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%)';
+                        }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.96)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
                     >
-                        {cat.label}
+                        <div style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '10px',
+                            background: 'var(--color-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            boxShadow: '0 2px 4px rgba(49, 130, 206, 0.3)'
+                        }}>
+                            {cat.icon}
+                        </div>
+                        <span>{cat.label}</span>
                     </button>
                 ))}
             </div>
