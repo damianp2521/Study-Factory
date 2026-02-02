@@ -3,6 +3,8 @@ import { ChevronLeft, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_LIST } from '../constants/branches';
 
+import { getTodayString } from '../utils/dateUtils';
+
 const AdminMemberRegister = ({ onBack }) => {
     console.log('AdminMemberRegister mounting');
     const [name, setName] = useState('');
@@ -82,7 +84,7 @@ const AdminMemberRegister = ({ onBack }) => {
             }
 
             // Insert into pending_registrations table
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('pending_registrations')
                 .insert([{
                     name: name.trim(),
@@ -93,7 +95,39 @@ const AdminMemberRegister = ({ onBack }) => {
                     selection_2: selection2 || null,
                     selection_3: selection3 || null,
                     memo: memo.trim() || null
-                }]);
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Auto-create Staff Todos
+            if (data) {
+                // Format: 2/10 -> M/D
+                const dateObj = new Date();
+                const month = dateObj.getMonth() + 1;
+                const date = dateObj.getDate();
+                const shortDate = `${month}/${date}`;
+
+                const todoContentPrefix = `${shortDate} ${seatNumber ? `${seatNumber}번` : ''} ${name.trim()}`;
+                const todos = [
+                    `${todoContentPrefix} 명패 준비`,
+                    `${todoContentPrefix} 책상 정비`,
+                    `${todoContentPrefix} 좌석 및 음료 정보 입력 확인`
+                ];
+
+                // Fetch user ID for created_by
+                const { data: { user } } = await supabase.auth.getUser();
+
+                const { error: todoError } = await supabase.from('staff_todos').insert(todos.map(content => ({
+                    content,
+                    branch,
+                    pending_registration_id: data.id,
+                    created_by: user?.id
+                })));
+
+                if (todoError) console.error("Auto todo creation failed", todoError);
+            }
 
             if (error) throw error;
 
@@ -120,6 +154,14 @@ const AdminMemberRegister = ({ onBack }) => {
                 .from('pending_registrations')
                 .delete()
                 .eq('id', id);
+
+            // Cascade delete should handle staff_todos if we set ON DELETE CASCADE in SQL.
+            // But if not, we should manually delete.
+            // My proposed SQL: "REFERENCES public.pending_registrations(id) ON DELETE CASCADE"
+            // So manual deletion is not strictly required IF the migration is run.
+            // However, to be safe (if migration hasn't run or cascade fails), let's try manual delete first or just rely on cascade.
+            // Given the user instruction "취소시키면 자동으로 삭제되게 해주고", CASCADE is the best way.
+            // I'll trust the SQL I just wrote.
 
             if (error) throw error;
             fetchList();

@@ -90,7 +90,7 @@ const StaffTaskBoard = () => {
             const formattedTodos = (todos || []).map(t => ({
                 ...t,
                 type: 'staff',
-                authorName: t.author?.name || '알수없음',
+                authorName: t.pending_registration_id ? '시스템' : (t.author?.name || '알수없음'),
                 branch: t.branch || t.author?.branch || '알수없음', // Use stored branch, fallback to author's current branch
                 completerName: t.completer?.name
             }));
