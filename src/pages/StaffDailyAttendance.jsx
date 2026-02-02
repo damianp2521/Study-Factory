@@ -1188,7 +1188,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                     </div>
 
                     {/* Rows */}
-                    <div style={{ width: 'max-content', paddingBottom: '20px' }}>
+                    <div style={{ width: 'max-content', paddingBottom: '100px' }}>
                         {sortedRows.map(user => {
                             const isDeactivated = user.isEmpty;
                             // Allow highlighting for unassigned users too (user.isUnassigned)
@@ -1358,52 +1358,75 @@ const StaffDailyAttendance = ({ onBack }) => {
                 />
             )}
 
-            {/* Fixed Bottom Control Bar */}
+            {/* Floating Bottom Control Bar - Optimized for One-Handed Use */}
             <div style={{
-                height: '80px', flexShrink: 0, borderTop: '1px solid #e2e8f0',
-                backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-around',
-                padding: '10px 20px', zIndex: 100,
-                boxShadow: '0 -2px 10px rgba(0,0,0,0.05)'
+                position: 'fixed', bottom: '20px', right: '20px',
+                height: '60px',
+                borderRadius: '30px',
+                backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '5px 20px', zIndex: 100,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                border: '1px solid #e2e8f0',
+                gap: '15px'
             }}>
-                <button
-                    onClick={() => handleActionInput('O')}
-                    style={{
-                        flex: 1, height: '100%', maxWidth: '120px', margin: '0 5px',
-                        borderRadius: '12px', border: 'none',
-                        background: '#c6f6d5', color: '#22543d',
-                        fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }}
-                >
-                    O
-                </button>
-                <button
-                    onClick={() => handleActionInput('X')}
-                    style={{
-                        flex: 1, height: '100%', maxWidth: '120px', margin: '0 5px',
-                        borderRadius: '12px', border: 'none',
-                        background: '#fed7d7', color: '#c53030',
-                        fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }}
-                >
-                    X
-                </button>
-                <button
-                    onClick={() => handleActionInput('OTHER')}
-                    style={{
-                        flex: 1, height: '100%', maxWidth: '120px', margin: '0 5px',
-                        borderRadius: '12px', border: '1px solid #cbd5e0',
-                        background: 'white', color: '#4a5568',
-                        fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                    }}
-                >
-                    기타
-                </button>
+                {/* Left Side: Selected User Info */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    {selectedCell ? (() => {
+                        const activeUser = displayRows.find(u => u.id === selectedCell.userId);
+                        if (!activeUser) return <span style={{ color: '#a0aec0', fontSize: '0.9rem' }}>선택해주세요</span>;
+                        return (
+                            <>
+                                <span style={{ fontSize: '0.8rem', color: '#718096' }}>{activeUser.seat_number ? `좌석 ${activeUser.seat_number}` : '-'}</span>
+                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>{activeUser.name}</span>
+                            </>
+                        );
+                    })() : (
+                        <span style={{ color: '#a0aec0', fontSize: '0.9rem' }}>선택해주세요</span>
+                    )}
+                </div>
+
+                {/* Right Side: Compact Buttons */}
+                <div style={{ display: 'flex', gap: '8px', height: '44px' }}>
+                    <button
+                        onClick={() => handleActionInput('O')}
+                        style={{
+                            width: '60px', height: '100%',
+                            borderRadius: '12px', border: 'none',
+                            background: '#c6f6d5', color: '#22543d',
+                            fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                    >
+                        O
+                    </button>
+                    <button
+                        onClick={() => handleActionInput('X')}
+                        style={{
+                            width: '60px', height: '100%',
+                            borderRadius: '12px', border: 'none',
+                            background: '#fed7d7', color: '#c53030',
+                            fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                    >
+                        X
+                    </button>
+                    <button
+                        onClick={() => handleActionInput('OTHER')}
+                        style={{
+                            width: '60px', height: '100%',
+                            borderRadius: '12px', border: '1px solid #cbd5e0',
+                            background: 'white', color: '#4a5568',
+                            fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}
+                    >
+                        기타
+                    </button>
+                </div>
             </div>
         </div>
     );
