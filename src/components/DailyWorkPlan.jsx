@@ -324,16 +324,19 @@ const DailyWorkPlan = () => {
             flexDirection: 'column'
         }}>
             {/* Top Bar handles */}
+            {/* Top Bar handles */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <button
                     onClick={() => setShowSharedModal(true)}
                     style={{
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        background: '#edf2f7', border: 'none', padding: '8px 12px', borderRadius: '20px',
-                        color: '#4a5568', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer'
-                    }}>
-                    <Users size={18} />
-                    <span>다른 회원 보기</span>
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: '#edf2f7', border: 'none', padding: '10px', borderRadius: '50%', // Circle/Icon only
+                        color: '#4a5568', cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                    }}
+                    title="다른 회원 보기"
+                >
+                    <Users size={20} />
                 </button>
 
                 <button
@@ -350,15 +353,8 @@ const DailyWorkPlan = () => {
                 </button>
             </div>
 
-            {/* Calendar */}
-            <div style={{ marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '20px' }}>
-                {renderHeader()}
-                {renderDays()}
-                {renderCells()}
-            </div>
-
-            {/* To-Do List */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* To-Do List (Now on Top) */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
                         {format(selectedDate, 'M월 d일')} 계획
@@ -456,6 +452,13 @@ const DailyWorkPlan = () => {
                         ))
                     )}
                 </div>
+            </div>
+
+            {/* Calendar (Now on Bottom) */}
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+                {renderHeader()}
+                {renderDays()}
+                {renderCells()}
             </div>
 
             {/* Modal */}

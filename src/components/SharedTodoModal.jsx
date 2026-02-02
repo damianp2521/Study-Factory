@@ -31,38 +31,16 @@ const SharedTodoModal = ({ onClose }) => {
     const fetchPublicMembers = async () => {
         setLoading(true);
         try {
-            // Need to join user_certificates to filter by cert later, 
-            // but first get all public profiles.
-            // Assuming authorized_users view has is_public_todo
-            const { data, error } = await supabase
-                .from('authorized_users')
-                .select('*')
-                .eq('is_public_todo', true);
+            // Use RPC to fetch public members safely
+            const { data, error } = await supabase.rpc('get_public_members');
 
             if (error) throw error;
 
-            // Now fetch certificates for these users to allow filtering
-            // Format: { user_id: [cert_name, ...] }
-            const { data: certs } = await supabase
-                .from('user_certificates')
-                .select('user_id, certificate_options(name)');
-
-            const certMap = {};
-            if (certs) {
-                certs.forEach(item => {
-                    if (!certMap[item.user_id]) certMap[item.user_id] = [];
-                    if (item.certificate_options) certMap[item.user_id].push(item.certificate_options.name);
-                });
-            }
-
-            const membersWithCerts = data.map(m => ({
-                ...m,
-                certificates: certMap[m.id] || []
-            }));
-
-            setMembers(membersWithCerts);
+            console.log('Public members fetched:', data);
+            setMembers(data || []);
         } catch (error) {
             console.error('Error fetching members:', error);
+            // Fallback (for testing if RPC not applied) is hard due to RLS, so just error log
         } finally {
             setLoading(false);
         }
