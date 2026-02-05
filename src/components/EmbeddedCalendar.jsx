@@ -126,18 +126,18 @@ const EmbeddedCalendar = ({
                     key={dateStr}
                     onClick={() => !disabled && onSelectDate(dateStr)}
                     style={{
-                        minHeight: '52px', // Reduced height but enough for date + 1 label
-                        height: 'auto', // Allow expansion
+                        minHeight: '60px', // Increased height
+                        height: 'auto',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'flex-start',
-                        gap: '2px', // Tight gap
-                        padding: '4px',
+                        gap: '4px', // Increased gap
+                        padding: '6px 4px', // Increased padding
                         background: cellBgColor,
                         color: cellTextColor,
                         border: isSelected ? 'none' : `1px solid ${cellBorderColor}`,
-                        borderRadius: '8px',
+                        borderRadius: '12px', // More rounded
                         fontWeight: fontWeight,
                         fontSize: '0.9rem',
                         cursor: disabled ? 'not-allowed' : 'pointer',
@@ -162,33 +162,33 @@ const EmbeddedCalendar = ({
                             // 1. Base Label
                             if (event.type === 'full') {
                                 label = '월차';
-                                itemBgColor = '#fff5f5';
-                                itemTextColor = '#c53030';
-                                itemBorderColor = '#feb2b2';
+                                itemBgColor = '#ffffff';
+                                itemTextColor = '#c53030'; // Red text
+                                itemBorderColor = '#fc8181'; // Red border
                             } else if (event.type === 'half') {
                                 if (isAm) {
                                     label = '오전';
-                                    itemBgColor = '#fff5f5';
-                                    itemTextColor = '#c53030';
-                                    itemBorderColor = '#feb2b2';
+                                    itemBgColor = '#ffffff';
+                                    itemTextColor = '#c53030'; // Red text for AM
+                                    itemBorderColor = '#fc8181'; // Red border for AM (matching screenshot style usually)
                                 } else {
                                     label = '오후';
-                                    itemBgColor = '#ebf8ff';
-                                    itemTextColor = '#2c5282';
-                                    itemBorderColor = '#90cdf4';
+                                    itemBgColor = '#ffffff';
+                                    itemTextColor = '#3182ce'; // Blue text
+                                    itemBorderColor = '#63b3ed'; // Blue border
                                 }
                             } else if (event.type === 'special') {
                                 label = '특휴';
-                                itemBgColor = '#faf5ff';
+                                itemBgColor = '#ffffff';
                                 itemTextColor = '#553c9a';
-                                itemBorderColor = '#d6bcfa';
+                                itemBorderColor = '#b794f4';
                             }
 
                             // 2. Reason Override
                             if (event.reason) {
                                 label = event.reason;
                                 // Default Gray Style for other reasons
-                                itemBgColor = '#F7FAFC';
+                                itemBgColor = '#ffffff';
                                 itemTextColor = '#4A5568';
                                 itemBorderColor = '#CBD5E0';
                             }
@@ -212,16 +212,17 @@ const EmbeddedCalendar = ({
                                         fontSize: '0.7rem',
                                         fontWeight: 'bold',
                                         color: item.itemTextColor,
-                                        backgroundColor: item.itemBgColor,
-                                        border: `1px solid ${item.itemBorderColor}`,
-                                        borderRadius: '6px',
-                                        padding: '2px 0',
+                                        backgroundColor: '#ffffff', // White background
+                                        border: `1px solid ${item.itemBorderColor}`, // Colored border
+                                        borderRadius: '12px', // Rounded pill
+                                        padding: '3px 0',
                                         width: '100%',
                                         textAlign: 'center',
                                         lineHeight: 1.2,
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
+                                        textOverflow: 'ellipsis',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                     }}>
                                         {item.label}
                                     </div>
