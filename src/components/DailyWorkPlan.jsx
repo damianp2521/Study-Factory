@@ -447,49 +447,53 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                             todos.map(todo => (
                                 <div key={todo.id} style={{
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px',
+                                    flexDirection: 'column',
                                     padding: '12px',
                                     background: '#f8fafc',
                                     borderRadius: '10px',
                                     transition: 'all 0.2s',
                                     borderLeft: todo.is_completed ? '4px solid #48bb78' : '4px solid #cbd5e0'
                                 }}>
-                                    <button
-                                        onClick={() => toggleTodo(todo)}
-                                        style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            cursor: isReadOnly ? 'default' : 'pointer', // No pointer if read only
-                                            padding: 0,
-                                            display: 'flex',
-                                            flexShrink: 0
-                                        }}
-                                        disabled={isReadOnly}
-                                    >
-                                        {todo.is_completed ?
-                                            <CheckCircle size={22} color="#48bb78" fill="#e6fffa" /> :
-                                            <Circle size={22} color="#cbd5e0" />
-                                        }
-                                    </button>
-                                    <span style={{
-                                        flex: 1,
-                                        fontSize: '1rem',
-                                        color: todo.is_completed ? '#a0aec0' : '#2d3748',
-                                        textDecoration: todo.is_completed ? 'line-through' : 'none',
-                                        wordBreak: 'break-all'
-                                    }}>
-                                        {todo.content}
-                                    </span>
-                                    {/* Hide delete button if read only */}
-                                    {!isReadOnly && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                         <button
-                                            onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
+                                            onClick={() => toggleTodo(todo)}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: isReadOnly ? 'default' : 'pointer',
+                                                padding: 0,
+                                                display: 'flex',
+                                                flexShrink: 0
+                                            }}
+                                            disabled={isReadOnly}
                                         >
-                                            <Trash2 size={18} />
+                                            {todo.is_completed ?
+                                                <CheckCircle size={22} color="#48bb78" fill="#e6fffa" /> :
+                                                <Circle size={22} color="#cbd5e0" />
+                                            }
                                         </button>
-                                    )}
+                                        <span style={{
+                                            flex: 1,
+                                            fontSize: '1rem',
+                                            color: todo.is_completed ? '#a0aec0' : '#2d3748',
+                                            textDecoration: todo.is_completed ? 'line-through' : 'none',
+                                            wordBreak: 'break-all'
+                                        }}>
+                                            {todo.content}
+                                        </span>
+                                        {!isReadOnly && (
+                                            <button
+                                                onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', fontSize: '0.7rem', color: '#cbd5e0', marginTop: '4px', paddingRight: '4px' }}>
+                                        <span>생성: {todo.created_at ? format(new Date(todo.created_at), 'yy.MM.dd(eee) HH:mm', { locale: ko }) : ''}</span>
+                                        {todo.completed_at && <span>완료: {format(new Date(todo.completed_at), 'yy.MM.dd(eee) HH:mm', { locale: ko })}</span>}
+                                    </div>
                                 </div>
                             ))
                         )}
