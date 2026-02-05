@@ -490,7 +490,7 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                             </button>
                                         )}
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', fontSize: '0.7rem', color: '#cbd5e0', marginTop: '4px', paddingRight: '4px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', fontSize: '0.7rem', color: '#cbd5e0', marginTop: '4px', paddingRight: '4px' }}>
                                         <span>생성: {todo.created_at ? format(new Date(todo.created_at), 'yy.MM.dd(eee) HH:mm', { locale: ko }) : ''}</span>
                                         {todo.completed_at && <span>완료: {format(new Date(todo.completed_at), 'yy.MM.dd(eee) HH:mm', { locale: ko })}</span>}
                                     </div>
