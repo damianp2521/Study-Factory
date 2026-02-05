@@ -406,14 +406,15 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                         <button
                             onClick={toggleVisibility}
                             style={{
-                                display: 'flex', alignItems: 'center', gap: '5px',
+                                display: 'flex', alignItems: 'center', gap: '4px',
                                 background: isPublic ? '#e6fffa' : '#edf2f7',
                                 border: '1px solid', borderColor: isPublic ? '#38b2ac' : 'transparent',
-                                padding: '8px 12px', borderRadius: '20px',
-                                color: isPublic ? '#319795' : '#718096', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer'
+                                padding: '4px 10px', borderRadius: '15px',
+                                color: isPublic ? '#319795' : '#718096', fontWeight: 'bold', fontSize: '0.75rem', cursor: 'pointer',
+                                height: 'fit-content'
                             }}>
-                            {isPublic ? <Unlock size={16} /> : <Lock size={16} />}
-                            <span>{isPublic ? '내 투두 공개중' : '비공개'}</span>
+                            {isPublic ? <Unlock size={14} /> : <Lock size={14} />}
+                            <span>{isPublic ? '공개중' : '비공개'}</span>
                         </button>
                     </>
                 )}
@@ -441,15 +442,15 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
 
                 {/* To-Do List Section */}
                 <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
                             {format(selectedDate, 'M월 d일')} 계획
                         </h3>
-                        <div style={{ fontSize: '0.9rem', color: '#718096' }}>
+                        <div style={{ fontSize: '0.85rem', color: '#718096' }}>
                             <span style={{ color: '#48bb78', fontWeight: 'bold' }}>{todayStats.completed}</span>
                             <span style={{ margin: '0 4px' }}>/</span>
                             <span>{todayStats.total}</span>
-                            <span style={{ marginLeft: '8px', fontSize: '0.8rem', background: '#f7fafc', padding: '2px 6px', borderRadius: '4px' }}>
+                            <span style={{ marginLeft: '8px', fontSize: '0.75rem', background: '#f7fafc', padding: '2px 6px', borderRadius: '4px' }}>
                                 {completionRate}%
                             </span>
                         </div>
@@ -457,7 +458,7 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
 
                     {/* Input - Hide if Read Only OR Past Date */}
                     {!isReadOnly && !isBefore(selectedDate, startOfToday()) && (
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                             <input
                                 type="text"
                                 value={newTask}
@@ -466,10 +467,10 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                 placeholder="할 일을 입력하세요..."
                                 style={{
                                     flex: 1,
-                                    padding: '12px',
+                                    padding: '10px',
                                     borderRadius: '8px',
                                     border: '1px solid #e2e8f0',
-                                    fontSize: '1rem',
+                                    fontSize: '0.9rem',
                                     outline: 'none'
                                 }}
                             />
@@ -481,23 +482,23 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                     color: 'white',
                                     border: 'none',
                                     borderRadius: '8px',
-                                    width: '45px',
+                                    width: '40px',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     cursor: newTask.trim() ? 'pointer' : 'default',
                                     opacity: newTask.trim() ? 1 : 0.5
                                 }}
                             >
-                                <Plus size={24} />
+                                <Plus size={20} />
                             </button>
                         </div>
                     )}
 
                     {/* List */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {loading ? (
-                            <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>로딩 중...</div>
+                            <div style={{ textAlign: 'center', color: '#a0aec0', padding: '15px' }}>로딩 중...</div>
                         ) : todos.length === 0 ? (
-                            <div style={{ textAlign: 'center', color: '#cbd5e0', padding: '20px', fontSize: '0.9rem' }}>
+                            <div style={{ textAlign: 'center', color: '#cbd5e0', padding: '15px', fontSize: '0.85rem' }}>
                                 등록된 할 일이 없습니다.
                             </div>
                         ) : (
@@ -505,14 +506,14 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                 <div key={todo.id} style={{
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    padding: '12px',
+                                    padding: '10px',
                                     background: '#f8fafc',
-                                    borderRadius: '10px',
+                                    borderRadius: '8px',
                                     transition: 'all 0.2s',
-                                    borderLeft: todo.is_completed ? '4px solid #48bb78' : '4px solid #cbd5e0',
+                                    borderLeft: todo.is_completed ? '3px solid #48bb78' : '3px solid #cbd5e0',
                                     opacity: isBefore(parseISO(todo.date), startOfToday()) ? 0.8 : 1 // Slight fade for past items
                                 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <button
                                             onClick={() => toggleTodo(todo)}
                                             style={{
@@ -526,13 +527,13 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                             disabled={isReadOnly || isBefore(parseISO(todo.date), startOfToday())}
                                         >
                                             {todo.is_completed ?
-                                                <CheckCircle size={22} color="#48bb78" fill="#e6fffa" /> :
-                                                <Circle size={22} color="#cbd5e0" />
+                                                <CheckCircle size={18} color="#48bb78" fill="#e6fffa" /> :
+                                                <Circle size={18} color="#cbd5e0" />
                                             }
                                         </button>
                                         <span style={{
                                             flex: 1,
-                                            fontSize: '1rem',
+                                            fontSize: '0.9rem',
                                             color: todo.is_completed ? '#a0aec0' : '#2d3748',
                                             textDecoration: todo.is_completed ? 'line-through' : 'none',
                                             wordBreak: 'break-all'
@@ -544,11 +545,11 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                                 onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
                                                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
                                             >
-                                                <Trash2 size={18} />
+                                                <Trash2 size={16} />
                                             </button>
                                         )}
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px', fontSize: '0.7rem', color: '#cbd5e0', marginTop: '4px', paddingRight: '4px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px', fontSize: '0.65rem', color: '#cbd5e0', marginTop: '2px', paddingRight: '2px' }}>
                                         <span>생성: {todo.created_at ? format(new Date(todo.created_at), 'yy.MM.dd(eee) HH:mm', { locale: ko }) : ''}</span>
                                         {todo.completed_at && <span>완료: {format(new Date(todo.completed_at), 'yy.MM.dd(eee) HH:mm', { locale: ko })}</span>}
                                     </div>
