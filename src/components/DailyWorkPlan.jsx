@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, isBefore, startOfToday } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, CheckCircle, Circle, Trash2, Users, Lock, Unlock, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
@@ -24,7 +24,10 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
     useEffect(() => {
         if (effectiveUserId) {
             // Only fetch visibility if it's my own plan
-            if (!isReadOnly) fetchVisibility();
+            if (!isReadOnly) {
+                fetchVisibility();
+                checkDailyRollover();
+            }
             fetchMonthStats(currentMonth);
             fetchTodos(selectedDate);
         }
@@ -78,6 +81,26 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
         }
     };
 
+    const checkDailyRollover = async () => {
+        try {
+            const { data, error } = await supabase.rpc('perform_daily_rollover', {
+                target_user_id: effectiveUserId
+            });
+            if (error) console.error('Rollover check failed:', error);
+            else if (data?.count > 0) {
+                console.log('Rollover performed:', data);
+                // Refresh stats and todos if needed (though useEffect handles fetchTodos on selectedDate change, 
+                // and fetchMonthStats on mount. We might want to re-fetch if today was affected)
+                fetchMonthStats(currentMonth);
+                if (isSameDay(selectedDate, new Date())) {
+                    fetchTodos(selectedDate);
+                }
+            }
+        } catch (e) {
+            console.error('Rollover exception:', e);
+        }
+    };
+
     const fetchMonthStats = async (monthDate) => {
         const start = format(startOfMonth(monthDate), 'yyyy-MM-dd');
         const end = format(endOfMonth(monthDate), 'yyyy-MM-dd');
@@ -126,6 +149,11 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
     };
 
     const handleAddTask = async () => {
+        // Prevent editing past dates (Strictly Date comparison)
+        if (isBefore(selectedDate, startOfToday())) {
+            alert('지난 날짜의 계획은 수정할 수 없습니다.');
+            return;
+        }
         if (isReadOnly || !newTask.trim()) return;
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
@@ -161,6 +189,8 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
     };
 
     const toggleTodo = async (todo) => {
+        // Prevent editing past dates
+        if (isBefore(parseISO(todo.date), startOfToday())) return;
         if (isReadOnly) return; // Prevent toggling in read-only mode
 
         try {
@@ -192,6 +222,14 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
     };
 
     const deleteTodo = async (id, dateStr, isCompleted) => {
+        // Allow deleting copied/failed tasks? User said "completed ones... failed ones copied... delete copied".
+        // Use general rule: If it's today or future, allow. If past, disallow.
+        const targetDate = parseISO(dateStr);
+        if (isBefore(targetDate, startOfToday())) {
+            alert('지난 날짜의 기록은 삭제할 수 없습니다.');
+            return;
+        }
+
         if (isReadOnly) return;
         if (!confirm('삭제하시겠습니까?')) return;
         try {
@@ -299,8 +337,18 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                         {/* Stats */}
                         {stat && stat.total > 0 && (
                             <div style={{ marginTop: 'auto', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ fontSize: '0.75rem', color: '#48bb78', fontWeight: 'bold' }}>{stat.completed}</span>
-                                <span style={{ fontSize: '0.75rem', color: '#a0aec0', fontWeight: 'normal' }}> / {stat.total}</span>
+                                {isBefore(cloneDay, startOfToday()) ? (
+                                    // Past: Show Percentage in Gray
+                                    <span style={{ fontSize: '0.75rem', color: '#a0aec0', fontWeight: 'bold' }}>
+                                        {Math.round((stat.completed / stat.total) * 100)}%
+                                    </span>
+                                ) : (
+                                    // Future/Today: Show Count
+                                    <>
+                                        <span style={{ fontSize: '0.75rem', color: '#48bb78', fontWeight: 'bold' }}>{stat.completed}</span>
+                                        <span style={{ fontSize: '0.75rem', color: '#a0aec0', fontWeight: 'normal' }}> / {stat.total}</span>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -371,7 +419,6 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                 )}
             </div>
 
-            {/* Scrollable Content Area (List + Calendar) */}
             <div style={{
                 flex: 1,
                 overflowY: 'auto',
@@ -382,6 +429,16 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                 <style>{`
                     div::-webkit-scrollbar { display: none; }
                 `}</style>
+
+                {/* Calendar (Moved to Top) */}
+                <div style={{ marginBottom: '20px' }}>
+                    {renderHeader()}
+                    {renderDays()}
+                    {renderCells()}
+                </div>
+
+                <div style={{ height: '1px', background: '#edf2f7', marginBottom: '20px' }}></div>
+
                 {/* To-Do List Section */}
                 <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
@@ -398,8 +455,8 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                         </div>
                     </div>
 
-                    {/* Input - Hide if Read Only */}
-                    {!isReadOnly && (
+                    {/* Input - Hide if Read Only OR Past Date */}
+                    {!isReadOnly && !isBefore(selectedDate, startOfToday()) && (
                         <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                             <input
                                 type="text"
@@ -452,7 +509,8 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                     background: '#f8fafc',
                                     borderRadius: '10px',
                                     transition: 'all 0.2s',
-                                    borderLeft: todo.is_completed ? '4px solid #48bb78' : '4px solid #cbd5e0'
+                                    borderLeft: todo.is_completed ? '4px solid #48bb78' : '4px solid #cbd5e0',
+                                    opacity: isBefore(parseISO(todo.date), startOfToday()) ? 0.8 : 1 // Slight fade for past items
                                 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                         <button
@@ -460,12 +518,12 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                             style={{
                                                 background: 'none',
                                                 border: 'none',
-                                                cursor: isReadOnly ? 'default' : 'pointer',
+                                                cursor: (isReadOnly || isBefore(parseISO(todo.date), startOfToday())) ? 'default' : 'pointer',
                                                 padding: 0,
                                                 display: 'flex',
                                                 flexShrink: 0
                                             }}
-                                            disabled={isReadOnly}
+                                            disabled={isReadOnly || isBefore(parseISO(todo.date), startOfToday())}
                                         >
                                             {todo.is_completed ?
                                                 <CheckCircle size={22} color="#48bb78" fill="#e6fffa" /> :
@@ -481,7 +539,7 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                                         }}>
                                             {todo.content}
                                         </span>
-                                        {!isReadOnly && (
+                                        {!isReadOnly && !isBefore(parseISO(todo.date), startOfToday()) && (
                                             <button
                                                 onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
                                                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
@@ -498,13 +556,6 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                             ))
                         )}
                     </div>
-                </div>
-
-                {/* Calendar (Scrolls with list) */}
-                <div style={{}}>
-                    {renderHeader()}
-                    {renderDays()}
-                    {renderCells()}
                 </div>
             </div>
 
