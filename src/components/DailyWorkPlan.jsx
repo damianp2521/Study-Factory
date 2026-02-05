@@ -317,36 +317,56 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
                         key={day}
                         onClick={() => setSelectedDate(cloneDay)}
                         style={{
-                            height: '70px',
-                            borderTop: '1px solid #f7fafc',
+                            minHeight: '60px', // Narrower height (was 70px fixed)
+                            height: 'auto',
+                            borderTop: '1px solid transparent', // Remove top border or make transparent
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             cursor: 'pointer',
-                            background: isSelected ? '#ebf8ff' : 'transparent',
-                            color: !isCurrentMonth ? '#cbd5e0' : (isSelected ? '#3182ce' : '#2d3748'),
+                            background: isSelected ? 'var(--color-primary)' : 'transparent', // Selected fills cell
+                            color: !isCurrentMonth ? '#cbd5e0' : (isSelected ? 'white' : '#2d3748'),
                             position: 'relative',
-                            paddingTop: '5px',
-                            borderRadius: '8px'
+                            padding: '6px 4px',
+                            gap: '4px',
+                            borderRadius: '12px', // Rounded
+                            transition: 'all 0.2s',
+                            border: isSelected ? 'none' : '1px solid transparent' // Placeholder for alignment
                         }}
                     >
-                        <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 'bold' : 'normal' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 'bold' : 'normal', lineHeight: 1 }}>
                             {formattedDate}
                         </span>
 
-                        {/* Stats */}
+                        {/* Stats Pill */}
                         {stat && stat.total > 0 && (
-                            <div style={{ marginTop: 'auto', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{
+                                marginTop: 'auto',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '4px',
+                                background: isSelected ? 'rgba(255,255,255,0.2)' : 'white',
+                                borderRadius: '12px',
+                                padding: '3px 8px',
+                                width: '100%',
+                                border: isSelected ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e2e8f0',
+                                boxShadow: isSelected ? 'none' : '0 1px 2px rgba(0,0,0,0.05)',
+                                fontSize: '0.7rem'
+                            }}>
                                 {isBefore(cloneDay, startOfToday()) ? (
-                                    // Past: Show Percentage in Gray
-                                    <span style={{ fontSize: '0.75rem', color: '#a0aec0', fontWeight: 'bold' }}>
+                                    // Past: Show Percentage
+                                    <span style={{
+                                        color: isSelected ? 'white' : '#a0aec0',
+                                        fontWeight: 'bold'
+                                    }}>
                                         {Math.round((stat.completed / stat.total) * 100)}%
                                     </span>
                                 ) : (
                                     // Future/Today: Show Count
                                     <>
-                                        <span style={{ fontSize: '0.75rem', color: '#48bb78', fontWeight: 'bold' }}>{stat.completed}</span>
-                                        <span style={{ fontSize: '0.75rem', color: '#a0aec0', fontWeight: 'normal' }}> / {stat.total}</span>
+                                        <span style={{ color: isSelected ? 'white' : '#48bb78', fontWeight: 'bold' }}>{stat.completed}</span>
+                                        <span style={{ color: isSelected ? 'rgba(255,255,255,0.8)' : '#a0aec0', fontWeight: 'normal' }}> / {stat.total}</span>
                                     </>
                                 )}
                             </div>
