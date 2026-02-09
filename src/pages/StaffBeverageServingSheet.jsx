@@ -91,16 +91,12 @@ const StaffBeverageServingSheet = ({ onBack }) => {
             }
 
             // 4. Build Seat Grid
-            // Find max seat number to define grid range? Or just list occupied seats + gaps?
-            // "1번부터 좌석 쫙 놓은 다음에" implies a continuous grid.
-            // Let's find MAX seat number, or default to a reasonable number (e.g. 50 or 100) if small.
-            // But usually we just map the layout. For now, let's just use the max seat number found or at least 100 if user wants "쫙 놓은".
-            // Actually, simply filling gaps is safer.
+            // Simple approach: list all seated users + empty slots up to max seat?
+            // "1번부터 좌석 쫙 놓은 다음에" -> Sequential list.
             const maxSeat = userData && userData.length > 0 ? Math.max(...userData.map(u => u.seat_number)) : 0;
-            const gridLimit = Math.max(maxSeat, 20); // Show at least 20, or up to max.
+            const gridLimit = Math.max(maxSeat, 20); // Show at least 20
 
             const finalData = [];
-            // Create a map for quick lookup
             const userSeatMap = {};
             (userData || []).forEach(u => userSeatMap[u.seat_number] = u);
 
@@ -210,12 +206,12 @@ const StaffBeverageServingSheet = ({ onBack }) => {
                 ))}
             </div>
 
-            {/* Grid Content */}
+            {/* Grid Content: Single Column */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-                    gap: '12px'
+                    gridTemplateColumns: '1fr', // Single column as requested
+                    gap: '8px' // Reduced gap
                 }}>
                     {seatData.map(item => (
                         <SeatCard key={item.seatNo} item={item} />
@@ -232,96 +228,98 @@ const StaffBeverageServingSheet = ({ onBack }) => {
 const SeatCard = ({ item }) => {
     // Styles based on status
     let cardStyle = {
-        borderRadius: '12px',
-        padding: '12px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        borderRadius: '8px',
+        padding: '8px 12px',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
         display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        minHeight: '100px',
+        flexDirection: 'column', // Beverages below header
+        justifyContent: 'center',
+        minHeight: '40px',
         position: 'relative',
-        border: '1px solid #e2e8f0'
+        border: '1px solid #e2e8f0',
+        background: 'white'
     };
 
-    // Status: present (Green), absent (Red), empty (Gray)
+    // Badge Styles (Oval)
+    let badgeStyle = {
+        fontSize: '0.75rem',
+        padding: '2px 8px',
+        borderRadius: '12px',
+        fontWeight: 'bold',
+        display: 'inline-block',
+        marginLeft: '10px' // Attached to name with small gap
+    };
+
+    // Status Colors
     if (item.status === 'present') {
-        cardStyle.background = '#f0fff4'; // Light green bg
+        cardStyle.background = '#f0fff4';
         cardStyle.border = '1px solid #9ae6b4';
+        badgeStyle.background = '#c6f6d5';
+        badgeStyle.color = '#22543d';
+        badgeStyle.border = '1px solid #48bb78';
     } else if (item.status === 'absent') {
-        cardStyle.background = '#fff5f5'; // Light red bg
+        cardStyle.background = '#fff5f5';
         cardStyle.border = '1px solid #feb2b2';
+        badgeStyle.background = '#fed7d7'; // Light red bg for badge
+        badgeStyle.color = '#9b2c2c'; // Dark red text
+        badgeStyle.border = '1px solid #f56565';
     } else {
-        cardStyle.background = '#f7fafc'; // Gray bg
+        cardStyle.background = '#f7fafc';
         cardStyle.border = '1px solid #edf2f7';
+        badgeStyle.background = '#edf2f7';
+        badgeStyle.color = '#a0aec0';
+        badgeStyle.border = '1px solid #cbd5e0';
     }
 
     return (
         <div style={cardStyle}>
-            {/* Header: Seat & Name */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+            {/* Header Row: Seat | Name | Badge */}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
                 <span style={{
-                    fontSize: '1.2rem',
+                    fontSize: '1rem',
                     fontWeight: 'bold',
-                    color: item.status === 'empty' ? '#a0aec0' : (item.status === 'present' ? '#2f855a' : '#c53030')
+                    color: item.status === 'empty' ? '#a0aec0' : (item.status === 'present' ? '#2f855a' : '#c53030'),
+                    width: '30px',
+                    textAlign: 'center',
+                    marginRight: '6px'
                 }}>
                     {item.seatNo}
                 </span>
+
                 {item.status !== 'empty' && (
-                    <span style={{
-                        fontSize: '0.95rem',
-                        fontWeight: 'bold',
-                        color: '#2d3748',
-                        textAlign: 'right',
-                        wordBreak: 'keep-all'
-                    }}>
-                        {item.user.name}
-                    </span>
-                )}
-            </div>
+                    <>
+                        <span style={{
+                            fontSize: '1rem',
+                            fontWeight: 'bold',
+                            color: '#2d3748'
+                        }}>
+                            {item.user.name}
+                        </span>
 
-            {/* Content: Beverages or Status Text */}
-            <div style={{ fontSize: '0.85rem' }}>
-                {item.status === 'present' && (
-                    <div style={{ color: '#276749', fontWeight: '500', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        {item.beverages && item.beverages.length > 0 ? (
-                            item.beverages.map((bev, idx) => <span key={idx}>{bev}</span>)
+                        {/* Status Badge */}
+                        {item.status === 'present' ? (
+                            <span style={badgeStyle}>정상출근</span>
                         ) : (
-                            <span style={{ color: '#718096', fontSize: '0.8rem' }}>(음료 없음)</span>
+                            <span style={badgeStyle}>{item.reason}</span>
                         )}
-                        <span style={{
-                            marginTop: '6px',
-                            fontSize: '0.75rem',
-                            color: '#22543d',
-                            border: '1px solid #48bb78',
-                            padding: '2px 6px',
-                            borderRadius: '12px',
-                            alignSelf: 'flex-start',
-                            fontWeight: 'bold',
-                            background: '#c6f6d5'
-                        }}>
-                            정상출근
-                        </span>
-                    </div>
-                )}
-
-                {item.status === 'absent' && (
-                    <div style={{ textAlign: 'right', marginTop: '4px' }}>
-                        <span style={{
-                            color: '#e53e3e',
-                            fontWeight: 'bold',
-                            fontSize: '0.9rem'
-                        }}>
-                            {item.reason}
-                        </span>
-                    </div>
+                    </>
                 )}
 
                 {item.status === 'empty' && (
-                    <div style={{ textAlign: 'center', color: '#cbd5e0', fontSize: '0.9rem', marginTop: '10px' }}>
-                        미배정
-                    </div>
+                    <span style={{ fontSize: '0.9rem', color: '#cbd5e0', marginLeft: '10px' }}>미배정</span>
                 )}
             </div>
+
+            {/* Content: Beverages (Below the header) */}
+            {item.status === 'present' && item.beverages && item.beverages.length > 0 && (
+                <div style={{ marginTop: '4px', paddingLeft: '45px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    {item.beverages.map((bev, idx) => (
+                        <span key={idx} style={{ fontSize: '0.85rem', color: '#276749', fontWeight: '500' }}>
+                            - {bev}
+                        </span>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
