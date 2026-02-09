@@ -133,6 +133,26 @@ const InlineVacationRequest = () => {
         }
     };
 
+    const handleCancelAttendance = async (date, status) => {
+        if (!confirm(`${date} ${status} 일정을 취소하시겠습니까?`)) return;
+
+        try {
+            const { error } = await supabase
+                .from('attendance_logs')
+                .delete()
+                .eq('user_id', user.id)
+                .eq('date', date)
+                .eq('status', status);
+
+            if (error) throw error;
+            alert('취소되었습니다.');
+            fetchSpecialAttendance();
+        } catch (err) {
+            console.error('Error cancelling attendance:', err);
+            alert('취소에 실패했습니다.');
+        }
+    };
+
     // Merge and Filter List logic (same as VacationRequest.jsx)
     const mergedList = useMemo(() => {
         // 1. Tag vacation items
@@ -325,6 +345,7 @@ const InlineVacationRequest = () => {
                         {mergedList.map((item) => {
                             // Attendance Item
                             if (item.category === 'attendance') {
+                                const isPast = item.date < todayStr;
                                 return (
                                     <div
                                         key={item.id}
@@ -335,27 +356,53 @@ const InlineVacationRequest = () => {
                                             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                                             borderLeft: '4px solid #38a169',
                                             display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between'
+                                            flexDirection: 'column',
+                                            gap: '6px'
                                         }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#2d3748' }}>
-                                                {format(parseISO(item.date), 'MM.dd(EEE)', { locale: ko })}
-                                            </span>
-                                            <span style={{
-                                                fontSize: '0.85rem', fontWeight: 'bold',
-                                                color: '#c53030',
-                                                background: '#c6f6d5',
-                                                padding: '2px 6px',
-                                                borderRadius: '4px'
-                                            }}>
-                                                {item.status}
-                                            </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                                    {format(parseISO(item.date), 'MM.dd(EEE)', { locale: ko })}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '0.85rem', fontWeight: 'bold',
+                                                    color: '#c53030',
+                                                    background: '#c6f6d5',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px'
+                                                }}>
+                                                    {item.status}
+                                                </span>
+                                            </div>
+                                            <div style={{ color: '#718096', fontSize: '0.85rem' }}>
+                                                {item.periods.join(', ')}교시
+                                            </div>
                                         </div>
-                                        <div style={{ color: '#718096', fontSize: '0.85rem' }}>
-                                            {item.periods.join(', ')}교시
-                                        </div>
+
+                                        {!isPast && (
+                                            <button
+                                                onClick={() => handleCancelAttendance(item.date, item.status)}
+                                                style={{
+                                                    alignSelf: 'flex-end',
+                                                    background: '#fff5f5',
+                                                    color: '#e53e3e',
+                                                    border: '1px solid #fc8181',
+                                                    padding: '4px 10px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: 'bold',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    marginTop: '4px'
+                                                }}
+                                            >
+                                                <Trash2 size={12} />
+                                                취소
+                                            </button>
+                                        )}
                                     </div>
                                 );
                             }
