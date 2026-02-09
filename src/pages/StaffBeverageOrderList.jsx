@@ -42,7 +42,7 @@ const StaffBeverageOrderList = ({ onBack }) => {
                 .order('seat_number', { ascending: true });
 
             if (userError) throw userError;
-            const allUsers = userData || [];
+            const allUsers = (userData || []).filter(u => u && u.seat_number); // Filter valid users
 
             // 2. Fetch Beverage Options
             const { data: optionsData, error: optionsError } = await supabase

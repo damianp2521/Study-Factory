@@ -14,9 +14,8 @@ const EmbeddedCalendar = ({
 }) => {
     // Internal state for uncontrolled mode
     const [internalMonth, setInternalMonth] = useState(() => {
-        if (selectedDate) return new Date(selectedDate);
-        if (selectedDates.length > 0) return new Date(selectedDates[0]);
-        return new Date();
+        const d = selectedDate ? new Date(selectedDate) : (selectedDates.length > 0 ? new Date(selectedDates[0]) : new Date());
+        return isNaN(d.getTime()) ? new Date() : d;
     });
 
     // Use controlled value if provided, otherwise internal
@@ -24,7 +23,10 @@ const EmbeddedCalendar = ({
 
     useEffect(() => {
         if (selectedDate && !controlledMonth) {
-            setInternalMonth(new Date(selectedDate));
+            const d = new Date(selectedDate);
+            if (!isNaN(d.getTime())) {
+                setInternalMonth(d);
+            }
         }
     }, [selectedDate, controlledMonth]);
 
@@ -261,7 +263,7 @@ const EmbeddedCalendar = ({
                     <ChevronLeft size={24} />
                 </button>
                 <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                    {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
+                    {currentMonth instanceof Date && !isNaN(currentMonth) ? `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월` : ''}
                 </span>
                 <button
                     onClick={handleNextMonth}
