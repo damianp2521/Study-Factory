@@ -4,11 +4,13 @@ import { useDashboardNavigation } from '../../hooks/useDashboardNavigation';
 import { useAuth } from '../../context/AuthContext';
 
 import EmployeeVacationStatus from './EmployeeVacationStatus';
+import AdminVacationDetails from '../AdminVacationDetails';
 import StaffTaskBoard from '../../pages/StaffTaskBoard';
 import InlineVacationRequest from '../../components/InlineVacationRequest';
 import StaffAttendance from '../../pages/StaffAttendance';
 import StaffSeatManagement from '../../pages/StaffSeatManagement';
 import StaffBeverageManagement from '../../pages/StaffBeverageManagement';
+import StaffBeverageOrderList from '../../pages/StaffBeverageOrderList';
 import StaffBeverageServingSheet from '../../pages/StaffBeverageServingSheet';
 
 const StaffGridMenu = () => {
