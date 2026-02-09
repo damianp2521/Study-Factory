@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -7,23 +7,33 @@ const AdminVacationDetails = ({ user, onBack }) => {
     const [userVacations, setUserVacations] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    if (!user) return null; // Safety check
+    // Safety check
+    if (!user || !user.id) return null;
 
     useEffect(() => {
         fetchUserVacations();
-    }, [user, currentDate]);
+    }, [user.id, currentDate]); // Use user.id for stability
 
     const fetchUserVacations = async () => {
-        if (!user?.id) return;
         setLoading(true);
         try {
             const y = currentDate.getFullYear();
-            const m = String(currentDate.getMonth() + 1).padStart(2, '0');
-            const queryDateStart = `${y}-${m}-01`;
-            const lastDay = new Date(y, Number(m), 0).getDate();
-            const queryDateEnd = `${y}-${m}-${lastDay}`;
+            const m = currentDate.getMonth();
+            const firstDay = new Date(y, m, 1);
+            const lastDay = new Date(y, m + 1, 0);
 
-            // Parallel fetch vacations and attendance logs
+            // Format as YYYY-MM-DD
+            const formatDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            const queryDateStart = formatDate(firstDay);
+            const queryDateEnd = formatDate(lastDay);
+
+            // Parallel fetch
             const [vacationRes, attendanceRes] = await Promise.all([
                 supabase
                     .from('vacation_requests')
@@ -43,13 +53,15 @@ const AdminVacationDetails = ({ user, onBack }) => {
             if (vacationRes.error) throw vacationRes.error;
             if (attendanceRes.error) throw attendanceRes.error;
 
-            // Merge them
+            // Merge
             const merged = [
                 ...(vacationRes.data || []),
                 ...(attendanceRes.data || []).map(a => ({
                     ...a,
                     type: 'special',
-                    reason: a.status
+                    reason: a.status,
+                    // Ensure ID for key if missing
+                    id: `log-${a.date}-${a.period}`
                 }))
             ];
 
@@ -61,21 +73,23 @@ const AdminVacationDetails = ({ user, onBack }) => {
         }
     };
 
-    const getDaysInMonth = (date) => {
-        const year = date.getFullYear();
-        const month = date.getMonth();
+    const days = useMemo(() => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        const days = [];
+        const daysArr = [];
 
+        // Pad start
         for (let i = 0; i < firstDay.getDay(); i++) {
-            days.push(null);
+            daysArr.push(null);
         }
+        // Days
         for (let i = 1; i <= lastDay.getDate(); i++) {
-            days.push(new Date(year, month, i));
+            daysArr.push(new Date(year, month, i));
         }
-        return days;
-    };
+        return daysArr;
+    }, [currentDate]);
 
     const handlePrevMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -85,13 +99,74 @@ const AdminVacationDetails = ({ user, onBack }) => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     };
 
-    const getVacationsForDate = (date) => {
-        if (!date) return [];
-        const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-        return userVacations.filter(v => v.date === dateString);
-    };
+    const renderVacationBadges = (date) => {
+        if (!date) return null;
 
-    const days = getDaysInMonth(currentDate);
+        const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        const vacations = userVacations.filter(v => v.date === dateString);
+
+        if (vacations.length === 0) return null;
+
+        // Dedup logic
+        const seenLabels = new Set();
+        const badges = [];
+
+        vacations.forEach(vacation => {
+            let label = '';
+            let style = {};
+
+            const isAm = Array.isArray(vacation.periods) && vacation.periods.includes(1);
+
+            if (vacation.type === 'full') {
+                label = '월차';
+                style = { bg: '#fff5f5', color: '#c53030', border: '#feb2b2' };
+            } else if (vacation.type === 'half') {
+                if (isAm) {
+                    label = '오전';
+                    style = { bg: '#fff5f5', color: '#c53030', border: '#feb2b2' };
+                } else {
+                    label = '오후';
+                    style = { bg: '#ebf8ff', color: '#2c5282', border: '#90cdf4' };
+                }
+            } else if (vacation.type === 'special') {
+                label = '특휴';
+                style = { bg: '#faf5ff', color: '#553c9a', border: '#d6bcfa' };
+            }
+
+            // Override if reason exists
+            if (vacation.reason) {
+                label = vacation.reason;
+                style = { bg: '#F7FAFC', color: '#4A5568', border: '#CBD5E0' };
+            }
+
+            if (label && !seenLabels.has(label)) {
+                seenLabels.add(label);
+                badges.push({ label, ...style });
+            }
+        });
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', alignItems: 'center' }}>
+                {badges.map((b, idx) => (
+                    <div key={idx} style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
+                        color: b.color,
+                        backgroundColor: b.bg,
+                        border: `1px solid ${b.border}`,
+                        borderRadius: '4px',
+                        textAlign: 'center',
+                        wordBreak: 'keep-all',
+                        lineHeight: 1.1,
+                        padding: '2px',
+                        width: '95%'
+                    }}>
+                        {b.label}
+                    </div>
+                ))}
+            </div>
+        );
+    };
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -114,9 +189,9 @@ const AdminVacationDetails = ({ user, onBack }) => {
                 </button>
                 <div>
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: 0, lineHeight: 1.2 }}>
-                        {user?.name || '정보 없음'}
+                        {user.name || '알 수 없음'}
                     </h2>
-                    <span style={{ fontSize: '0.85rem', color: '#718096' }}>{user?.branch || '지점 미정'} 휴가 현황</span>
+                    <span style={{ fontSize: '0.85rem', color: '#718096' }}>{user.branch || '지점 미정'} 휴가 현황</span>
                 </div>
             </div>
 
@@ -139,7 +214,6 @@ const AdminVacationDetails = ({ user, onBack }) => {
 
             {/* Calendar Grid */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-                {/* Weekday Headers */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '10px', textAlign: 'center' }}>
                     {['일', '월', '화', '수', '목', '금', '토'].map((day, i) => (
                         <div key={day} style={{
@@ -152,26 +226,15 @@ const AdminVacationDetails = ({ user, onBack }) => {
                     ))}
                 </div>
 
-                {/* Days */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px', autoRows: 'minmax(52px, auto)' }}>
                     {days.map((date, i) => {
                         if (!date) return <div key={`empty-${i}`} />;
-
-                        const vacations = getVacationsForDate(date);
-
-                        // Default Style
-                        let cellBg = 'white';
-                        let cellBorder = '#f7fafc';
-
-                        // If any vacation exists, maybe tint the cell background lightly? 
-                        // Or just keep individual items styled. Keeping white bg for clarity.
-
                         return (
                             <div key={i} style={{
                                 minHeight: '52px',
-                                background: cellBg,
+                                background: 'white',
                                 borderRadius: '8px',
-                                border: `1px solid ${cellBorder}`,
+                                border: '1px solid #f7fafc',
                                 padding: '4px',
                                 display: 'flex',
                                 flexDirection: 'column',
@@ -179,8 +242,7 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                 justifyContent: 'flex-start',
                                 position: 'relative',
                                 opacity: loading ? 0.5 : 1,
-                                height: 'auto',
-                                overflow: 'visible'
+                                height: 'auto'
                             }}>
                                 <span style={{
                                     fontSize: '0.8rem',
@@ -190,81 +252,7 @@ const AdminVacationDetails = ({ user, onBack }) => {
                                 }}>
                                     {date.getDate()}
                                 </span>
-
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', width: '100%', alignItems: 'center' }}>
-                                    {(() => {
-                                        // Group vacations by unique labels to avoid duplicates
-                                        const uniqueLabels = [];
-                                        const seenLabels = new Set();
-
-                                        vacations.forEach(vacation => {
-                                            let label = '';
-                                            let bgColor = '#fff';
-                                            let textColor = '#2d3748';
-                                            let borderColor = 'transparent';
-
-                                            const isAm = (vacation.periods || []).includes(1);
-
-                                            // 1. Determine Base Style & Label
-                                            if (vacation.type === 'full') {
-                                                label = '월차';
-                                                bgColor = '#fff5f5';
-                                                textColor = '#c53030';
-                                                borderColor = '#feb2b2';
-                                            } else if (vacation.type === 'half') {
-                                                if (isAm) {
-                                                    label = '오전';
-                                                    bgColor = '#fff5f5';
-                                                    textColor = '#c53030';
-                                                    borderColor = '#feb2b2';
-                                                } else {
-                                                    label = '오후';
-                                                    bgColor = '#ebf8ff';
-                                                    textColor = '#2c5282';
-                                                    borderColor = '#90cdf4';
-                                                }
-                                            } else if (vacation.type === 'special') {
-                                                label = '특휴';
-                                                bgColor = '#faf5ff';
-                                                textColor = '#553c9a';
-                                                borderColor = '#d6bcfa';
-                                            }
-
-                                            // 2. Override Label and Style if 'reason' exists (Other Leave)
-                                            if (vacation.reason) {
-                                                label = vacation.reason;
-                                                bgColor = '#F7FAFC';
-                                                textColor = '#4A5568';
-                                                borderColor = '#CBD5E0';
-                                            }
-
-                                            // Only add if we haven't seen this label
-                                            if (!seenLabels.has(label)) {
-                                                seenLabels.add(label);
-                                                uniqueLabels.push({ label, bgColor, textColor, borderColor });
-                                            }
-                                        });
-
-                                        return uniqueLabels.map((item, idx) => (
-                                            <div key={idx} style={{
-                                                fontSize: '0.7rem',
-                                                fontWeight: 'bold',
-                                                color: item.textColor,
-                                                backgroundColor: item.bgColor,
-                                                border: `1px solid ${item.borderColor}`,
-                                                borderRadius: '4px',
-                                                textAlign: 'center',
-                                                wordBreak: 'keep-all',
-                                                overflowWrap: 'break-word',
-                                                lineHeight: 1.1,
-                                                padding: '2px',
-                                                width: '95%'
-                                            }}>
-                                                {item.label}
-                                            </div>
-                                        ));
-                                    })()}
-                                </div>
+                                {renderVacationBadges(date)}
                             </div>
                         );
                     })}
