@@ -15,9 +15,12 @@ const AdminMemberRegister = ({ onBack }) => {
     const [selection2, setSelection2] = useState('');
     const [selection3, setSelection3] = useState('');
     const [memo, setMemo] = useState('');
+    const [expectedStartDate, setExpectedStartDate] = useState('');
+    const [targetCertificate, setTargetCertificate] = useState('');
 
     const [list, setList] = useState([]);
     const [beverageOptions, setBeverageOptions] = useState([]);
+    const [certOptions, setCertOptions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -26,6 +29,7 @@ const AdminMemberRegister = ({ onBack }) => {
     useEffect(() => {
         fetchList();
         fetchBeverageOptions();
+        fetchCertOptions();
     }, []);
 
     const fetchBeverageOptions = async () => {
@@ -33,6 +37,13 @@ const AdminMemberRegister = ({ onBack }) => {
             const { data } = await supabase.from('beverage_options').select('*').order('name');
             setBeverageOptions(data || []);
         } catch (e) { console.error('Error fetching beverage options:', e); }
+    };
+
+    const fetchCertOptions = async () => {
+        try {
+            const { data } = await supabase.from('certificate_options').select('*').order('name');
+            setCertOptions(data || []);
+        } catch (e) { console.error('Error fetching certificate options:', e); }
     };
 
     const fetchList = async () => {
@@ -94,7 +105,9 @@ const AdminMemberRegister = ({ onBack }) => {
                     selection_1: selection1 || null,
                     selection_2: selection2 || null,
                     selection_3: selection3 || null,
-                    memo: memo.trim() || null
+                    memo: memo.trim() || null,
+                    expected_start_date: expectedStartDate || null,
+                    target_certificate: targetCertificate.trim() || null
                 }])
                 .select()
                 .single();
@@ -137,6 +150,8 @@ const AdminMemberRegister = ({ onBack }) => {
             setSelection2('');
             setSelection3('');
             setMemo('');
+            setExpectedStartDate('');
+            setTargetCertificate('');
             fetchList();
         } catch (err) {
             console.error('Add error:', err);
@@ -245,6 +260,34 @@ const AdminMemberRegister = ({ onBack }) => {
                     </div>
                 </div>
 
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>입사예정일</label>
+                        <input
+                            type="date"
+                            value={expectedStartDate}
+                            onChange={(e) => setExpectedStartDate(e.target.value)}
+                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }}
+                        />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>준비 자격증</label>
+                        <input
+                            type="text"
+                            value={targetCertificate}
+                            onChange={(e) => setTargetCertificate(e.target.value)}
+                            placeholder="자격증명 입력 또는 선택"
+                            list="cert-options-list"
+                            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }}
+                        />
+                        <datalist id="cert-options-list">
+                            {certOptions.map(opt => (
+                                <option key={opt.id} value={opt.name} />
+                            ))}
+                        </datalist>
+                    </div>
+                </div>
+
                 <div style={{ marginBottom: '15px' }}>
                     <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>음료 설정 (선택사항)</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
@@ -313,6 +356,25 @@ const AdminMemberRegister = ({ onBack }) => {
                                     {user.role === 'admin' ? '관리자' : (user.role === 'staff' ? '스탭' : '회원')}
                                 </span>
                                 {user.seat_number && <span style={{ marginLeft: '6px', color: '#718096' }}>| 좌석 {user.seat_number}</span>}
+                                {user.expected_start_date && (
+                                    <span style={{ marginLeft: '6px', color: '#718096' }}>
+                                        | 입사예정: {new Date(user.expected_start_date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}
+                                    </span>
+                                )}
+                                {user.target_certificate && (
+                                    <div style={{ marginTop: '4px' }}>
+                                        <span style={{
+                                            fontSize: '0.75rem',
+                                            background: '#ebf8ff',
+                                            color: '#2b6cb0',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            fontWeight: '500'
+                                        }}>
+                                            {user.target_certificate}
+                                        </span>
+                                    </div>
+                                )}
                                 {user.memo && <div style={{ fontSize: '0.8rem', color: '#a0aec0', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{user.memo}</div>}
                             </div>
                         </div>
