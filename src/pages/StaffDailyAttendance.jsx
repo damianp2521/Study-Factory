@@ -448,7 +448,7 @@ const IncomingEmployeeModal = ({ onClose }) => {
             const shortDate = `${month}/${date}`;
             const todoPrefix = `${shortDate} ${editForm.seat_number ? `${editForm.seat_number}번` : ''} ${editForm.name}${editForm.target_certificate ? ` ${editForm.target_certificate}` : ''}`;
 
-            const tasks = ['명패 준비', '책상 정비', '좌석 및 음료 정보 입력 확인'];
+            const tasks = ['명패 준비', '책상 정비', '좌석 및 음료 정보 입력 확인', '이름스티커 준비'];
             for (let i = 0; i < employeeTodos.length; i++) {
                 await supabase
                     .from('staff_todos')
@@ -590,6 +590,8 @@ const IncomingEmployeeModal = ({ onClose }) => {
                                                                 taskName = '책상 정비';
                                                             } else if (todo.content.includes('좌석 및 음료 정보 입력 확인')) {
                                                                 taskName = '좌석 및 음료 정보 입력 확인';
+                                                            } else if (todo.content.includes('이름스티커 준비')) {
+                                                                taskName = '이름스티커 준비';
                                                             }
 
                                                             const isComplete = todo.status === 'completed';
@@ -860,7 +862,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             const filteredPending = (pendingRes.data || []).filter(emp => {
                 const todos = todosByPending[emp.id] || [];
-                const allComplete = todos.length === 3 && todos.every(t => t.status === 'completed');
+                const allComplete = todos.length === 4 && todos.every(t => t.status === 'completed');
                 const startDatePassed = emp.expected_start_date && emp.expected_start_date <= todayStr;
                 // Show if: start date hasn't passed OR todos not all complete
                 return !startDatePassed || !allComplete;
@@ -1466,7 +1468,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
                                                 if (incoming) {
                                                     const todos = pendingTodos[incoming.id] || [];
-                                                    const allComplete = todos.length === 3 && todos.every(t => t.status === 'completed');
+                                                    const allComplete = todos.length === 4 && todos.every(t => t.status === 'completed');
 
                                                     if (allComplete) {
                                                         // All todos complete - show green

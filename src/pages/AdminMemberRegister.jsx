@@ -158,7 +158,8 @@ const AdminMemberRegister = ({ onBack }) => {
                 const todos = [
                     `${todoContentPrefix} 명패 준비`,
                     `${todoContentPrefix} 책상 정비`,
-                    `${todoContentPrefix} 좌석 및 음료 정보 입력 확인`
+                    `${todoContentPrefix} 좌석 및 음료 정보 입력 확인`,
+                    `${todoContentPrefix} 이름스티커 준비`
                 ];
 
                 // Fetch user ID for created_by
@@ -269,7 +270,7 @@ const AdminMemberRegister = ({ onBack }) => {
                 .eq('pending_registration_id', id);
 
             if (todos && todos.length > 0) {
-                const tasks = ['명패 준비', '책상 정비', '좌석 및 음료 정보 입력 확인'];
+                const tasks = ['명패 준비', '책상 정비', '좌석 및 음료 정보 입력 확인', '이름스티커 준비'];
                 for (let i = 0; i < todos.length; i++) {
                     await supabase
                         .from('staff_todos')
