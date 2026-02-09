@@ -75,17 +75,40 @@ const StaffBeverageOrderList = ({ onBack }) => {
 
             if (vacationError) throw vacationError;
 
+            // 4.5 Fetch Attendance Logs (To exclude daily absentees like Sick/Late for Period 1)
+            const { data: attendanceData, error: attendanceError } = await supabase
+                .from('attendance_logs')
+                .select('user_id, period, status')
+                .eq('date', today)
+                .in('user_id', userIds)
+                .not('status', 'is', null);
+
+            if (attendanceError) throw attendanceError;
+
             const absentUserIdSet = new Set();
+
+            // Allow-list for Vacation Requests
             (vacationData || []).forEach(req => {
                 if (req.type === 'full') {
                     absentUserIdSet.add(req.user_id);
                 } else if (req.type === 'half') {
                     // Check if period 1 is included (Morning absence)
-                    // DB stores periods as array for 'half'. 
-                    // 'half_am' usually has [1,2,3,4]. 'half_pm' [5,6,7].
                     if (req.periods && req.periods.includes(1)) {
                         absentUserIdSet.add(req.user_id);
                     }
+                }
+            });
+
+            // Allow-list for Attendance Logs
+            (attendanceData || []).forEach(log => {
+                // If there is ANY log for Period 1 with status, they are absent/late for morning.
+                // Assuming 'status' implies they are NOT here. (e.g., '결석', '지각', '병결'...)
+                // Except if status is '출석' (which usually isn't logged unless special system, but logs usually mean exception)
+                // In TodayLeaves.jsx, all logs with status are shown as "Special Log".
+                // If Period 1 is logged, they are effectively "not in standard 1st period class" or "late/absent".
+                // So we exclude them.
+                if (log.period === 1) {
+                    absentUserIdSet.add(log.user_id);
                 }
             });
 
