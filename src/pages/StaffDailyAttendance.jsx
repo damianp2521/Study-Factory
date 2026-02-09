@@ -643,6 +643,7 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [dailyMemos, setDailyMemos] = useState([]);
     const [memberMemos, setMemberMemos] = useState([]);
     const [incomingEmployees, setIncomingEmployees] = useState([]);
+    const [pendingTodos, setPendingTodos] = useState({}); // {pending_registration_id: [todos]}
 
     const [loading, setLoading] = useState(false);
     const [highlightedUserId, setHighlightedUserId] = useState(null);
@@ -740,13 +741,14 @@ const StaffDailyAttendance = ({ onBack }) => {
             const startDate = dateStr;
             const endDate = dateStr;
 
-            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, incomingRes] = await Promise.all([
+            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, todosRes] = await Promise.all([
                 supabase.from('profiles').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
                 supabase.from('attendance_memos').select('*').eq('date', dateStr).order('created_at', { ascending: true }),
                 supabase.from('member_memos').select('*').order('created_at', { ascending: true }),
-                supabase.from('incoming_employees').select('*').order('entry_date', { ascending: true })
+                supabase.from('pending_registrations').select('*').eq('branch', branch).order('expected_start_date', { ascending: true }),
+                supabase.from('staff_todos').select('*').not('pending_registration_id', 'is', null)
             ]);
 
             if (userRes.error) throw userRes.error;
@@ -783,7 +785,26 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             setDailyMemos(dailyMemoRes.data || []);
             setMemberMemos(memberMemoRes.data || []);
-            setIncomingEmployees(incomingRes.data || []);
+
+            // Filter pending employees: only show if start date hasn't passed OR todos not all complete
+            const todayStr = format(new Date(), 'yyyy-MM-dd');
+            const todosByPending = {};
+            (todosRes.data || []).forEach(todo => {
+                if (!todosByPending[todo.pending_registration_id]) {
+                    todosByPending[todo.pending_registration_id] = [];
+                }
+                todosByPending[todo.pending_registration_id].push(todo);
+            });
+            setPendingTodos(todosByPending);
+
+            const filteredPending = (pendingRes.data || []).filter(emp => {
+                const todos = todosByPending[emp.id] || [];
+                const allComplete = todos.length === 3 && todos.every(t => t.status === 'completed');
+                const startDatePassed = emp.expected_start_date && emp.expected_start_date <= todayStr;
+                // Show if: start date hasn't passed OR todos not all complete
+                return !startDatePassed || !allComplete;
+            });
+            setIncomingEmployees(filteredPending);
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -1379,27 +1400,28 @@ const StaffDailyAttendance = ({ onBack }) => {
                                             {daysInView.map(date => {
                                                 const incoming = incomingEmployees.find(i => i.seat_number === user.seat_number);
                                                 let showIncoming = false;
-                                                let incomingColor = '#fefcbf'; // Yellow by default (not prepared)
+                                                let incomingColor = '#fefcbf'; // Yellow by default (todos incomplete)
                                                 let incomingTextColor = '#b7791f';
 
                                                 if (incoming) {
-                                                    if (!incoming.is_prepared) {
-                                                        showIncoming = true;
-                                                    } else {
-                                                        const entryDate = new Date(incoming.entry_date);
-                                                        const viewDate = new Date(format(currentViewDate, 'yyyy-MM-dd'));
-                                                        // entry_date is string yyyy-MM-dd
-                                                        // Compare dates
-                                                        if (viewDate < entryDate) {
-                                                            showIncoming = true;
-                                                            incomingColor = '#c6f6d5'; // Green (prepared but not yet entered)
-                                                            incomingTextColor = '#2f855a';
-                                                        }
+                                                    const todos = pendingTodos[incoming.id] || [];
+                                                    const allComplete = todos.length === 3 && todos.every(t => t.status === 'completed');
+
+                                                    if (allComplete) {
+                                                        // All todos complete - show green
+                                                        incomingColor = '#c6f6d5';
+                                                        incomingTextColor = '#2f855a';
                                                     }
+                                                    // Always show until start date passes
+                                                    showIncoming = true;
                                                 }
 
                                                 if (showIncoming) {
-                                                    const incomingText = `${format(new Date(incoming.entry_date), 'M.d(EEE)', { locale: ko })} ${incoming.seat_number}번 ${incoming.content}`;
+                                                    const dateStr = incoming.expected_start_date ? format(new Date(incoming.expected_start_date), 'M.d(EEE)', { locale: ko }) : '';
+                                                    const seatStr = incoming.seat_number ? `${incoming.seat_number}번` : '';
+                                                    const certStr = incoming.target_certificate || '';
+                                                    const incomingText = `${dateStr} ${seatStr} ${incoming.name} ${certStr}`.trim();
+
                                                     // Calculate font size based on text length to fit in one line
                                                     const baseFontSize = 0.9 * scale;
                                                     const textLen = incomingText.length;
