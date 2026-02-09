@@ -122,12 +122,7 @@ const AdminMemberRegister = ({ onBack }) => {
                 const date = dateObj.getDate();
                 const shortDate = `${month}/${date}`;
 
-                // Extract certificate abbreviation (e.g., "노무사" -> "노무")
-                const certAbbrev = targetCertificate.trim()
-                    ? targetCertificate.trim().replace(/사$/, '') // Remove trailing '사' if exists
-                    : '';
-
-                const todoContentPrefix = `${shortDate} ${seatNumber ? `${seatNumber}번` : ''} ${name.trim()}${certAbbrev ? ` ${certAbbrev}` : ''}`;
+                const todoContentPrefix = `${shortDate} ${seatNumber ? `${seatNumber}번` : ''} ${name.trim()}${targetCertificate.trim() ? ` ${targetCertificate.trim()}` : ''}`;
                 const todos = [
                     `${todoContentPrefix} 명패 준비`,
                     `${todoContentPrefix} 책상 정비`,
