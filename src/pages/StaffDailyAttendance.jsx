@@ -580,9 +580,18 @@ const IncomingEmployeeModal = ({ onClose }) => {
                                                     {employeeTodos.length === 0 ? (
                                                         <div style={{ fontSize: '0.85rem', color: '#a0aec0', textAlign: 'center', padding: '10px' }}>투두가 생성되지 않았습니다</div>
                                                     ) : (
-                                                        employeeTodos.map((todo, idx) => {
-                                                            const tasks = ['명패 준비', '책상 정비', '좌석 및 음료 정보 입력 확인'];
-                                                            const taskName = tasks[idx] || '작업';
+                                                        employeeTodos.map((todo) => {
+                                                            // Extract task name from todo content
+                                                            // Content format: "M/d 좌석번 이름 자격증 작업명"
+                                                            let taskName = '작업';
+                                                            if (todo.content.includes('명패 준비')) {
+                                                                taskName = '명패 준비';
+                                                            } else if (todo.content.includes('책상 정비')) {
+                                                                taskName = '책상 정비';
+                                                            } else if (todo.content.includes('좌석 및 음료 정보 입력 확인')) {
+                                                                taskName = '좌석 및 음료 정보 입력 확인';
+                                                            }
+
                                                             const isComplete = todo.status === 'completed';
 
                                                             return (
