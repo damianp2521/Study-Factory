@@ -100,6 +100,22 @@ const Notices = () => {
         };
 
         fetchNotices();
+
+        // Real-time subscription for notices
+        const noticesChannel = supabase
+            .channel('notices_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'notices'
+            }, () => {
+                fetchNotices();
+            })
+            .subscribe();
+
+        return () => {
+            noticesChannel.unsubscribe();
+        };
     }, []);
 
     if (loading) {

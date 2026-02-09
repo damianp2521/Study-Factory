@@ -720,6 +720,58 @@ const StaffDailyAttendance = ({ onBack }) => {
     // Fetch on Date Change
     useEffect(() => {
         fetchData();
+
+        // Real-time subscriptions for attendance data
+        const attendanceChannel = supabase
+            .channel('attendance_logs_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'attendance_logs'
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        const vacationChannel = supabase
+            .channel('vacation_requests_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'vacation_requests'
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        const memosChannel = supabase
+            .channel('attendance_memos_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'attendance_memos'
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        const pendingChannel = supabase
+            .channel('pending_attendance_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'pending_registrations'
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        return () => {
+            attendanceChannel.unsubscribe();
+            vacationChannel.unsubscribe();
+            memosChannel.unsubscribe();
+            pendingChannel.unsubscribe();
+        };
     }, [currentViewDate, branch]);
 
     // Auto-fit Logic: Always Active

@@ -22,6 +22,22 @@ const SuggestionBox = () => {
             // 2. Fetch fresh list
             fetchSuggestions();
         });
+
+        // Real-time subscription for suggestions
+        const suggestionsChannel = supabase
+            .channel('suggestions_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'suggestions'
+            }, () => {
+                fetchSuggestions();
+            })
+            .subscribe();
+
+        return () => {
+            suggestionsChannel.unsubscribe();
+        };
     }, []);
 
     const fetchSuggestions = async () => {

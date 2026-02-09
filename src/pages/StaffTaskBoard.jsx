@@ -684,6 +684,23 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
 
     useEffect(() => {
         fetchData();
+
+        // Real-time subscription for StaffWorkSchedule
+        const scheduleChannel = supabase
+            .channel('staff_schedules_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'staff_schedules',
+                filter: `branch=eq.${branch}`
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
+        return () => {
+            scheduleChannel.unsubscribe();
+        };
     }, [branch]);
 
     const handleUpdateAssignment = async (day, shift, role, name) => {

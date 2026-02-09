@@ -35,6 +35,24 @@ const VacationRequest = () => {
             fetchMyRequests();
             fetchSpecialAttendance();
         }
+
+        // Real-time subscription for vacation requests
+        if (viewMode === 'history') {
+            const vacationChannel = supabase
+                .channel('my_vacation_changes')
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'vacation_requests'
+                }, () => {
+                    fetchMyRequests();
+                })
+                .subscribe();
+
+            return () => {
+                vacationChannel.unsubscribe();
+            };
+        }
     }, [viewMode, user]);
 
     const fetchMyRequests = async () => {

@@ -31,6 +31,34 @@ const AdminMemberStatus = ({ onBack }) => {
         fetchUsers();
         fetchBeverageOptions();
         fetchCertOptions();
+
+        // Real-time subscriptions
+        const profilesChannel = supabase
+            .channel('admin_profiles_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'authorized_users'
+            }, () => {
+                fetchUsers();
+            })
+            .subscribe();
+
+        const certsChannel = supabase
+            .channel('user_certs_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'user_certificates'
+            }, () => {
+                fetchUsers();
+            })
+            .subscribe();
+
+        return () => {
+            profilesChannel.unsubscribe();
+            certsChannel.unsubscribe();
+        };
     }, []);
 
     const fetchCertOptions = async () => {

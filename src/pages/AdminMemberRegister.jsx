@@ -34,6 +34,34 @@ const AdminMemberRegister = ({ onBack }) => {
         fetchList();
         fetchBeverageOptions();
         fetchCertOptions();
+
+        // Real-time subscriptions
+        const profilesChannel = supabase
+            .channel('profiles_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'profiles'
+            }, () => {
+                fetchList();
+            })
+            .subscribe();
+
+        const pendingChannel = supabase
+            .channel('pending_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'pending_registrations'
+            }, () => {
+                fetchList();
+            })
+            .subscribe();
+
+        return () => {
+            profilesChannel.unsubscribe();
+            pendingChannel.unsubscribe();
+        };
     }, []);
 
     const fetchBeverageOptions = async () => {

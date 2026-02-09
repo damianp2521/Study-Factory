@@ -21,6 +21,34 @@ const TodayLeaves = () => {
 
     useEffect(() => {
         fetchLeaves();
+
+        // Real-time subscriptions for vacation and attendance
+        const vacationChannel = supabase
+            .channel('today_vacation_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'vacation_requests'
+            }, () => {
+                fetchLeaves();
+            })
+            .subscribe();
+
+        const attendanceChannel = supabase
+            .channel('today_attendance_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'attendance_logs'
+            }, () => {
+                fetchLeaves();
+            })
+            .subscribe();
+
+        return () => {
+            vacationChannel.unsubscribe();
+            attendanceChannel.unsubscribe();
+        };
     }, [date]);
 
     // Helper: Get start(Mon) and end(Sun) of the week for a given date

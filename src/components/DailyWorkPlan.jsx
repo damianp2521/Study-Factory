@@ -45,6 +45,26 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
         if (effectiveUserId) {
             fetchTodos(selectedDate);
         }
+
+        // Real-time subscription for daily todos
+        if (effectiveUserId) {
+            const todosChannel = supabase
+                .channel('daily_todos_changes')
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'daily_todos',
+                    filter: `user_id=eq.${effectiveUserId}`
+                }, () => {
+                    fetchTodos(selectedDate);
+                    fetchMonthStats(currentMonth);
+                })
+                .subscribe();
+
+            return () => {
+                todosChannel.unsubscribe();
+            };
+        }
     }, [selectedDate, effectiveUserId]);
 
     const fetchVisibility = async () => {
