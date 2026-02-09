@@ -9,9 +9,7 @@ import InlineVacationRequest from '../../components/InlineVacationRequest';
 import StaffAttendance from '../../pages/StaffAttendance';
 import StaffSeatManagement from '../../pages/StaffSeatManagement';
 import StaffBeverageManagement from '../../pages/StaffBeverageManagement';
-import StaffBeverageOrderList from '../../pages/StaffBeverageOrderList';
-import StaffDailyAttendance from '../../pages/StaffDailyAttendance';
-import AdminVacationDetails from '../AdminVacationDetails';
+import StaffBeverageServingSheet from '../../pages/StaffBeverageServingSheet';
 
 const StaffGridMenu = () => {
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
@@ -95,6 +93,7 @@ const StaffGridMenu = () => {
     if (currentView === 'seat_management') return renderWithPadding(<StaffSeatManagement onBack={goBack} />);
     if (currentView === 'beverage_management') return renderWithPadding(<StaffBeverageManagement onBack={goBack} />);
     if (currentView === 'beverage_order_list') return renderWithPadding(<StaffBeverageOrderList onBack={goBack} />);
+    if (currentView === 'beverage_serving_sheet') return renderWithPadding(<StaffBeverageServingSheet onBack={goBack} />);
 
     // Grid View (Categorized Structure)
     return (
@@ -124,6 +123,14 @@ const StaffGridMenu = () => {
                             <ClipboardList size={24} />
                         </div>
                         <span style={labelStyle}>음료 제조표</span>
+                    </button>
+
+                    {/* 3. 음료 서빙표 (New) */}
+                    <button onClick={() => navigateTo('beverage_serving_sheet')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#f0fff4', color: '#2f855a' }}>
+                            <Coffee size={24} />
+                        </div>
+                        <span style={labelStyle}>음료 서빙표</span>
                     </button>
                 </div>
             </div>
