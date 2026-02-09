@@ -604,31 +604,81 @@ const VacationRequest = () => {
                                         style={{
                                             background: 'white',
                                             borderRadius: '12px',
-                                            padding: '16px 20px',
-                                            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                            padding: '20px',
+                                            boxShadow: 'var(--shadow-sm)',
                                             borderLeft: '5px solid #38a169',
                                             display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between'
+                                            flexDirection: 'column',
+                                            gap: '15px'
                                         }}
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                                                {format(parseISO(item.date), 'MM.dd(EEE)', { locale: ko })}
-                                            </span>
-                                            <span style={{
-                                                fontSize: '0.95rem', fontWeight: 'bold',
-                                                color: '#c53030',
-                                                background: '#c6f6d5',
-                                                padding: '2px 8px',
-                                                borderRadius: '4px'
-                                            }}>
-                                                {item.status}
-                                            </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                                    {format(parseISO(item.date), 'MM.dd(EEE)', { locale: ko })}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '0.9rem', fontWeight: 'bold',
+                                                    color: '#22543d',
+                                                    background: '#c6f6d5',
+                                                    padding: '4px 8px',
+                                                    borderRadius: '6px'
+                                                }}>
+                                                    {item.status}
+                                                </span>
+                                            </div>
+                                            <div style={{ color: '#718096', fontSize: '0.95rem', fontWeight: '600' }}>
+                                                {item.periods.join(', ')}교시
+                                            </div>
                                         </div>
-                                        <div style={{ color: '#718096', fontSize: '0.9rem', fontWeight: '600' }}>
-                                            {item.periods.join(', ')}교시
-                                        </div>
+
+                                        <button
+                                            onClick={async () => {
+                                                if (!confirm(`${item.date} ${item.status} 일정을 취소하시겠습니까?`)) return;
+                                                try {
+                                                    const { error } = await supabase
+                                                        .from('attendance_logs')
+                                                        .delete()
+                                                        .eq('user_id', user.id)
+                                                        .eq('date', item.date)
+                                                        .eq('status', item.status);
+
+                                                    if (error) throw error;
+                                                    alert('취소되었습니다.');
+                                                    fetchSpecialAttendance(); // Refresh list
+                                                } catch (e) {
+                                                    console.error(e);
+                                                    alert('취소 실패');
+                                                }
+                                            }}
+                                            style={{
+                                                width: '100%',
+                                                padding: '10px',
+                                                borderRadius: '8px',
+                                                border: '1px solid #e53e3e',
+                                                background: 'white',
+                                                color: '#e53e3e',
+                                                fontWeight: 'bold',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '6px',
+                                                transition: 'all 0.2s',
+                                                fontSize: '0.9rem'
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.currentTarget.style.background = '#e53e3e';
+                                                e.currentTarget.style.color = 'white';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.currentTarget.style.background = 'white';
+                                                e.currentTarget.style.color = '#e53e3e';
+                                            }}
+                                        >
+                                            <Trash2 size={16} />
+                                            취소하기
+                                        </button>
                                     </div>
                                 );
                             }
