@@ -298,9 +298,9 @@ const SeatCard = ({ item }) => {
 
                         {/* Status Badge */}
                         {item.status === 'present' ? (
-                            <span style={badgeStyle}>정상출근</span>
+                            <span style={{ ...badgeStyle, marginLeft: 'auto' }}>정상출근</span>
                         ) : (
-                            <span style={badgeStyle}>{item.reason}</span>
+                            <span style={{ ...badgeStyle, marginLeft: 'auto' }}>{item.reason}</span>
                         )}
                     </>
                 )}
