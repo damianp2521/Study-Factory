@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Trash2 } from 'lucide-react';
+import { ChevronLeft, Trash2, Edit2, Save, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_LIST } from '../constants/branches';
 
@@ -23,6 +23,10 @@ const AdminMemberRegister = ({ onBack }) => {
     const [certOptions, setCertOptions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    // Edit pending registration state
+    const [editingPendingId, setEditingPendingId] = useState(null);
+    const [editPendingForm, setEditPendingForm] = useState({});
 
     const branches = BRANCH_LIST;
 
@@ -164,25 +168,98 @@ const AdminMemberRegister = ({ onBack }) => {
     const handleDelete = async (id) => {
         if (!window.confirm('정말 삭제하시겠습니까?')) return;
         try {
-            // Delete from pending_registrations table
             const { error } = await supabase
                 .from('pending_registrations')
                 .delete()
                 .eq('id', id);
-
-            // Cascade delete should handle staff_todos if we set ON DELETE CASCADE in SQL.
-            // But if not, we should manually delete.
-            // My proposed SQL: "REFERENCES public.pending_registrations(id) ON DELETE CASCADE"
-            // So manual deletion is not strictly required IF the migration is run.
-            // However, to be safe (if migration hasn't run or cascade fails), let's try manual delete first or just rely on cascade.
-            // Given the user instruction "취소시키면 자동으로 삭제되게 해주고", CASCADE is the best way.
-            // I'll trust the SQL I just wrote.
 
             if (error) throw error;
             fetchList();
         } catch (err) {
             console.error('Delete error:', err);
             alert(`삭제 실패: ${err.message}`);
+        }
+    };
+
+    const startEditPending = (user) => {
+        setEditingPendingId(user.id);
+        setEditPendingForm({
+            name: user.name,
+            branch: user.branch,
+            role: user.role,
+            seat_number: user.seat_number || '',
+            expected_start_date: user.expected_start_date || '',
+            target_certificate: user.target_certificate || '',
+            selection_1: user.selection_1,
+            selection_2: user.selection_2,
+            selection_3: user.selection_3,
+            memo: user.memo || ''
+        });
+    };
+
+    const cancelEditPending = () => {
+        setEditingPendingId(null);
+        setEditPendingForm({});
+    };
+
+    const saveEditPending = async (id) => {
+        try {
+            const seatNum = editPendingForm.seat_number === '미지정' || editPendingForm.seat_number === ''
+                ? null
+                : parseInt(editPendingForm.seat_number, 10);
+
+            // Update pending_registrations
+            const { error } = await supabase
+                .from('pending_registrations')
+                .update({
+                    name: editPendingForm.name,
+                    branch: editPendingForm.branch,
+                    role: editPendingForm.role,
+                    seat_number: seatNum,
+                    expected_start_date: editPendingForm.expected_start_date || null,
+                    target_certificate: editPendingForm.target_certificate || null,
+                    selection_1: editPendingForm.selection_1,
+                    selection_2: editPendingForm.selection_2,
+                    selection_3: editPendingForm.selection_3,
+                    memo: editPendingForm.memo || null
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Update linked staff_todos content
+            const dateObj = editPendingForm.expected_start_date ? new Date(editPendingForm.expected_start_date) : new Date();
+            const month = dateObj.getMonth() + 1;
+            const date = dateObj.getDate();
+            const shortDate = `${month}/${date}`;
+            const todoPrefix = `${shortDate} ${seatNum ? `${seatNum}번` : ''} ${editPendingForm.name}${editPendingForm.target_certificate ? ` ${editPendingForm.target_certificate}` : ''}`;
+
+            // Fetch and update todos
+            const { data: todos } = await supabase
+                .from('staff_todos')
+                .select('*')
+                .eq('pending_registration_id', id);
+
+            if (todos && todos.length > 0) {
+                const tasks = ['명패 준비', '책상 정비', '좌석 및 음료 정보 입력 확인'];
+                for (let i = 0; i < todos.length; i++) {
+                    await supabase
+                        .from('staff_todos')
+                        .update({
+                            content: `${todoPrefix} ${tasks[i] || ''}`,
+                            branch: editPendingForm.branch
+                        })
+                        .eq('id', todos[i].id);
+                }
+            }
+
+            setEditingPendingId(null);
+            setEditPendingForm({});
+            await fetchList();
+            alert('수정되었습니다.');
+        } catch (error) {
+            console.error('Update error:', error);
+            alert(`수정에 실패했습니다.\n사유: ${error.message}`);
         }
     };
 
@@ -197,7 +274,7 @@ const AdminMemberRegister = ({ onBack }) => {
                         border: 'none',
                         cursor: 'pointer',
                         padding: '8px',
-                        marginLeft: '-8px', // Compensate for padding to align visually
+                        marginLeft: '-8px',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -325,7 +402,7 @@ const AdminMemberRegister = ({ onBack }) => {
                 <button
                     type="submit"
                     disabled={loading}
-                    style={{ // Premium Button Style
+                    style={{
                         width: '100%',
                         padding: '14px',
                         borderRadius: '12px',
@@ -348,42 +425,104 @@ const AdminMemberRegister = ({ onBack }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {list.length === 0 && <div style={{ textAlign: 'center', color: '#a0aec0', padding: '20px' }}>대기 중인 인원이 없습니다.</div>}
                 {list.map(user => (
-                    <div key={user.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                        <div>
-                            <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>{user.name}</div>
-                            <div style={{ fontSize: '0.85rem', color: '#718096' }}>
-                                {user.branch} · <span style={{ color: user.role === 'admin' ? '#e53e3e' : (user.role === 'staff' ? '#805ad5' : '#4299e1'), fontWeight: 'bold' }}>
-                                    {user.role === 'admin' ? '관리자' : (user.role === 'staff' ? '스탭' : '회원')}
-                                </span>
-                                {user.seat_number && <span style={{ marginLeft: '6px', color: '#718096' }}>| 좌석 {user.seat_number}</span>}
-                                {user.expected_start_date && (
-                                    <span style={{ marginLeft: '6px', color: '#718096' }}>
-                                        | 입사예정: {new Date(user.expected_start_date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}
-                                    </span>
-                                )}
-                                {user.target_certificate && (
-                                    <div style={{ marginTop: '4px' }}>
-                                        <span style={{
-                                            fontSize: '0.75rem',
-                                            background: '#ebf8ff',
-                                            color: '#2b6cb0',
-                                            padding: '2px 6px',
-                                            borderRadius: '4px',
-                                            fontWeight: '500'
-                                        }}>
-                                            {user.target_certificate}
-                                        </span>
+                    <div key={user.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '15px' }}>
+                        {editingPendingId === user.id ? (
+                            // Edit Mode
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <span style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{user.name} 수정</span>
+                                    <div style={{ display: 'flex', gap: '5px' }}>
+                                        <button onClick={() => saveEditPending(user.id)} style={{ padding: '8px', background: '#38a169', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}><Save size={18} /></button>
+                                        <button onClick={cancelEditPending} style={{ padding: '8px', background: '#e2e8f0', color: '#4a5568', border: 'none', borderRadius: '8px', cursor: 'pointer' }}><X size={18} /></button>
                                     </div>
-                                )}
-                                {user.memo && <div style={{ fontSize: '0.8rem', color: '#a0aec0', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{user.memo}</div>}
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>이름</label>
+                                        <input value={editPendingForm.name} onChange={(e) => setEditPendingForm({ ...editPendingForm, name: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>지점</label>
+                                        <select value={editPendingForm.branch} onChange={(e) => setEditPendingForm({ ...editPendingForm, branch: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
+                                            {BRANCH_LIST.map(b => <option key={b} value={b}>{b}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>구분</label>
+                                        <select value={editPendingForm.role} onChange={(e) => setEditPendingForm({ ...editPendingForm, role: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
+                                            <option value="member">회원</option>
+                                            <option value="staff">스탭</option>
+                                            <option value="admin">관리자</option>
+                                        </select>
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>좌석</label>
+                                        <input type="number" value={editPendingForm.seat_number} onChange={(e) => setEditPendingForm({ ...editPendingForm, seat_number: e.target.value })} placeholder="번호" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>입사예정일</label>
+                                        <input type="date" value={editPendingForm.expected_start_date} onChange={(e) => setEditPendingForm({ ...editPendingForm, expected_start_date: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>준비 자격증</label>
+                                        <input type="text" value={editPendingForm.target_certificate} onChange={(e) => setEditPendingForm({ ...editPendingForm, target_certificate: e.target.value })} placeholder="자격증명" list="cert-options-edit" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
+                                        <datalist id="cert-options-edit">
+                                            {certOptions.map(opt => (<option key={opt.id} value={opt.name} />))}
+                                        </datalist>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>메모</label>
+                                    <textarea value={editPendingForm.memo} onChange={(e) => setEditPendingForm({ ...editPendingForm, memo: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0', resize: 'vertical', minHeight: '60px' }} />
+                                </div>
                             </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#d69e2e', background: '#fffaf0', padding: '4px 8px', borderRadius: '20px', fontWeight: 'bold' }}>대기중</span>
-                            <button onClick={() => handleDelete(user.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
-                                <Trash2 size={18} color="#e53e3e" />
-                            </button>
-                        </div>
+                        ) : (
+                            // View Mode
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div>
+                                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>{user.name}</div>
+                                    <div style={{ fontSize: '0.85rem', color: '#718096' }}>
+                                        {user.branch} · <span style={{ color: user.role === 'admin' ? '#e53e3e' : (user.role === 'staff' ? '#805ad5' : '#4299e1'), fontWeight: 'bold' }}>
+                                            {user.role === 'admin' ? '관리자' : (user.role === 'staff' ? '스탭' : '회원')}
+                                        </span>
+                                        {user.seat_number && <span style={{ marginLeft: '6px', color: '#718096' }}>| 좌석 {user.seat_number}</span>}
+                                        {user.expected_start_date && (
+                                            <span style={{ marginLeft: '6px', color: '#718096' }}>
+                                                | 입사예정: {new Date(user.expected_start_date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}
+                                            </span>
+                                        )}
+                                        {user.target_certificate && (
+                                            <div style={{ marginTop: '4px' }}>
+                                                <span style={{
+                                                    fontSize: '0.75rem',
+                                                    background: '#ebf8ff',
+                                                    color: '#2b6cb0',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px',
+                                                    fontWeight: '500'
+                                                }}>
+                                                    {user.target_certificate}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {user.memo && <div style={{ fontSize: '0.8rem', color: '#a0aec0', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}>{user.memo}</div>}
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '0.8rem', color: '#d69e2e', background: '#fffaf0', padding: '4px 8px', borderRadius: '20px', fontWeight: 'bold' }}>대기중</span>
+                                    <button onClick={() => startEditPending(user)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
+                                        <Edit2 size={18} color="#3182ce" />
+                                    </button>
+                                    <button onClick={() => handleDelete(user.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '5px' }}>
+                                        <Trash2 size={18} color="#e53e3e" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
