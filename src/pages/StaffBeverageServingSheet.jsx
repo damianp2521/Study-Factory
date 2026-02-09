@@ -69,7 +69,7 @@ const StaffBeverageServingSheet = ({ onBack }) => {
                     .in('user_id', userIds);
 
                 (vacData || []).forEach(req => {
-                    if (req.type === 'full') absenceMap[req.user_id] = '휴가(전일)';
+                    if (req.type === 'full') absenceMap[req.user_id] = '월차';
                     else if (req.type === 'half' && req.periods?.includes(1)) absenceMap[req.user_id] = '오전반차'; // Assuming morning absence checks period 1
                 });
 

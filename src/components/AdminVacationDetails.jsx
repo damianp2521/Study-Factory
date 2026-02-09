@@ -7,12 +7,14 @@ const AdminVacationDetails = ({ user, onBack }) => {
     const [userVacations, setUserVacations] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    if (!user) return null; // Safety check
+
     useEffect(() => {
         fetchUserVacations();
     }, [user, currentDate]);
 
     const fetchUserVacations = async () => {
-        if (!user) return;
+        if (!user?.id) return;
         setLoading(true);
         try {
             const y = currentDate.getFullYear();
@@ -112,9 +114,9 @@ const AdminVacationDetails = ({ user, onBack }) => {
                 </button>
                 <div>
                     <h2 style={{ fontSize: '1.3rem', fontWeight: 'bold', margin: 0, lineHeight: 1.2 }}>
-                        {user.name}
+                        {user?.name || '정보 없음'}
                     </h2>
-                    <span style={{ fontSize: '0.85rem', color: '#718096' }}>{user.branch} 휴가 현황</span>
+                    <span style={{ fontSize: '0.85rem', color: '#718096' }}>{user?.branch || '지점 미정'} 휴가 현황</span>
                 </div>
             </div>
 
