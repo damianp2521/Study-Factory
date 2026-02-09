@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Search, Check, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
 
+import { startOfMonth, endOfMonth, format } from 'date-fns';
+
 const AdminOtherLeaveRequest = ({ onBack }) => {
     const [view, setView] = useState('list'); // 'list' | 'form'
     const [users, setUsers] = useState([]);
@@ -19,6 +21,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
 
     // History State
     const [history, setHistory] = useState([]);
+    const [currentMonth, setCurrentMonth] = useState(new Date()); // Track calendar month
 
     useEffect(() => {
         fetchUsers();
@@ -32,12 +35,12 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
         }
     }, [searchTerm, users]);
 
-    // Fetch History when User is selected
+    // Fetch History when User OR Month changes
     useEffect(() => {
         if (selectedUser) {
             fetchHistory();
         }
-    }, [selectedUser]);
+    }, [selectedUser, currentMonth]);
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -60,14 +63,18 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
     const fetchHistory = async () => {
         if (!selectedUser) return;
         try {
-            // Fetch RECENT attendance logs with status
+            const startDate = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
+            const endDate = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
+
+            // Fetch attendance logs for the current month
             const { data, error } = await supabase
                 .from('attendance_logs')
                 .select('*')
                 .eq('user_id', selectedUser.id)
                 .not('status', 'is', null) // Only special statuses
-                .order('date', { ascending: false })
-                .limit(50);
+                .gte('date', startDate)
+                .lte('date', endDate)
+                .order('date', { ascending: false });
 
             if (error) throw error;
             setHistory(data || []);
@@ -309,6 +316,8 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
                 <EmbeddedCalendar
                     selectedDates={selectedDates}
                     onSelectDate={toggleDate}
+                    currentMonth={currentMonth}
+                    onMonthChange={setCurrentMonth}
                 />
                 <div style={{ textAlign: 'center', marginTop: '10px', color: '#718096', fontSize: '0.9rem' }}>
                     {selectedDates.length > 0 ? `${selectedDates.length}일 선택됨` : '날짜를 선택하세요 (다중 선택 가능)'}
