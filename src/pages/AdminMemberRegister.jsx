@@ -116,13 +116,18 @@ const AdminMemberRegister = ({ onBack }) => {
 
             // Auto-create Staff Todos
             if (data) {
-                // Format: 2/10 -> M/D
-                const dateObj = new Date();
+                // Use expected_start_date if provided, otherwise use current date
+                const dateObj = expectedStartDate ? new Date(expectedStartDate) : new Date();
                 const month = dateObj.getMonth() + 1;
                 const date = dateObj.getDate();
                 const shortDate = `${month}/${date}`;
 
-                const todoContentPrefix = `${shortDate} ${seatNumber ? `${seatNumber}번` : ''} ${name.trim()}`;
+                // Extract certificate abbreviation (e.g., "노무사" -> "노무")
+                const certAbbrev = targetCertificate.trim()
+                    ? targetCertificate.trim().replace(/사$/, '') // Remove trailing '사' if exists
+                    : '';
+
+                const todoContentPrefix = `${shortDate} ${seatNumber ? `${seatNumber}번` : ''} ${name.trim()}${certAbbrev ? ` ${certAbbrev}` : ''}`;
                 const todos = [
                     `${todoContentPrefix} 명패 준비`,
                     `${todoContentPrefix} 책상 정비`,
