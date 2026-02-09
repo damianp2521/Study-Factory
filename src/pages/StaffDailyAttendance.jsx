@@ -328,24 +328,157 @@ const UserMemoPopup = ({ user, memberMemos, onSave, onClose }) => {
     );
 };
 
-// Incoming Employee Modal
-const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, onClose }) => {
-    const [entryDate, setEntryDate] = useState(new Date()); // Default today
-    const [seatNumber, setSeatNumber] = useState('');
-    const [content, setContent] = useState('');
+// Redesigned Incoming Employee Modal - Fetches from pending_registrations and syncs todos
+const IncomingEmployeeModal = ({ onClose }) => {
+    const [pendingEmployees, setPendingEmployees] = useState([]);
+    const [todos, setTodos] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [editingId, setEditingId] = useState(null);
+    const [editForm, setEditForm] = useState({});
 
-    const handleAdd = () => {
-        if (!seatNumber || !content) {
-            alert('좌석 번호와 내용을 입력해주세요.');
-            return;
+    useEffect(() => {
+        fetchPendingEmployees();
+
+        // Subscribe to real-time updates for staff_todos
+        const todosSubscription = supabase
+            .channel('staff_todos_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'staff_todos',
+                filter: 'pending_registration_id=not.is.null'
+            }, () => {
+                fetchPendingEmployees();
+            })
+            .subscribe();
+
+        return () => {
+            todosSubscription.unsubscribe();
+        };
+    }, []);
+
+    const fetchPendingEmployees = async () => {
+        setLoading(true);
+        try {
+            // Fetch pending_registrations
+            const { data: pending, error: pendingError } = await supabase
+                .from('pending_registrations')
+                .select('*')
+                .order('expected_start_date', { ascending: true });
+
+            if (pendingError) throw pendingError;
+
+            // Fetch all related todos
+            const { data: allTodos, error: todosError } = await supabase
+                .from('staff_todos')
+                .select('*')
+                .not('pending_registration_id', 'is', null);
+
+            if (todosError) throw todosError;
+
+            // Group todos by pending_registration_id
+            const todosByPending = {};
+            (allTodos || []).forEach(todo => {
+                if (!todosByPending[todo.pending_registration_id]) {
+                    todosByPending[todo.pending_registration_id] = [];
+                }
+                todosByPending[todo.pending_registration_id].push(todo);
+            });
+
+            setPendingEmployees(pending || []);
+            setTodos(todosByPending);
+        } catch (error) {
+            console.error('Error fetching pending employees:', error);
+        } finally {
+            setLoading(false);
         }
-        onAdd({
-            seat_number: parseInt(seatNumber),
-            entry_date: format(entryDate, 'yyyy-MM-dd'),
-            content: content
+    };
+
+    const toggleTodo = async (todoId, currentStatus) => {
+        try {
+            const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+            const { data: { user } } = await supabase.auth.getUser();
+
+            const { error } = await supabase
+                .from('staff_todos')
+                .update({
+                    status: newStatus,
+                    completed_by: newStatus === 'completed' ? user?.id : null,
+                    completed_at: newStatus === 'completed' ? new Date().toISOString() : null
+                })
+                .eq('id', todoId);
+
+            if (error) throw error;
+            await fetchPendingEmployees();
+        } catch (error) {
+            console.error('Error toggling todo:', error);
+            alert('투두 업데이트 실패');
+        }
+    };
+
+    const startEdit = (employee) => {
+        setEditingId(employee.id);
+        setEditForm({
+            name: employee.name,
+            seat_number: employee.seat_number || '',
+            expected_start_date: employee.expected_start_date || '',
+            target_certificate: employee.target_certificate || ''
         });
-        setSeatNumber('');
-        setContent('');
+    };
+
+    const saveEdit = async (id) => {
+        try {
+            const { error } = await supabase
+                .from('pending_registrations')
+                .update({
+                    name: editForm.name,
+                    seat_number: editForm.seat_number || null,
+                    expected_start_date: editForm.expected_start_date || null,
+                    target_certificate: editForm.target_certificate || null
+                })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Update todos
+            const employeeTodos = todos[id] || [];
+            const dateObj = editForm.expected_start_date ? new Date(editForm.expected_start_date) : new Date();
+            const month = dateObj.getMonth() + 1;
+            const date = dateObj.getDate();
+            const shortDate = `${month}/${date}`;
+            const todoPrefix = `${shortDate} ${editForm.seat_number ? `${editForm.seat_number}번` : ''} ${editForm.name}${editForm.target_certificate ? ` ${editForm.target_certificate}` : ''}`;
+
+            const tasks = ['명패 준비', '책상 정비', '좌석 및 음료 정보 입력 확인'];
+            for (let i = 0; i < employeeTodos.length; i++) {
+                await supabase
+                    .from('staff_todos')
+                    .update({ content: `${todoPrefix} ${tasks[i] || ''}` })
+                    .eq('id', employeeTodos[i].id);
+            }
+
+            setEditingId(null);
+            setEditForm({});
+            await fetchPendingEmployees();
+        } catch (error) {
+            console.error('Error saving edit:', error);
+            alert('수정 실패');
+        }
+    };
+
+    const deletePending = async (id) => {
+        if (!confirm('삭제하시겠습니까?')) return;
+        try {
+            const { error } = await supabase
+                .from('pending_registrations')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            await fetchPendingEmployees();
+        } catch (error) {
+            console.error('Error deleting:', error);
+            alert('삭제 실패');
+        }
     };
 
     return createPortal(
@@ -355,8 +488,8 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
             display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
             <div style={{
-                background: 'white', borderRadius: '16px', width: '90%', maxWidth: '500px',
-                height: '80vh', display: 'flex', flexDirection: 'column',
+                background: 'white', borderRadius: '16px', width: '90%', maxWidth: '600px',
+                height: '85vh', display: 'flex', flexDirection: 'column',
                 boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
             }}>
                 <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -366,99 +499,126 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
                     <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={24} color="#a0aec0" /></button>
                 </div>
 
-                <div style={{ padding: '20px', borderBottom: '1px solid #e2e8f0', background: '#f7fafc' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '12px' }}>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <div style={{ flex: '1 1 50%', minWidth: 0 }}>
-                                <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>입사예정일</label>
-                                <input
-                                    type="date"
-                                    value={format(entryDate, 'yyyy-MM-dd')}
-                                    onChange={(e) => setEntryDate(new Date(e.target.value))}
-                                    style={{
-                                        width: '100%', height: '44px',
-                                        padding: '0 8px', borderRadius: '8px',
-                                        border: '1px solid #cbd5e0', fontSize: '0.95rem',
-                                        boxSizing: 'border-box', backgroundColor: 'white',
-                                        WebkitAppearance: 'none', appearance: 'none'
-                                    }}
-                                />
-                            </div>
-                            <div style={{ flex: '1 1 50%', minWidth: 0 }}>
-                                <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>좌석번호</label>
-                                <input
-                                    type="number"
-                                    value={seatNumber}
-                                    onChange={(e) => setSeatNumber(e.target.value)}
-                                    placeholder="번호"
-                                    style={{
-                                        width: '100%', height: '44px',
-                                        padding: '0 10px', borderRadius: '8px',
-                                        border: '1px solid #cbd5e0', fontSize: '0.95rem',
-                                        boxSizing: 'border-box', backgroundColor: 'white'
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#718096', marginBottom: '4px' }}>내용 (이름, 준비물 등)</label>
-                        <input
-                            type="text"
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="예: 김회원 / 회계사 / 선식, 뜨아"
-                            style={{
-                                width: '100%', height: '44px', minHeight: '44px', maxHeight: '44px',
-                                padding: '0 8px', borderRadius: '8px',
-                                border: '1px solid #cbd5e0', fontSize: '0.9rem', boxSizing: 'border-box',
-                                backgroundColor: 'white'
-                            }}
-                        />
-                    </div>
-                    <button
-                        onClick={handleAdd}
-                        style={{
-                            width: '100%', padding: '10px', background: '#267E82', color: 'white',
-                            border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'
-                        }}
-                    >
-                        등록하기
-                    </button>
-                </div>
-
                 <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
-                    {incomingEmployees.length === 0 ? (
-                        <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '40px' }}>등록된 입사예정자가 없습니다.</div>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '40px' }}>로딩중...</div>
+                    ) : pendingEmployees.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#a0aec0', marginTop: '40px' }}>
+                            입사예정자가 없습니다.<br />
+                            <span style={{ fontSize: '0.85rem' }}>관리자 페이지에서 사원 등록 시 자동으로 추가됩니다.</span>
+                        </div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {incomingEmployees.map(emp => (
-                                <div key={emp.id} style={{
-                                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '15px',
-                                    display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                                }}>
-                                    <div
-                                        onClick={() => onUpdate(emp.id, { is_prepared: !emp.is_prepared })}
-                                        style={{ cursor: 'pointer', color: emp.is_prepared ? '#38a169' : '#cbd5e0' }}
-                                    >
-                                        {emp.is_prepared ? <CheckSquare size={24} /> : <Square size={24} />}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {pendingEmployees.map(emp => {
+                                const employeeTodos = todos[emp.id] || [];
+                                const allComplete = employeeTodos.length === 3 && employeeTodos.every(t => t.status === 'completed');
+                                const isEditing = editingId === emp.id;
+
+                                return (
+                                    <div key={emp.id} style={{
+                                        background: allComplete ? '#f0fff4' : 'white',
+                                        border: `2px solid ${allComplete ? '#38a169' : '#e2e8f0'}`,
+                                        borderRadius: '12px',
+                                        padding: '15px',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                    }}>
+                                        {isEditing ? (
+                                            // Edit Mode
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                                    <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>수정</span>
+                                                    <div style={{ display: 'flex', gap: '5px' }}>
+                                                        <button onClick={() => saveEdit(emp.id)} style={{ padding: '6px 10px', background: '#38a169', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>저장</button>
+                                                        <button onClick={() => { setEditingId(null); setEditForm({}); }} style={{ padding: '6px 10px', background: '#e2e8f0', color: '#4a5568', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>취소</button>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                    <div>
+                                                        <label style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginBottom: '3px' }}>이름</label>
+                                                        <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }} />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginBottom: '3px' }}>좌석</label>
+                                                        <input type="number" value={editForm.seat_number} onChange={(e) => setEditForm({ ...editForm, seat_number: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }} />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginBottom: '3px' }}>입사예정일</label>
+                                                        <input type="date" value={editForm.expected_start_date} onChange={(e) => setEditForm({ ...editForm, expected_start_date: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }} />
+                                                    </div>
+                                                    <div>
+                                                        <label style={{ fontSize: '0.75rem', color: '#718096', display: 'block', marginBottom: '3px' }}>자격증</label>
+                                                        <input value={editForm.target_certificate} onChange={(e) => setEditForm({ ...editForm, target_certificate: e.target.value })} style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e0', fontSize: '0.9rem' }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            // View Mode
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                                                    <div>
+                                                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                                                            {emp.seat_number ? `${emp.seat_number}번` : ''} {emp.name} {emp.target_certificate && <span style={{ fontSize: '0.9rem', color: '#2b6cb0' }}>{emp.target_certificate}</span>}
+                                                        </div>
+                                                        {emp.expected_start_date && (
+                                                            <div style={{ fontSize: '0.85rem', color: '#718096', marginTop: '2px' }}>
+                                                                입사예정: {format(new Date(emp.expected_start_date), 'M월 d일 (EEE)', { locale: ko })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '5px' }}>
+                                                        <button onClick={() => startEdit(emp)} style={{ padding: '6px', background: '#ebf8ff', color: '#3182ce', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                                                            <Save size={16} />
+                                                        </button>
+                                                        <button onClick={() => deletePending(emp.id)} style={{ padding: '6px', background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                                                            <Trash size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Todos */}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                                                    {employeeTodos.length === 0 ? (
+                                                        <div style={{ fontSize: '0.85rem', color: '#a0aec0', textAlign: 'center', padding: '10px' }}>투두가 생성되지 않았습니다</div>
+                                                    ) : (
+                                                        employeeTodos.map((todo, idx) => {
+                                                            const tasks = ['명패 준비', '책상 정비', '좌석 및 음료 정보 입력 확인'];
+                                                            const taskName = tasks[idx] || '작업';
+                                                            const isComplete = todo.status === 'completed';
+
+                                                            return (
+                                                                <div key={todo.id} style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '10px',
+                                                                    padding: '8px',
+                                                                    background: isComplete ? '#f0fff4' : '#f7fafc',
+                                                                    borderRadius: '8px',
+                                                                    border: `1px solid ${isComplete ? '#9ae6b4' : '#e2e8f0'}`
+                                                                }}>
+                                                                    <div
+                                                                        onClick={() => toggleTodo(todo.id, todo.status)}
+                                                                        style={{ cursor: 'pointer', color: isComplete ? '#38a169' : '#cbd5e0' }}
+                                                                    >
+                                                                        {isComplete ? <CheckSquare size={20} /> : <Square size={20} />}
+                                                                    </div>
+                                                                    <div style={{
+                                                                        flex: 1,
+                                                                        fontSize: '0.9rem',
+                                                                        color: isComplete ? '#718096' : '#2d3748',
+                                                                        textDecoration: isComplete ? 'line-through' : 'none'
+                                                                    }}>
+                                                                        {taskName}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '0.9rem', color: '#718096', marginBottom: '2px' }}>
-                                            {format(new Date(emp.entry_date), 'M.d(EEE)', { locale: ko })} | 좌석 {emp.seat_number}
-                                        </div>
-                                        <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#2d3748' }}>
-                                            {emp.content}
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => onDelete(emp.id)}
-                                        style={{ background: '#fff5f5', color: '#e53e3e', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                                    >
-                                        <Trash size={18} />
-                                    </button>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -467,6 +627,7 @@ const IncomingEmployeeModal = ({ incomingEmployees, onAdd, onUpdate, onDelete, o
         document.body
     );
 };
+
 
 const StaffDailyAttendance = ({ onBack }) => {
     const [today] = useState(new Date());
@@ -1350,13 +1511,10 @@ const StaffDailyAttendance = ({ onBack }) => {
             {/* Incoming Employees Modal */}
             {showIncomingModal && (
                 <IncomingEmployeeModal
-                    incomingEmployees={incomingEmployees}
-                    onAdd={addIncomingEmployee}
-                    onUpdate={updateIncomingEmployee}
-                    onDelete={deleteIncomingEmployee}
                     onClose={() => setShowIncomingModal(false)}
                 />
             )}
+
 
             {/* Bottom Control Bar - Restored and Optimized */}
             <div style={{
