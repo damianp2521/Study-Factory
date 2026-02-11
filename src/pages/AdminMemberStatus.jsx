@@ -82,7 +82,7 @@ const AdminMemberStatus = ({ onBack }) => {
             // 1. Fetch Users
             const [usersRes, pendingRes] = await Promise.all([
                 supabase.from('authorized_users').select('*').order('name', { ascending: true }),
-                supabase.from('pending_registrations').select('*').order('name', { ascending: true })
+                supabase.from('pending_registrations').select('*').is('linked_user_id', null).order('name', { ascending: true })
             ]);
 
             if (usersRes.error) throw usersRes.error;

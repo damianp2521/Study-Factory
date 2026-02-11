@@ -84,6 +84,7 @@ const AdminMemberRegister = ({ onBack }) => {
             const { data, error } = await supabase
                 .from('pending_registrations')
                 .select('*')
+                .is('linked_user_id', null)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
