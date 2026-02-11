@@ -1,5 +1,8 @@
--- Update handle_new_user trigger function to transfer ALL pending data
--- BUT KEEP the pending_registration record, just link it to the new user
+-- 1. Add linked_user_id column to pending_registrations
+ALTER TABLE public.pending_registrations
+ADD COLUMN IF NOT EXISTS linked_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- 2. Update handle_new_user trigger function
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 DECLARE
