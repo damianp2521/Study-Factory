@@ -861,11 +861,9 @@ const StaffDailyAttendance = ({ onBack }) => {
             setPendingTodos(todosByPending);
 
             const filteredPending = (pendingRes.data || []).filter(emp => {
-                const todos = todosByPending[emp.id] || [];
-                const allComplete = todos.length === 4 && todos.every(t => t.status === 'completed');
                 const startDatePassed = emp.expected_start_date && emp.expected_start_date <= todayStr;
-                // Show if: start date hasn't passed OR todos not all complete
-                return !startDatePassed || !allComplete;
+                // Show only if start date hasn't passed yet
+                return !startDatePassed;
             });
             setIncomingEmployees(filteredPending);
 
