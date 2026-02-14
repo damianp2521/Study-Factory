@@ -3,8 +3,6 @@ import { ChevronLeft, Trash2, Edit2, Save, X } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_LIST } from '../constants/branches';
 
-import { getTodayString } from '../utils/dateUtils';
-
 const AdminMemberRegister = ({ onBack }) => {
     console.log('AdminMemberRegister mounting');
     const [name, setName] = useState('');

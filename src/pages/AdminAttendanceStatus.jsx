@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Calendar, User, Search } from 'lucide-react';
+import { ChevronLeft, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
 import { getTodayString } from '../utils/dateUtils';
@@ -7,11 +7,10 @@ import { getTodayString } from '../utils/dateUtils';
 const AdminAttendanceStatus = ({ onBack }) => {
     const [selectedDate, setSelectedDate] = useState(getTodayString());
     const [showCalendar, setShowCalendar] = useState(false);
-    const [branch, setBranch] = useState('망미점'); // Default Mangmi
+    const [branch] = useState('망미점'); // Default Mangmi
     const [users, setUsers] = useState([]);
     const [attendanceData, setAttendanceData] = useState({}); // user_id -> set of periods
     const [vacationData, setVacationData] = useState({}); // user_id -> vacation request
-    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const updateDate = () => {
@@ -27,7 +26,6 @@ const AdminAttendanceStatus = ({ onBack }) => {
     }, [selectedDate, branch]);
 
     const fetchData = async () => {
-        setLoading(true);
         try {
             // 1. Fetch Users
             const { data: userData, error: userError } = await supabase
@@ -74,8 +72,6 @@ const AdminAttendanceStatus = ({ onBack }) => {
         } catch (error) {
             console.error('Error fetching admin attendance:', error);
             alert('데이터를 불러오지 못했습니다.');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -207,7 +203,6 @@ const AdminAttendanceStatus = ({ onBack }) => {
             {/* Table Body */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 {users.map(user => {
-                    const hasApp = verification(user.id); // Placeholder for verification logic if needed
                     return (
                         <div key={user.id} style={{ display: 'flex', height: '50px', borderBottom: '1px solid #edf2f7' }}>
                             <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRight: '1px solid #edf2f7', background: '#fafafa', fontSize: '0.8rem', color: '#a0aec0' }}>
@@ -228,8 +223,6 @@ const AdminAttendanceStatus = ({ onBack }) => {
             </div>
         </div>
     );
-
-    function verification(id) { return true; } // Dummy
 };
 
 export default AdminAttendanceStatus;

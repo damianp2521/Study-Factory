@@ -9,8 +9,6 @@ const MonthlyLeaveStatus = () => {
     const [searchParams] = useSearchParams();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [leaves, setLeaves] = useState([]);
-    // const [loading, setLoading] = useState(true);
-    const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedBranch, setSelectedBranch] = useState('전체 지점');
     const [branchOptions, setBranchOptions] = useState(['전체 지점', ...BRANCH_LIST, '미지정']);
@@ -75,7 +73,6 @@ const MonthlyLeaveStatus = () => {
 
     // 2. Fetch Leaves
     const fetchMonthlyLeaves = async () => {
-        setLoading(true);
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth() + 1;
 
@@ -96,8 +93,6 @@ const MonthlyLeaveStatus = () => {
             setLeaves(data || []);
         } catch (err) {
             console.error('Error fetching monthly leaves:', err);
-        } finally {
-            setLoading(false);
         }
     };
 

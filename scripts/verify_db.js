@@ -1,8 +1,38 @@
 
 import { createClient } from '@supabase/supabase-js';
+import fs from 'node:fs';
+import path from 'node:path';
 
-const SUPABASE_URL = 'https://sffydkaaevgbetzbnxes.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZnlka2FhZXZnYmV0emJueGVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczNjk0NzcsImV4cCI6MjA4Mjk0NTQ3N30.2N-2o8rN5Rb6yqu9Lfw9OyvX5qr9-7-jMBsd0If-62w';
+const readEnvValue = (key) => {
+    const direct = process.env[key];
+    if (direct) return direct;
+
+    try {
+        const envPath = path.resolve(process.cwd(), '.env');
+        const envText = fs.readFileSync(envPath, 'utf8');
+        const line = envText.split(/\r?\n/).find((row) => row.startsWith(`${key}=`));
+        return line ? line.slice(key.length + 1) : null;
+    } catch {
+        return null;
+    }
+};
+
+const SUPABASE_URL =
+    process.env.SUPABASE_URL ||
+    readEnvValue('SUPABASE_URL') ||
+    process.env.VITE_SUPABASE_URL ||
+    readEnvValue('VITE_SUPABASE_URL');
+
+const SUPABASE_ANON_KEY =
+    process.env.SUPABASE_ANON_KEY ||
+    readEnvValue('SUPABASE_ANON_KEY') ||
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    readEnvValue('VITE_SUPABASE_ANON_KEY');
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('Missing Supabase env values. Set SUPABASE_URL/SUPABASE_ANON_KEY or VITE_SUPABASE_*.');
+    process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

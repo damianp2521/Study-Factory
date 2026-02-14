@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify-db": "node scripts/verify_db.js",
+    "check-column": "node check_column.js",
+    "preflight": "node scripts/preflight.js",
+    "preflight:db": "node scripts/preflight.js --with-db"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",

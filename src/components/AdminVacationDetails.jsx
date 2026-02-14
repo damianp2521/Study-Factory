@@ -6,72 +6,85 @@ const AdminVacationDetails = ({ user, onBack }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [userVacations, setUserVacations] = useState([]);
     const [loading, setLoading] = useState(false);
-
-    // Safety check
-    if (!user || !user.id) return null;
+    const userId = user?.id ?? null;
 
     useEffect(() => {
-        fetchUserVacations();
-    }, [user.id, currentDate]); // Use user.id for stability
-
-    const fetchUserVacations = async () => {
-        setLoading(true);
-        try {
-            const y = currentDate.getFullYear();
-            const m = currentDate.getMonth();
-            const firstDay = new Date(y, m, 1);
-            const lastDay = new Date(y, m + 1, 0);
-
-            // Format as YYYY-MM-DD
-            const formatDate = (d) => {
-                const year = d.getFullYear();
-                const month = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            };
-
-            const queryDateStart = formatDate(firstDay);
-            const queryDateEnd = formatDate(lastDay);
-
-            // Parallel fetch
-            const [vacationRes, attendanceRes] = await Promise.all([
-                supabase
-                    .from('vacation_requests')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .gte('date', queryDateStart)
-                    .lte('date', queryDateEnd),
-                supabase
-                    .from('attendance_logs')
-                    .select('date, period, status')
-                    .eq('user_id', user.id)
-                    .not('status', 'is', null)
-                    .gte('date', queryDateStart)
-                    .lte('date', queryDateEnd)
-            ]);
-
-            if (vacationRes.error) throw vacationRes.error;
-            if (attendanceRes.error) throw attendanceRes.error;
-
-            // Merge
-            const merged = [
-                ...(vacationRes.data || []),
-                ...(attendanceRes.data || []).map(a => ({
-                    ...a,
-                    type: 'special',
-                    reason: a.status,
-                    // Ensure ID for key if missing
-                    id: `log-${a.date}-${a.period}`
-                }))
-            ];
-
-            setUserVacations(merged);
-        } catch (error) {
-            console.error('Error fetching vacations:', error);
-        } finally {
+        if (!userId) {
+            setUserVacations([]);
             setLoading(false);
+            return;
         }
-    };
+        let cancelled = false;
+        const fetchUserVacations = async () => {
+            setLoading(true);
+            try {
+                const y = currentDate.getFullYear();
+                const m = currentDate.getMonth();
+                const firstDay = new Date(y, m, 1);
+                const lastDay = new Date(y, m + 1, 0);
+
+                // Format as YYYY-MM-DD
+                const formatDate = (d) => {
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                };
+
+                const queryDateStart = formatDate(firstDay);
+                const queryDateEnd = formatDate(lastDay);
+
+                // Parallel fetch
+                const [vacationRes, attendanceRes] = await Promise.all([
+                    supabase
+                        .from('vacation_requests')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .gte('date', queryDateStart)
+                        .lte('date', queryDateEnd),
+                    supabase
+                        .from('attendance_logs')
+                        .select('date, period, status')
+                        .eq('user_id', userId)
+                        .not('status', 'is', null)
+                        .gte('date', queryDateStart)
+                        .lte('date', queryDateEnd)
+                ]);
+
+                if (vacationRes.error) throw vacationRes.error;
+                if (attendanceRes.error) throw attendanceRes.error;
+
+                // Merge
+                const merged = [
+                    ...(vacationRes.data || []),
+                    ...(attendanceRes.data || []).map(a => ({
+                        ...a,
+                        type: 'special',
+                        reason: a.status,
+                        // Ensure ID for key if missing
+                        id: `log-${a.date}-${a.period}`
+                    }))
+                ];
+
+                if (!cancelled) {
+                    setUserVacations(merged);
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    console.error('Error fetching vacations:', error);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchUserVacations();
+        return () => {
+            cancelled = true;
+        };
+    }, [userId, currentDate]);
 
     const days = useMemo(() => {
         const year = currentDate.getFullYear();
@@ -98,6 +111,8 @@ const AdminVacationDetails = ({ user, onBack }) => {
     const handleNextMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
     };
+
+    if (!userId) return null;
 
     const renderVacationBadges = (date) => {
         if (!date) return null;

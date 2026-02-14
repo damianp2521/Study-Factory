@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ClipboardList, Calendar, UserPlus, UserCheck, Pin } from 'lucide-react';
+import { ClipboardList, Calendar, UserPlus, UserCheck, Pin } from 'lucide-react';
 import { useDashboardNavigation } from '../../hooks/useDashboardNavigation';
 
 import AdminMemberRegister from '../../pages/AdminMemberRegister';
@@ -13,7 +13,7 @@ import AdminAttendanceStatus from '../../pages/AdminAttendanceStatus';
 import StaffAttendance from '../../pages/StaffAttendance';
 
 const AdminQuickMenu = () => {
-    const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
+    const { currentView, navigateTo } = useDashboardNavigation('grid');
 
     // Helper to wrap content with padding
     const renderWithPadding = (component) => (

@@ -1,16 +1,59 @@
-# React + Vite
+# 자격증공장 관리앱
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite + Supabase 기반의 운영 관리 앱입니다.
 
-Currently, two official plugins are available:
+## 기술 스택
+- React 19
+- Vite 7
+- Supabase (`@supabase/supabase-js`)
+- React Router
+- date-fns
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 실행
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## 빌드
+```bash
+npm run build
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 린트
+```bash
+npm run lint
+```
 
-## Expanding the ESLint configuration
+## 사전검증 (권장)
+배포 전 아래 명령으로 빌드/린트를 한 번에 확인합니다.
+```bash
+npm run preflight
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+DB 연결까지 확인하려면:
+```bash
+npm run preflight:db
+```
+
+## Supabase 확인 스크립트
+루트 `.env`의 값을 사용해서 DB 접근을 확인합니다.
+
+```bash
+node scripts/verify_db.js
+node check_column.js
+```
+
+필요한 환경변수:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+또는 동일 값의 서버용 키:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+
+## 운영 안전 가이드
+100명 이상 사용 환경 기준의 변경 절차는 아래 문서를 따릅니다.
+
+- `docs/SAFE_CHANGE_RUNBOOK.md`
+- `docs/SMOKE_CHECKLIST.md`

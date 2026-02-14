@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, CheckCircle, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { CheckCircle, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import EmbeddedCalendar from './EmbeddedCalendar';
-import { format, addMonths, subMonths, parseISO } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { getTodayString } from '../utils/dateUtils';
 import { ko } from 'date-fns/locale';
 
@@ -21,15 +21,8 @@ const InlineVacationRequest = () => {
     const [selectedMonth, setSelectedMonth] = useState(new Date());
     const [dbError, setDbError] = useState(false);
 
-    // Fetch all data
-    useEffect(() => {
-        if (user) {
-            fetchRequests();
-            fetchSpecialAttendance();
-        }
-    }, [user]);
-
-    const fetchRequests = async () => {
+    const fetchRequests = useCallback(async () => {
+        if (!user?.id) return;
         try {
             const { data, error } = await supabase
                 .from('vacation_requests')
@@ -42,9 +35,10 @@ const InlineVacationRequest = () => {
         } catch (err) {
             console.error('Error fetching requests:', err);
         }
-    };
+    }, [user?.id]);
 
-    const fetchSpecialAttendance = async () => {
+    const fetchSpecialAttendance = useCallback(async () => {
+        if (!user?.id) return;
         try {
             setDbError(false);
             const { data, error } = await supabase
@@ -63,7 +57,15 @@ const InlineVacationRequest = () => {
                 setDbError(true);
             }
         }
-    };
+    }, [user?.id]);
+
+    // Fetch all data
+    useEffect(() => {
+        if (user?.id) {
+            fetchRequests();
+            fetchSpecialAttendance();
+        }
+    }, [user?.id, fetchRequests, fetchSpecialAttendance]);
 
     const handleSubmit = async () => {
         if (!date) {
@@ -104,7 +106,6 @@ const InlineVacationRequest = () => {
 
             alert('휴가 신청이 완료되었습니다.');
             setDate(''); // Reset
-            fetchRequests(); // Refresh list
             fetchRequests(); // Refresh list
             // setViewMode('history'); - Removed
         } catch (err) {

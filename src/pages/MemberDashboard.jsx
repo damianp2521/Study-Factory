@@ -11,7 +11,7 @@ import DailyWorkPlan from '../components/DailyWorkPlan';
 
 const MemberDashboard = () => {
     const navigate = useNavigate();
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
 
     // Carousel State - Initialize from LocalStorage
     const [activeIndex, setActiveIndex] = useState(() => {

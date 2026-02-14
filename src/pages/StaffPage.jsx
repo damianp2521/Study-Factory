@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Edit, ArrowLeft, Inbox, Calendar } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { ArrowLeft, Inbox, Calendar } from 'lucide-react';
 
 const StaffPage = () => {
     const navigate = useNavigate();

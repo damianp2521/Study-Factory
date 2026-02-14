@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Trash2, Calendar, Play } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { addDays, startOfWeek, endOfWeek, format, nextMonday } from 'date-fns';
+import { addDays, startOfWeek, format, nextMonday } from 'date-fns';
 
 const AdminFixedLeaveManagement = ({ onBack }) => {
     const [requests, setRequests] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [lastGenerated, setLastGenerated] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -16,7 +15,6 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
     }, []);
 
     const fetchRequests = async () => {
-        setLoading(true);
         try {
             // Join with profiles to get name and branch
             const { data, error } = await supabase
@@ -33,8 +31,6 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
         } catch (err) {
             console.error(err);
             alert('목록을 불러오지 못했습니다.');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -66,7 +62,6 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
 
         if (!confirm(`이번 주 + 다음 주(${startDateStr} ~ ${endDateStr})의 고정 휴무를 생성하시겠습니까?\n(이미 존재하는 기록은 덮어씌워질 수 있습니다.)`)) return;
 
-        setLoading(true);
         try {
             const { data, error } = await supabase
                 .rpc('generate_fixed_leaves', {
@@ -84,8 +79,6 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
         } catch (err) {
             console.error(err);
             alert('생성 실패: ' + err.message);
-        } finally {
-            setLoading(false);
         }
     };
 

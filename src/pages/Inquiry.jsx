@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import PageTemplate from '../components/PageTemplate';
@@ -7,16 +7,13 @@ import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 const Inquiry = () => {
     const { user } = useAuth();
     const [inquiries, setInquiries] = useState([]);
-    // const [loading, setLoading] = useState(true);
-    // const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (user) {
-            fetchInquiries();
-        }
-    }, [user]);
-
-    const fetchInquiries = async () => {
+    const fetchInquiries = useCallback(async () => {
+        if (!user?.id) return;
+        setLoading(true);
+        setError(null);
         try {
             const { data, error } = await supabase
                 .from('inquiries')
@@ -43,7 +40,17 @@ const Inquiry = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (user?.id) {
+            fetchInquiries();
+            return;
+        }
+        setInquiries([]);
+        setError(null);
+        setLoading(false);
+    }, [user?.id, fetchInquiries]);
 
     const handleDelete = async (id) => {
         if (!window.confirm('정말 삭제하시겠습니까?')) return;
@@ -128,15 +135,27 @@ const Inquiry = () => {
     return (
         <PageTemplate title="문의하기" backPath="/memberdashboard">
             <div style={{ paddingBottom: '80px' }}>
+                {loading && (
+                    <div className="flex-center flex-col" style={{ padding: 'var(--spacing-xl) 0', opacity: 0.7 }}>
+                        <p>불러오는 중...</p>
+                    </div>
+                )}
+                {!loading && error && (
+                    <div className="glass-card" style={{ marginBottom: 'var(--spacing-md)', color: '#c53030' }}>
+                        {error}
+                    </div>
+                )}
                 {inquiries.length > 0 ? (
                     inquiries.map(item => (
                         <InquiryItem key={item.id} item={item} />
                     ))
                 ) : (
-                    <div className="flex-center flex-col" style={{ padding: 'var(--spacing-xl) 0', opacity: 0.5 }}>
-                        <MessageCircle size={48} style={{ marginBottom: 'var(--spacing-md)' }} />
-                        <p>작성된 문의 내역이 없습니다.</p>
-                    </div>
+                    !loading && (
+                        <div className="flex-center flex-col" style={{ padding: 'var(--spacing-xl) 0', opacity: 0.5 }}>
+                            <MessageCircle size={48} style={{ marginBottom: 'var(--spacing-md)' }} />
+                            <p>작성된 문의 내역이 없습니다.</p>
+                        </div>
+                    )
                 )}
             </div>
 
