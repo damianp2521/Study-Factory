@@ -317,8 +317,8 @@ const AdminMemberRegister = ({ onBack }) => {
 
             {/* Form */}
             <form onSubmit={handleAdd} style={{ marginBottom: '30px', background: 'white', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '15px' }}>
+                    <div style={{ minWidth: 0 }}>
                         <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>지점</label>
                         <select
                             value={branch}
@@ -328,7 +328,7 @@ const AdminMemberRegister = ({ onBack }) => {
                             {branches.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ minWidth: 0 }}>
                         <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>사원 구분</label>
                         <select
                             value={role}
@@ -342,8 +342,8 @@ const AdminMemberRegister = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div style={{ marginBottom: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 2, minWidth: 0 }}>
+                <div style={{ marginBottom: '15px', display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '10px' }}>
+                    <div style={{ minWidth: 0 }}>
                         <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>이름 (로그인 ID)</label>
                         <input
                             type="text"
@@ -353,7 +353,7 @@ const AdminMemberRegister = ({ onBack }) => {
                             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem', fontWeight: 'bold' }}
                         />
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ minWidth: 0 }}>
                         <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>좌석 번호</label>
                         <input
                             type="number"
@@ -365,8 +365,8 @@ const AdminMemberRegister = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '15px' }}>
+                    <div style={{ minWidth: 0 }}>
                         <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>입사예정일</label>
                         <input
                             type="date"
@@ -375,7 +375,7 @@ const AdminMemberRegister = ({ onBack }) => {
                             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }}
                         />
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ minWidth: 0 }}>
                         <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>준비 자격증</label>
                         <input
                             type="text"
@@ -464,20 +464,20 @@ const AdminMemberRegister = ({ onBack }) => {
                                         <button onClick={cancelEditPending} style={{ padding: '8px', background: '#e2e8f0', color: '#4a5568', border: 'none', borderRadius: '8px', cursor: 'pointer' }}><X size={18} /></button>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                                    <div style={{ minWidth: 0 }}>
                                         <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>이름</label>
                                         <input value={editPendingForm.name} onChange={(e) => setEditPendingForm({ ...editPendingForm, name: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
                                     </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ minWidth: 0 }}>
                                         <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>지점</label>
                                         <select value={editPendingForm.branch} onChange={(e) => setEditPendingForm({ ...editPendingForm, branch: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
                                             {BRANCH_LIST.map(b => <option key={b} value={b}>{b}</option>)}
                                         </select>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                                    <div style={{ minWidth: 0 }}>
                                         <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>구분</label>
                                         <select value={editPendingForm.role} onChange={(e) => setEditPendingForm({ ...editPendingForm, role: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }}>
                                             <option value="member">회원</option>
@@ -485,17 +485,17 @@ const AdminMemberRegister = ({ onBack }) => {
                                             <option value="admin">관리자</option>
                                         </select>
                                     </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ minWidth: 0 }}>
                                         <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>좌석</label>
                                         <input type="number" value={editPendingForm.seat_number} onChange={(e) => setEditPendingForm({ ...editPendingForm, seat_number: e.target.value })} placeholder="번호" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                                    <div style={{ minWidth: 0 }}>
                                         <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>입사예정일</label>
                                         <input type="date" value={editPendingForm.expected_start_date} onChange={(e) => setEditPendingForm({ ...editPendingForm, expected_start_date: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
                                     </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ minWidth: 0 }}>
                                         <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>준비 자격증</label>
                                         <input type="text" value={editPendingForm.target_certificate} onChange={(e) => setEditPendingForm({ ...editPendingForm, target_certificate: e.target.value })} placeholder="자격증명" list="cert-options-edit" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
                                         <datalist id="cert-options-edit">
