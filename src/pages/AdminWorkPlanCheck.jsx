@@ -13,7 +13,7 @@ const AdminWorkPlanCheck = ({ onBack }) => {
     const [selectedMember, setSelectedMember] = useState(null);
 
     useEffect(() => {
-        fetchPublicMembers();
+        fetchMembersForAdmin();
         fetchCertOptions();
     }, []);
 
@@ -26,11 +26,20 @@ const AdminWorkPlanCheck = ({ onBack }) => {
         }
     };
 
-    const fetchPublicMembers = async () => {
+    const fetchMembersForAdmin = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase.rpc('get_public_members');
-            if (error) throw error;
+            // Prefer admin-only RPC. Fallback keeps page usable before DB migration is applied.
+            const { data, error } = await supabase.rpc('get_all_members_for_admin');
+
+            if (error) {
+                console.warn('get_all_members_for_admin RPC failed. Fallback to get_public_members.', error);
+                const { data: fallbackData, error: fallbackError } = await supabase.rpc('get_public_members');
+                if (fallbackError) throw fallbackError;
+                setMembers(fallbackData || []);
+                return;
+            }
+
             setMembers(data || []);
         } catch (error) {
             console.error('Error fetching members:', error);
@@ -156,7 +165,7 @@ const AdminWorkPlanCheck = ({ onBack }) => {
                     <div style={{ textAlign: 'center', marginTop: '40px', color: '#a0aec0' }}>사원 목록 로딩 중...</div>
                 ) : filteredMembers.length === 0 ? (
                     <div style={{ textAlign: 'center', marginTop: '40px', color: '#a0aec0' }}>
-                        검색 결과가 없거나 작업 계획이 공유된 멤버가 없습니다.
+                        검색 조건에 맞는 멤버가 없습니다.
                     </div>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
@@ -187,6 +196,19 @@ const AdminWorkPlanCheck = ({ onBack }) => {
                                     <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#2d3748', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         {member.name}
                                         {member.branch && <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: '#718096', background: '#f7fafc', padding: '2px 8px', borderRadius: '4px' }}>{member.branch}</span>}
+                                        {typeof member.is_public_todo === 'boolean' && (
+                                            <span style={{
+                                                fontSize: '0.75rem',
+                                                fontWeight: 'bold',
+                                                color: member.is_public_todo ? '#2f855a' : '#9b2c2c',
+                                                background: member.is_public_todo ? '#f0fff4' : '#fff5f5',
+                                                border: `1px solid ${member.is_public_todo ? '#9ae6b4' : '#feb2b2'}`,
+                                                padding: '2px 8px',
+                                                borderRadius: '999px'
+                                            }}>
+                                                {member.is_public_todo ? '공개' : '비공개'}
+                                            </span>
+                                        )}
                                     </div>
                                     <div style={{ fontSize: '0.85rem', color: '#3182ce', marginTop: '4px' }}>
                                         {(member.certificates && member.certificates.length > 0) ? member.certificates.join(', ') : '준비중인 자격증 없음'}
