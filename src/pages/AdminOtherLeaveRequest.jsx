@@ -226,7 +226,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
 
                 if (error) throw error;
 
-                alert('매주 고정 일정이 등록되었습니다.\n[고정 기타 휴무 관리] 메뉴에서 확인 및 자동 생성을 할 수 있습니다.');
+                alert('매주 고정 일정이 등록되었습니다.\n[고정 기타 휴무 관리] 메뉴에서 확인할 수 있으며, 매주 월요일 00:00 (KST)에 자동 반영됩니다.');
                 // Don't clear form immediately? Or clear it? user might want to apply one-off too?
                 // Clear for safety
                 setSelectedDates([]);

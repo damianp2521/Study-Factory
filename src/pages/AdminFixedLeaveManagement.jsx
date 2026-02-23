@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Trash2, Calendar, Play } from 'lucide-react';
+import { ChevronLeft, Trash2, Play } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { addDays, startOfWeek, format, nextMonday } from 'date-fns';
 
@@ -136,11 +136,14 @@ const AdminFixedLeaveManagement = ({ onBack }) => {
                             }}
                         >
                             <Play size={14} />
-                            다음주 자동 생성
+                            수동 생성
                         </button>
+                        <div style={{ fontSize: '0.7rem', color: '#4a5568' }}>
+                            매주 월요일 00:00 (KST) 자동 생성
+                        </div>
                         {lastGenerated && (
                             <div style={{ fontSize: '0.7rem', color: '#718096' }}>
-                                {lastGenerated} 생성됨
+                                수동 실행: {lastGenerated}
                             </div>
                         )}
                     </div>
