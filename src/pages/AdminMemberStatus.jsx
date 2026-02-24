@@ -120,6 +120,18 @@ const AdminMemberStatus = ({ onBack }) => {
         }
     };
 
+    const tryDeleteUserCompletely = async (id) => (
+        supabase.rpc('delete_user_completely', { target_user_id: id })
+    );
+
+    const isSuggestionsForeignKeyError = (error) => {
+        const message = `${error?.message || ''} ${error?.details || ''}`;
+        return message.includes('suggestions_user_id_fkey') || (
+            message.includes('violates foreign key constraint') &&
+            message.includes('"suggestions"')
+        );
+    };
+
     const handleDelete = async (id, name, type) => {
         if (type === 'pending') {
             if (!window.confirm(`${name} (가입대기) 님을 삭제하시겠습니까?`)) return;
@@ -138,11 +150,21 @@ const AdminMemberStatus = ({ onBack }) => {
         if (!window.confirm(`${name} 님을 정말 삭제하시겠습니까?\n삭제 후에는 로그인이 불가능하며, 계정 정보가 완전히 제거됩니다.`)) return;
 
         try {
-            const { error } = await supabase.rpc('delete_user_completely', {
-                target_user_id: id
-            });
+            const { error } = await tryDeleteUserCompletely(id);
 
-            if (error) throw error;
+            if (error) {
+                if (!isSuggestionsForeignKeyError(error)) throw error;
+
+                const { error: cleanupError } = await supabase
+                    .from('suggestions')
+                    .delete()
+                    .eq('user_id', id);
+
+                if (cleanupError) throw cleanupError;
+
+                const { error: retryError } = await tryDeleteUserCompletely(id);
+                if (retryError) throw retryError;
+            }
 
             fetchUsers();
             alert('삭제되었습니다.');
