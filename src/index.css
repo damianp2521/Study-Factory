@@ -203,6 +203,13 @@ input[type="password"] {
   max-width: 100%;
 }
 
+/* Prevent iOS focus zoom on text controls */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 /* Ensure Native Date Picker UI */
 input[type="date"] {
   /* Do not strip appearance for date inputs to keep calendar icon */
