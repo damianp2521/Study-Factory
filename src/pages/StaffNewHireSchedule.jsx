@@ -233,7 +233,7 @@ const StaffNewHireSchedule = ({ onBack }) => {
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                 <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
                     <ChevronLeft size={24} color="#2d3748" />
@@ -327,7 +327,7 @@ const StaffNewHireSchedule = ({ onBack }) => {
                 </div>
             </div>
 
-            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '12px', maxHeight: '42vh', overflowY: 'auto', marginBottom: '6px' }}>
+            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '12px', marginBottom: '6px' }}>
                 <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#2d3748' }}>체크리스트</h4>
                 {loading ? (
                     <div style={{ textAlign: 'center', color: '#a0aec0', padding: '16px 0' }}>불러오는 중...</div>
