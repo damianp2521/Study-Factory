@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2, ChevronDown, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 
 const StaffTaskBoard = () => {
     const { user } = useAuth();
@@ -86,14 +87,46 @@ const StaffTaskBoard = () => {
 
             if (suggestionError) throw suggestionError;
 
-            // 3. Merge & Format
-            const formattedTodos = (todos || []).map(t => ({
+            // 3. Fetch Pending Registrations for "신규 있음" notices
+            const { data: pendingRegs, error: pendingError } = await supabase
+                .from('pending_registrations')
+                .select('id, branch, expected_start_date')
+                .is('linked_user_id', null);
+
+            if (pendingError) throw pendingError;
+
+            // 4. Merge & Format
+            const formattedTodos = (todos || [])
+                .filter(t => !t.pending_registration_id)
+                .map(t => ({
                 ...t,
                 type: 'staff',
-                authorName: t.pending_registration_id ? '시스템' : (t.author?.name || '알수없음'),
+                authorName: t.author?.name || '알수없음',
                 branch: t.branch || t.author?.branch || '알수없음', // Use stored branch, fallback to author's current branch
                 completerName: t.completer?.name
-            }));
+                }));
+
+            const groupedNewHireByDate = {};
+            (pendingRegs || []).forEach((reg) => {
+                if (!reg.expected_start_date) return;
+                const key = `${reg.branch || '알수없음'}_${reg.expected_start_date}`;
+                if (!groupedNewHireByDate[key]) {
+                    const shortDate = format(new Date(`${reg.expected_start_date}T00:00:00`), 'M/d');
+                    groupedNewHireByDate[key] = {
+                        id: key,
+                        content: `${shortDate} 신규 있음`,
+                        is_urgent: false,
+                        status: 'pending',
+                        created_at: `${reg.expected_start_date}T00:00:00`,
+                        type: 'new_hire_notice',
+                        authorName: '시스템',
+                        branch: reg.branch || '알수없음',
+                        completerName: null
+                    };
+                }
+            });
+
+            const newHireNotices = Object.values(groupedNewHireByDate);
 
             const formattedSuggestions = (suggestions || []).map(s => ({
                 id: s.id, // suggestion id
@@ -107,7 +140,7 @@ const StaffTaskBoard = () => {
                 completerName: s.completer?.name // Now fetching completer name from newly added relation
             }));
 
-            setTasks([...formattedTodos, ...formattedSuggestions]);
+            setTasks([...newHireNotices, ...formattedTodos, ...formattedSuggestions]);
         } catch (error) {
             console.error('Error fetching tasks:', error);
         } finally {
@@ -151,6 +184,8 @@ const StaffTaskBoard = () => {
     // Toggle Complete
     const handleToggleComplete = async (task) => {
         try {
+            if (task.type === 'new_hire_notice') return;
+
             if (task.type === 'staff') {
                 const newStatus = task.status === 'completed' ? 'pending' : 'completed';
                 const completedBy = newStatus === 'completed' ? user.id : null;
@@ -263,6 +298,7 @@ const StaffTaskBoard = () => {
             if (a.status === 'pending') {
                 const getPriority = (t) => {
                     if (t.type === 'staff' && t.is_urgent) return 3;
+                    if (t.type === 'new_hire_notice') return 2;
                     if (t.type === 'suggestion') return 2;
                     return 1;
                 };
@@ -281,6 +317,9 @@ const StaffTaskBoard = () => {
         if (task.status === 'completed') {
             return { borderColor: '#e2e8f0', bg: '#f8fafc', text: '#718096' }; // Darker gray for completed
         }
+        if (task.type === 'new_hire_notice') {
+            return { borderColor: '#f6e05e', bg: '#fffbeb', text: '#975a16' }; // Yellow
+        }
         if (task.type === 'staff' && task.is_urgent) {
             return { borderColor: '#feb2b2', bg: '#fff5f5', text: '#c53030' }; // Red
         }
@@ -292,6 +331,7 @@ const StaffTaskBoard = () => {
 
     // Check Delete/Edit Permission Helper (same rules)
     const canUserModify = (task) => {
+        if (task.type === 'new_hire_notice') return false;
         const isAdmin = user.role === 'admin' || user.role === 'manager';
         if (isAdmin) return true;
 
@@ -489,6 +529,7 @@ const StaffTaskBoard = () => {
                         ) : (
                             sortedTasks.map(task => {
                                 const style = getTaskStyle(task);
+                                const isNotice = task.type === 'new_hire_notice';
                                 const isCompleted = task.status === 'completed';
                                 const canModify = canUserModify(task);
                                 const isEditing = editingTask?.id === task.id && editingTask?.type === task.type;
@@ -509,21 +550,23 @@ const StaffTaskBoard = () => {
                                     >
                                         {/* Checkbox */}
                                         <div
-                                            onClick={() => handleToggleComplete(task)}
+                                            onClick={() => {
+                                                if (!isNotice) handleToggleComplete(task);
+                                            }}
                                             style={{
                                                 minWidth: '20px',
                                                 height: '20px',
                                                 borderRadius: '5px',
-                                                border: `2px solid ${isCompleted ? '#cbd5e0' : style.text}`,
+                                                border: `2px solid ${isNotice ? style.text : (isCompleted ? '#cbd5e0' : style.text)}`,
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                cursor: 'pointer',
+                                                cursor: isNotice ? 'default' : 'pointer',
                                                 flexShrink: 0,
-                                                backgroundColor: isCompleted ? '#cbd5e0' : 'white'
+                                                backgroundColor: isNotice ? 'transparent' : (isCompleted ? '#cbd5e0' : 'white')
                                             }}
                                         >
-                                            {isCompleted && <Check size={12} color="white" />}
+                                            {isNotice ? <Calendar size={12} color={style.text} /> : (isCompleted && <Check size={12} color="white" />)}
                                         </div>
 
                                         {/* Content - flexible width, wraps when needed */}
@@ -561,7 +604,7 @@ const StaffTaskBoard = () => {
                                                 <div style={{
                                                     fontSize: '0.9rem',
                                                     color: isCompleted ? '#718096' : '#2d3748',
-                                                    textDecoration: isCompleted ? 'line-through' : 'none',
+                                                    textDecoration: isCompleted && !isNotice ? 'line-through' : 'none',
                                                     wordBreak: 'break-word',
                                                     lineHeight: '1.4'
                                                 }}>
@@ -571,7 +614,7 @@ const StaffTaskBoard = () => {
                                         </div>
 
                                         {/* Right side: Author + Action Buttons */}
-                                        {!isEditing && (
+                                        {!isEditing && !isNotice && (
                                             <div style={{
                                                 display: 'flex',
                                                 alignItems: 'center',

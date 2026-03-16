@@ -942,14 +942,14 @@ const StaffDailyAttendance = ({ onBack }) => {
             const startDate = dateStr;
             const endDate = dateStr;
 
-            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, todosRes] = await Promise.all([
+            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, beverageRes] = await Promise.all([
                 supabase.from('profiles').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
                 supabase.from('attendance_memos').select('*').eq('date', dateStr).order('created_at', { ascending: true }),
                 supabase.from('member_memos').select('*').order('created_at', { ascending: true }),
                 supabase.from('pending_registrations').select('*').eq('branch', branch).order('expected_start_date', { ascending: true }),
-                supabase.from('staff_todos').select('*').not('pending_registration_id', 'is', null)
+                supabase.from('beverage_options').select('id, name')
             ]);
 
             if (userRes.error) throw userRes.error;
@@ -984,26 +984,30 @@ const StaffDailyAttendance = ({ onBack }) => {
             (vacRes.data || []).forEach(v => vacMap[`${v.user_id}_${v.date}`] = v);
             setVacationData(vacMap);
 
-            setDailyMemos(dailyMemoRes.data || []);
+            const beverageNameMap = {};
+            (beverageRes.data || []).forEach((opt) => {
+                beverageNameMap[String(opt.id)] = opt.name;
+            });
+
+            const systemIncomingMemos = (pendingRes.data || [])
+                .filter((emp) => emp.expected_start_date === dateStr)
+                .map((emp) => {
+                    const beverageNames = [emp.selection_1, emp.selection_2, emp.selection_3]
+                        .map((id) => beverageNameMap[String(id)])
+                        .filter(Boolean);
+                    const seatText = emp.seat_number ? `${emp.seat_number}번 ` : '';
+                    const plaqueText = emp.target_certificate || emp.name;
+                    const beverageText = beverageNames.length > 0 ? beverageNames.join(', ') : '-';
+
+                    return {
+                        id: `incoming_${emp.id}_${dateStr}`,
+                        content: `신규 ${seatText}${emp.name}(${plaqueText}) ${beverageText}`.trim(),
+                        isSystemIncoming: true
+                    };
+                });
+
+            setDailyMemos([...systemIncomingMemos, ...(dailyMemoRes.data || [])]);
             setMemberMemos(memberMemoRes.data || []);
-
-            // Filter pending employees: only show if start date hasn't passed OR todos not all complete
-            const todayStr = format(new Date(), 'yyyy-MM-dd');
-            const todosByPending = {};
-            (todosRes.data || []).forEach(todo => {
-                if (!todosByPending[todo.pending_registration_id]) {
-                    todosByPending[todo.pending_registration_id] = [];
-                }
-                todosByPending[todo.pending_registration_id].push(todo);
-            });
-            setPendingTodos(todosByPending);
-
-            const filteredPending = (pendingRes.data || []).filter(emp => {
-                const startDatePassed = emp.expected_start_date && emp.expected_start_date <= todayStr;
-                // Show only if start date hasn't passed yet
-                return !startDatePassed;
-            });
-            setIncomingEmployees(filteredPending);
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -1601,28 +1605,6 @@ const StaffDailyAttendance = ({ onBack }) => {
 
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, minWidth: 0 }}>
                         <button
-                            onClick={() => setShowIncomingModal(true)}
-                            style={{
-                                background: '#e6fffa', border: '1px solid #b2f5ea', borderRadius: '16px',
-                                padding: '6px 10px', fontSize: 'clamp(0.6rem, 2.5vw, 0.85rem)', color: '#267E82', fontWeight: 'bold',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer',
-                                height: '32px', whiteSpace: 'nowrap', flexShrink: 1, minWidth: 0
-                            }}
-                        >
-                            <UserPlus size={14} style={{ flexShrink: 0 }} />
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>입사예정자 관리</span>
-                            {incomingEmployees.length > 0 && (
-                                <span style={{
-                                    color: '#267E82', background: 'white', width: '18px', height: '18px',
-                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '0.7rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', flexShrink: 0
-                                }}>
-                                    {incomingEmployees.length}
-                                </span>
-                            )}
-                        </button>
-
-                        <button
                             onClick={() => setShowMemoModal(true)}
                             style={{
                                 background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
@@ -1707,51 +1689,6 @@ const StaffDailyAttendance = ({ onBack }) => {
                                         <div style={{ display: 'flex', position: 'relative' }}>
                                             {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />}
                                             {daysInView.map(date => {
-                                                const incoming = incomingEmployees.find(i => i.seat_number === user.seat_number);
-                                                let showIncoming = false;
-                                                let incomingColor = '#fefcbf'; // Yellow by default (todos incomplete)
-                                                let incomingTextColor = '#b7791f';
-
-                                                if (incoming) {
-                                                    const todos = pendingTodos[incoming.id] || [];
-                                                    const allComplete = todos.length === 4 && todos.every(t => t.status === 'completed');
-
-                                                    if (allComplete) {
-                                                        // All todos complete - show green
-                                                        incomingColor = '#c6f6d5';
-                                                        incomingTextColor = '#2f855a';
-                                                    }
-                                                    // Always show until start date passes
-                                                    showIncoming = true;
-                                                }
-
-                                                if (showIncoming) {
-                                                    const dateStr = incoming.expected_start_date ? format(new Date(incoming.expected_start_date), 'M.d(EEE)', { locale: ko }) : '';
-                                                    const seatStr = incoming.seat_number ? `${incoming.seat_number}번` : '';
-                                                    const certStr = incoming.target_certificate || '';
-                                                    const incomingText = `${dateStr} ${seatStr} ${incoming.name} ${certStr}`.trim();
-
-                                                    // Calculate font size based on text length to fit in one line
-                                                    const baseFontSize = 0.9 * scale;
-                                                    const textLen = incomingText.length;
-                                                    // Reduce font size for longer text
-                                                    const adjustedFontSize = textLen > 25 ? Math.max(baseFontSize * (25 / textLen), baseFontSize * 0.5) : baseFontSize;
-
-                                                    return (
-                                                        <div key={format(date, 'yyyy-MM-dd')} style={{
-                                                            display: 'flex', height: ROW_HEIGHT, width: DAY_WIDTH,
-                                                            background: incomingColor, color: incomingTextColor,
-                                                            alignItems: 'center', justifyContent: 'center',
-                                                            fontWeight: 'bold', fontSize: `${adjustedFontSize}rem`,
-                                                            borderBottom: '1px solid #e2e8f0',
-                                                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                                                            padding: '0 5px', boxSizing: 'border-box'
-                                                        }}>
-                                                            {incomingText}
-                                                        </div>
-                                                    );
-                                                }
-
                                                 return (
                                                     <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
                                                         {[1, 2, 3, 4, 5, 6, 7].map(p => (
@@ -1814,9 +1751,11 @@ const StaffDailyAttendance = ({ onBack }) => {
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 {dailyMemos.length === 0 && <li style={{ color: '#a0aec0', textAlign: 'center' }}>등록된 참고사항이 없습니다.</li>}
                                 {dailyMemos.map((memo, idx) => (
-                                    <li key={memo.id} style={{ background: 'white', padding: '12px', borderRadius: '12px', fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+                                    <li key={memo.id} style={{ background: memo.isSystemIncoming ? '#fffaf0' : 'white', padding: '12px', borderRadius: '12px', fontSize: '0.95rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1 }}><span style={{ fontWeight: 'bold', color: '#3182ce', minWidth: '20px' }}>{idx + 1}.</span><span style={{ color: '#4a5568', wordBreak: 'break-all', lineHeight: 1.4 }}>{memo.content}</span></div>
-                                        <button onClick={() => deleteDailyMemo(memo.id)} style={{ background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px', fontWeight: 'bold' }}>삭제</button>
+                                        {!memo.isSystemIncoming && (
+                                            <button onClick={() => deleteDailyMemo(memo.id)} style={{ background: '#fff5f5', color: '#e53e3e', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', cursor: 'pointer', marginLeft: '10px', fontWeight: 'bold' }}>삭제</button>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -1840,14 +1779,6 @@ const StaffDailyAttendance = ({ onBack }) => {
                 onSubmit={handleStatusSubmit}
                 onFixedSubmit={handleFixedStatusSubmit}
             />
-
-            {/* Incoming Employees Modal */}
-            {showIncomingModal && (
-                <IncomingEmployeeModal
-                    onClose={() => setShowIncomingModal(false)}
-                />
-            )}
-
 
             {/* Bottom Control Bar - Restored and Optimized */}
             <div style={{

@@ -376,12 +376,12 @@ const AdminMemberRegister = ({ onBack }) => {
                         />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                        <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>준비 자격증</label>
+                        <label style={{ display: 'block', fontSize: '0.9rem', color: '#718096', marginBottom: '5px' }}>명패 내용</label>
                         <input
                             type="text"
                             value={targetCertificate}
                             onChange={(e) => setTargetCertificate(e.target.value)}
-                            placeholder="자격증명 입력 또는 선택"
+                            placeholder="명패 문구 입력 또는 선택"
                             list="cert-options-list"
                             style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '1rem' }}
                         />
@@ -496,8 +496,8 @@ const AdminMemberRegister = ({ onBack }) => {
                                         <input type="date" value={editPendingForm.expected_start_date} onChange={(e) => setEditPendingForm({ ...editPendingForm, expected_start_date: e.target.value })} style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
                                     </div>
                                     <div style={{ minWidth: 0 }}>
-                                        <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>준비 자격증</label>
-                                        <input type="text" value={editPendingForm.target_certificate} onChange={(e) => setEditPendingForm({ ...editPendingForm, target_certificate: e.target.value })} placeholder="자격증명" list="cert-options-edit" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
+                                        <label style={{ fontSize: '0.8rem', color: '#718096', display: 'block', marginBottom: '4px' }}>명패 내용</label>
+                                        <input type="text" value={editPendingForm.target_certificate} onChange={(e) => setEditPendingForm({ ...editPendingForm, target_certificate: e.target.value })} placeholder="명패 문구" list="cert-options-edit" style={{ width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e0' }} />
                                         <datalist id="cert-options-edit">
                                             {certOptions.map(opt => (<option key={opt.id} value={opt.name} />))}
                                         </datalist>

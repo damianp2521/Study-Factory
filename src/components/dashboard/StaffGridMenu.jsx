@@ -12,6 +12,7 @@ import StaffSeatManagement from '../../pages/StaffSeatManagement';
 import StaffBeverageManagement from '../../pages/StaffBeverageManagement';
 import StaffBeverageOrderList from '../../pages/StaffBeverageOrderList';
 import StaffBeverageServingSheet from '../../pages/StaffBeverageServingSheet';
+import StaffNewHireSchedule from '../../pages/StaffNewHireSchedule';
 
 const StaffGridMenu = () => {
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
@@ -96,6 +97,7 @@ const StaffGridMenu = () => {
     if (currentView === 'beverage_management') return renderWithPadding(<StaffBeverageManagement onBack={goBack} />);
     if (currentView === 'beverage_order_list') return renderWithPadding(<StaffBeverageOrderList onBack={goBack} />);
     if (currentView === 'beverage_serving_sheet') return renderWithPadding(<StaffBeverageServingSheet onBack={goBack} />);
+    if (currentView === 'new_hire_schedule') return renderWithPadding(<StaffNewHireSchedule onBack={goBack} />);
 
     // Grid View (Categorized Structure)
     return (
@@ -133,6 +135,13 @@ const StaffGridMenu = () => {
                             <Coffee size={24} />
                         </div>
                         <span style={labelStyle}>음료 서빙표</span>
+                    </button>
+
+                    <button onClick={() => navigateTo('new_hire_schedule')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#fffaf0', color: '#d69e2e' }}>
+                            <UserCheck size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>신규 출근<br />일정</span>
                     </button>
                 </div>
             </div>
