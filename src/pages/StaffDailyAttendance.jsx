@@ -1,15 +1,31 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search, UserPlus, CheckSquare, Square, Trash, Save, CornerDownLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 // Special attendance statuses
-const SPECIAL_STATUSES = ['지각', '병원', '외출', '쉼', '운동', '알바', '스터디', '집공', '개인', '아픔', '모의', '시험', '그만둠', '늦잠', '교회'];
+const SPECIAL_STATUSES = ['지각', '병원', '외출', '쉼', '운동', '알바', '스터디', '개인', '모의', '그만둠', '늦잠', '교회'];
+const VACATION_STATUS_KEYS = ['vacation_full', 'vacation_half_am', 'vacation_half_pm', 'vacation_cancel'];
 
 // Status Selection Popup
-const StatusPopup = ({ onSelect, onClose }) => {
+const StatusPopup = ({
+    popup,
+    onClose,
+    onTogglePeriod,
+    onReasonSelect,
+    onCustomReasonChange,
+    onSubmit,
+    onFixedSubmit
+}) => {
+    if (!popup.open) return null;
+
+    const { user, selectedPeriods, selectedReason, customReason } = popup;
+    const isAllSelected = selectedPeriods.length === 7;
+    const isSelected = (reason) => selectedReason === reason;
+
     return createPortal(
         <div
             style={{
@@ -22,7 +38,8 @@ const StatusPopup = ({ onSelect, onClose }) => {
                 zIndex: 9999,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                padding: '16px'
             }}
             onClick={onClose}
         >
@@ -32,37 +49,124 @@ const StatusPopup = ({ onSelect, onClose }) => {
                     background: 'white',
                     borderRadius: '16px',
                     padding: '20px',
-                    width: '280px',
+                    width: 'min(430px, calc(100vw - 24px))',
+                    maxHeight: '85vh',
+                    overflowY: 'auto',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
                 }}
             >
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '15px', textAlign: 'center' }}>
-                    출석 상태 선택
+                    {user?.name || ''} 출석 상태 선택
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                    {SPECIAL_STATUSES.map(status => (
+
+                <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>교시</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+                        {[1, 2, 3, 4, 5, 6, 7].map((p) => (
+                            <button
+                                key={p}
+                                onClick={() => onTogglePeriod(p)}
+                                style={{
+                                    padding: '10px 0',
+                                    borderRadius: '8px',
+                                    border: selectedPeriods.includes(p) ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                                    background: selectedPeriods.includes(p) ? '#ebf8ff' : 'white',
+                                    color: selectedPeriods.includes(p) ? '#2c5282' : '#a0aec0',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                {p}
+                            </button>
+                        ))}
                         <button
-                            key={status}
-                            onClick={() => onSelect(status)}
+                            onClick={() => onTogglePeriod('all')}
                             style={{
-                                padding: '12px 8px', borderRadius: '10px',
-                                border: '1px solid #e2e8f0', background: '#c6f6d5',
-                                color: '#c53030', fontWeight: 'bold', fontSize: '0.9rem',
-                                cursor: 'pointer', transition: 'transform 0.1s'
+                                gridColumn: 'span 7',
+                                marginTop: '4px',
+                                padding: '10px',
+                                borderRadius: '8px',
+                                border: isAllSelected ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                                background: isAllSelected ? '#ebf8ff' : 'white',
+                                color: isAllSelected ? '#2c5282' : '#a0aec0',
+                                fontWeight: 'bold',
+                                cursor: 'pointer'
                             }}
                         >
-                            {status}
+                            전체 선택
                         </button>
-                    ))}
+                    </div>
                 </div>
+
                 <div style={{ margin: '15px 0', borderTop: '1px solid #e2e8f0' }}></div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ marginBottom: '15px' }}>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
+                        {SPECIAL_STATUSES.map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => onReasonSelect(status)}
+                                style={{
+                                    padding: '12px 8px',
+                                    borderRadius: '10px',
+                                    border: isSelected(status) ? '2px solid #38a169' : '1px solid #e2e8f0',
+                                    background: isSelected(status) ? '#f0fff4' : 'white',
+                                    color: isSelected(status) ? '#276749' : '#a0aec0',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.9rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {status}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                            onClick={() => onReasonSelect('기타')}
+                            style={{
+                                padding: '10px 15px',
+                                borderRadius: '8px',
+                                border: isSelected('기타') ? '2px solid #d69e2e' : '1px solid #e2e8f0',
+                                background: isSelected('기타') ? '#fffff0' : 'white',
+                                color: isSelected('기타') ? '#975a16' : '#a0aec0',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap'
+                            }}
+                        >
+                            기타
+                        </button>
+                        <input
+                            type="text"
+                            value={customReason}
+                            onChange={(e) => onCustomReasonChange(e.target.value)}
+                            disabled={!isSelected('기타')}
+                            placeholder="3글자 이하 권장"
+                            style={{
+                                flex: 1,
+                                padding: '10px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                outline: 'none',
+                                background: isSelected('기타') ? 'white' : '#f7fafc'
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div style={{ margin: '15px 0', borderTop: '1px solid #e2e8f0' }}></div>
+
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                     <button
-                        onClick={() => onSelect('vacation_full')}
+                        onClick={() => onReasonSelect('vacation_full')}
                         style={{
                             flex: 1, padding: '10px 0', borderRadius: '10px',
-                            border: '1px solid #feb2b2', background: '#fff5f5',
+                            border: isSelected('vacation_full') ? '2px solid #c53030' : '1px solid #feb2b2',
+                            background: '#fff5f5',
                             color: '#c53030', fontWeight: 'bold', fontSize: '0.9rem',
                             cursor: 'pointer'
                         }}
@@ -70,10 +174,11 @@ const StatusPopup = ({ onSelect, onClose }) => {
                         월차
                     </button>
                     <button
-                        onClick={() => onSelect('vacation_half_am')}
+                        onClick={() => onReasonSelect('vacation_half_am')}
                         style={{
                             flex: 1, padding: '10px 0', borderRadius: '10px',
-                            border: '1px solid #feb2b2', background: '#fff5f5',
+                            border: isSelected('vacation_half_am') ? '2px solid #c53030' : '1px solid #feb2b2',
+                            background: '#fff5f5',
                             color: '#c53030', fontWeight: 'bold', fontSize: '0.9rem',
                             cursor: 'pointer'
                         }}
@@ -81,10 +186,11 @@ const StatusPopup = ({ onSelect, onClose }) => {
                         오전반차
                     </button>
                     <button
-                        onClick={() => onSelect('vacation_half_pm')}
+                        onClick={() => onReasonSelect('vacation_half_pm')}
                         style={{
                             flex: 1, padding: '10px 0', borderRadius: '10px',
-                            border: '1px solid #90cdf4', background: '#ebf8ff',
+                            border: isSelected('vacation_half_pm') ? '2px solid #2c5282' : '1px solid #90cdf4',
+                            background: '#ebf8ff',
                             color: '#2c5282', fontWeight: 'bold', fontSize: '0.9rem',
                             cursor: 'pointer'
                         }}
@@ -96,16 +202,40 @@ const StatusPopup = ({ onSelect, onClose }) => {
 
 
                 <button
-                    onClick={() => onSelect('vacation_cancel')}
+                    onClick={() => onReasonSelect('vacation_cancel')}
                     style={{
                         width: '100%', marginTop: '8px', padding: '10px', borderRadius: '10px',
-                        border: '1px solid #cbd5e0', background: '#edf2f7',
+                        border: isSelected('vacation_cancel') ? '2px solid #4a5568' : '1px solid #cbd5e0',
+                        background: '#edf2f7',
                         color: '#4a5568', fontWeight: 'bold', fontSize: '0.9rem',
                         cursor: 'pointer'
                     }}
                 >
                     휴가취소
                 </button>
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    <button
+                        onClick={onSubmit}
+                        style={{
+                            flex: 1, padding: '12px', borderRadius: '10px',
+                            border: 'none', background: '#3182ce', color: 'white',
+                            fontWeight: 'bold', fontSize: '0.95rem', cursor: 'pointer'
+                        }}
+                    >
+                        신청
+                    </button>
+                    <button
+                        onClick={onFixedSubmit}
+                        style={{
+                            flex: 1, padding: '12px', borderRadius: '10px',
+                            border: 'none', background: '#805ad5', color: 'white',
+                            fontWeight: 'bold', fontSize: '0.95rem', cursor: 'pointer'
+                        }}
+                    >
+                        고정신청
+                    </button>
+                </div>
 
                 <button
                     onClick={onClose}
@@ -641,6 +771,7 @@ const IncomingEmployeeModal = ({ onClose }) => {
 
 
 const StaffDailyAttendance = ({ onBack }) => {
+    const navigate = useNavigate();
     const [today] = useState(new Date());
     // Fixed: Initialize navigation with today, allow changes
     const [currentViewDate, setCurrentViewDate] = useState(new Date());
@@ -666,7 +797,16 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     // Status popup state
-    const [statusPopup, setStatusPopup] = useState({ open: false, user: null, dateStr: '', period: null });
+    const createClosedPopupState = () => ({
+        open: false,
+        user: null,
+        dateStr: '',
+        period: null,
+        selectedPeriods: [],
+        selectedReason: null,
+        customReason: ''
+    });
+    const [statusPopup, setStatusPopup] = useState(createClosedPopupState());
     const [selectedCell, setSelectedCell] = useState(null); // { userId, dateStr, period }
 
     const scrollContainerRef = useRef(null);
@@ -896,21 +1036,87 @@ const StaffDailyAttendance = ({ onBack }) => {
         } catch (e) { fetchData(); }
     };
 
-    // Long press handler - opens status popup
-    const handleLongPress = (user, dateStr, period) => {
-        setStatusPopup({ open: true, user, dateStr, period });
+    const openStatusPopup = (user, dateStr, period) => {
+        setStatusPopup({
+            open: true,
+            user,
+            dateStr,
+            period,
+            selectedPeriods: period ? [period] : [],
+            selectedReason: null,
+            customReason: ''
+        });
     };
 
-    // Status selection handler
-    const handleStatusSelect = async (status) => {
-        const { user, dateStr, period } = statusPopup;
+    const closeStatusPopup = () => {
+        setStatusPopup(createClosedPopupState());
+    };
+
+    const toggleStatusPopupPeriod = (targetPeriod) => {
+        setStatusPopup(prev => {
+            if (targetPeriod === 'all') {
+                const all = [1, 2, 3, 4, 5, 6, 7];
+                const nextPeriods = prev.selectedPeriods.length === 7 ? [] : all;
+                return { ...prev, selectedPeriods: nextPeriods };
+            }
+
+            const hasPeriod = prev.selectedPeriods.includes(targetPeriod);
+            const nextPeriods = hasPeriod
+                ? prev.selectedPeriods.filter(p => p !== targetPeriod)
+                : [...prev.selectedPeriods, targetPeriod].sort((a, b) => a - b);
+
+            return { ...prev, selectedPeriods: nextPeriods };
+        });
+    };
+
+    const handlePopupReasonSelect = (reason) => {
+        setStatusPopup(prev => ({ ...prev, selectedReason: reason }));
+    };
+
+    const handlePopupCustomReasonChange = (value) => {
+        setStatusPopup(prev => ({ ...prev, customReason: value, selectedReason: '기타' }));
+    };
+
+    const getValidatedPopupReason = () => {
+        const { selectedReason, customReason } = statusPopup;
+
+        if (!selectedReason) {
+            alert('사유를 선택해주세요.');
+            return null;
+        }
+
+        if (selectedReason === '기타') {
+            const trimmed = customReason.trim();
+            if (!trimmed) {
+                alert('기타 사유를 입력해주세요.');
+                return null;
+            }
+            return trimmed;
+        }
+
+        return selectedReason;
+    };
+
+    // Long press handler - opens status popup
+    const handleLongPress = (user, dateStr, period) => {
+        openStatusPopup(user, dateStr, period);
+    };
+
+    const handleStatusSubmit = async () => {
+        const { user, dateStr, selectedPeriods, selectedReason } = statusPopup;
         if (!user) return;
 
-        // Handle Vacation Requests
-        if (['vacation_full', 'vacation_half_am', 'vacation_half_pm', 'vacation_cancel'].includes(status)) {
+        if (selectedPeriods.length === 0) {
+            alert('교시를 선택해주세요.');
+            return;
+        }
+
+        const finalReason = getValidatedPopupReason();
+        if (!finalReason) return;
+
+        if (VACATION_STATUS_KEYS.includes(selectedReason)) {
             try {
-                if (status === 'vacation_cancel') {
-                    // Delete vacation request
+                if (selectedReason === 'vacation_cancel') {
                     const { count, error } = await supabase.from('vacation_requests')
                         .delete({ count: 'exact' })
                         .eq('user_id', user.id)
@@ -920,29 +1126,25 @@ const StaffDailyAttendance = ({ onBack }) => {
                     if (count === 0) {
                         alert('삭제된 휴가가 없습니다. 이미 삭제되었거나 권한이 없을 수 있습니다.');
                     } else {
-                        // Optimistic Update: Remove from local state
                         setVacationData(prev => {
                             const next = { ...prev };
-                            const key = `${user.id}_${dateStr}`;
-                            delete next[key];
+                            delete next[`${user.id}_${dateStr}`];
                             return next;
                         });
                         alert('휴가가 취소되었습니다.');
-                        fetchData(); // Background refresh
                     }
                 } else {
                     let type = 'full';
                     let periods = null;
 
-                    if (status === 'vacation_half_am') {
+                    if (selectedReason === 'vacation_half_am') {
                         type = 'half';
                         periods = [1, 2, 3, 4];
-                    } else if (status === 'vacation_half_pm') {
+                    } else if (selectedReason === 'vacation_half_pm') {
                         type = 'half';
                         periods = [5, 6, 7];
                     }
 
-                    // Check if a request already exists
                     const { data: existingVacation } = await supabase.from('vacation_requests')
                         .select('id')
                         .eq('user_id', user.id)
@@ -950,114 +1152,136 @@ const StaffDailyAttendance = ({ onBack }) => {
                         .single();
 
                     if (existingVacation) {
-                        // Update existing
                         const { error } = await supabase.from('vacation_requests')
                             .update({
-                                type: type,
-                                periods: periods,
+                                type,
+                                periods,
                                 reason: null,
                                 status: 'approved'
                             })
                             .eq('id', existingVacation.id);
                         if (error) throw error;
                     } else {
-                        // Insert new
                         const { error } = await supabase.from('vacation_requests').insert({
                             user_id: user.id,
                             date: dateStr,
-                            type: type,
-                            periods: periods,
+                            type,
+                            periods,
                             reason: null,
                             status: 'approved'
                         });
                         if (error) throw error;
                     }
 
-                    // Optimistic Update: Add/Update local state
-                    setVacationData(prev => {
-                        const next = { ...prev };
-                        const key = `${user.id}_${dateStr}`;
-                        next[key] = { type, periods, reason: null, status: 'approved' };
-                        return next;
-                    });
-
-                    fetchData(); // Background refresh
+                    setVacationData(prev => ({
+                        ...prev,
+                        [`${user.id}_${dateStr}`]: { type, periods, reason: null, status: 'approved' }
+                    }));
                 }
             } catch (e) {
-                console.error("Error creating vacation:", e);
+                console.error('Error creating vacation:', e);
                 alert(`휴가 등록에 실패했습니다: ${e.message}`);
+                fetchData();
+                return;
             }
-            setStatusPopup({ open: false, user: null, dateStr: '', period: null });
+
+            closeStatusPopup();
+            autoAdvanceSelection(user.id);
+            fetchData();
             return;
         }
 
-        const key = `${user.id}_${dateStr}_${period}`;
+        const periodsToApply = Array.from(new Set(selectedPeriods)).sort((a, b) => a - b);
 
-        if (status === 'absent') {
-            // Delete attendance (make it X)
-            setAttendanceData(prev => {
-                const next = new Set(prev);
-                next.delete(key);
-                return next;
-            });
-            setStatusData(prev => {
-                const next = { ...prev };
-                delete next[key];
-                return next;
-            });
-            try {
-                await supabase.from('attendance_logs').delete().eq('user_id', user.id).eq('date', dateStr).eq('period', period);
-            } catch (e) { fetchData(); }
-        } else {
-            // Set attendance with status
-            setAttendanceData(prev => {
-                const next = new Set(prev);
-                next.add(key);
-                return next;
-            });
-            if (status) {
-                setStatusData(prev => ({ ...prev, [key]: status }));
-            } else {
-                setStatusData(prev => {
-                    const next = { ...prev };
-                    delete next[key];
-                    return next;
-                });
-            }
-            try {
-                // Check if record exists
-                const { data: existing } = await supabase.from('attendance_logs')
-                    .select('id')
-                    .eq('user_id', user.id)
-                    .eq('date', dateStr)
-                    .eq('period', period)
-                    .single();
+        setAttendanceData(prev => {
+            const next = new Set(prev);
+            periodsToApply.forEach(p => next.add(`${user.id}_${dateStr}_${p}`));
+            return next;
+        });
 
-                if (existing) {
-                    await supabase.from('attendance_logs')
-                        .update({ status: status || null })
-                        .eq('user_id', user.id)
-                        .eq('date', dateStr)
-                        .eq('period', period);
-                } else {
-                    await supabase.from('attendance_logs').insert({
-                        user_id: user.id,
-                        date: dateStr,
-                        period: period,
-                        status: status || null
-                    });
-                }
-            } catch (e) {
-                console.error(e);
-                fetchData();
-            }
+        setStatusData(prev => {
+            const next = { ...prev };
+            periodsToApply.forEach(p => {
+                next[`${user.id}_${dateStr}_${p}`] = finalReason;
+            });
+            return next;
+        });
+
+        try {
+            const upserts = periodsToApply.map(p => ({
+                user_id: user.id,
+                date: dateStr,
+                period: p,
+                status: finalReason
+            }));
+
+            const { error } = await supabase
+                .from('attendance_logs')
+                .upsert(upserts, { onConflict: 'user_id,date,period' });
+
+            if (error) throw error;
+        } catch (e) {
+            console.error(e);
+            alert('출석 상태 적용에 실패했습니다.');
+            fetchData();
+            return;
         }
 
-
-
-        setStatusPopup({ open: false, user: null, dateStr: '', period: null });
-        // Auto-advance after status selection (except specifically handled cases if any, but general rule apply)
+        closeStatusPopup();
         autoAdvanceSelection(user.id);
+    };
+
+    const handleFixedStatusSubmit = async () => {
+        const { user, dateStr, selectedPeriods, selectedReason } = statusPopup;
+        if (!user) return;
+
+        if (selectedPeriods.length === 0) {
+            alert('교시를 선택해주세요.');
+            return;
+        }
+        if (!selectedReason) {
+            alert('사유를 선택해주세요.');
+            return;
+        }
+        if (VACATION_STATUS_KEYS.includes(selectedReason)) {
+            alert('고정신청은 지각/병원/기타 등 출석 상태 사유에서만 가능합니다.');
+            return;
+        }
+
+        const finalReason = getValidatedPopupReason();
+        if (!finalReason) return;
+
+        const dayOfWeek = getDay(new Date(`${dateStr}T00:00:00`));
+        const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+        const periodsToApply = Array.from(new Set(selectedPeriods)).sort((a, b) => a - b);
+
+        const msg = `${user.name}님의 [매주 고정 일정]을 등록하시겠습니까?\n\n` +
+            `요일: ${dayNames[dayOfWeek]}\n` +
+            `사유: ${finalReason}\n` +
+            `교시: ${periodsToApply.join(', ')}`;
+
+        if (!confirm(msg)) return;
+
+        try {
+            const { error } = await supabase
+                .from('fixed_leave_requests')
+                .insert({
+                    user_id: user.id,
+                    day_of_week: dayOfWeek,
+                    periods: periodsToApply,
+                    reason: finalReason
+                });
+
+            if (error) throw error;
+
+            alert('매주 고정 일정이 등록되었습니다.\n[고정 기타 휴무 관리] 메뉴에서 확인할 수 있으며, 매주 월요일 00:00 (KST)에 자동 반영됩니다.');
+            closeStatusPopup();
+            localStorage.setItem('manager_dashboard_index', '0');
+            navigate('/managerdashboard?view=fixed_leave_management');
+        } catch (e) {
+            console.error(e);
+            alert('고정 등록 실패: ' + e.message);
+        }
     };
 
     const addDailyMemo = async (content) => {
@@ -1256,7 +1480,7 @@ const StaffDailyAttendance = ({ onBack }) => {
         if (type === 'O' || type === 'X') {
             autoAdvanceSelection(userId);
         } else if (type === 'OTHER') {
-            setStatusPopup({ open: true, user, dateStr, period });
+            openStatusPopup(user, dateStr, period);
             return; // Don't auto advance for OTHER (yet)
         }
 
@@ -1583,13 +1807,15 @@ const StaffDailyAttendance = ({ onBack }) => {
             )}
 
             {/* Status Selection Popup */}
-            {/* Status Selection Popup */}
-            {statusPopup.open && (
-                <StatusPopup
-                    onSelect={handleStatusSelect}
-                    onClose={() => setStatusPopup({ open: false, user: null, dateStr: '', period: null })}
-                />
-            )}
+            <StatusPopup
+                popup={statusPopup}
+                onClose={closeStatusPopup}
+                onTogglePeriod={toggleStatusPopupPeriod}
+                onReasonSelect={handlePopupReasonSelect}
+                onCustomReasonChange={handlePopupCustomReasonChange}
+                onSubmit={handleStatusSubmit}
+                onFixedSubmit={handleFixedStatusSubmit}
+            />
 
             {/* Incoming Employees Modal */}
             {showIncomingModal && (
