@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search, UserPlus, CheckSquare, Square, Trash, Save, CornerDownLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -771,7 +770,6 @@ const IncomingEmployeeModal = ({ onClose }) => {
 
 
 const StaffDailyAttendance = ({ onBack }) => {
-    const navigate = useNavigate();
     const [today] = useState(new Date());
     // Fixed: Initialize navigation with today, allow changes
     const [currentViewDate, setCurrentViewDate] = useState(new Date());
@@ -1287,10 +1285,23 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             if (applyError) throw applyError;
 
+            // Keep current screen and reflect selected-date cells immediately.
+            setAttendanceData(prev => {
+                const next = new Set(prev);
+                periodsToApply.forEach((p) => next.add(`${user.id}_${dateStr}_${p}`));
+                return next;
+            });
+            setStatusData(prev => {
+                const next = { ...prev };
+                periodsToApply.forEach((p) => {
+                    next[`${user.id}_${dateStr}_${p}`] = finalReason;
+                });
+                return next;
+            });
+
             alert('매주 고정 일정이 등록되었고, 선택한 날짜에는 즉시 반영되었습니다.\n[고정 기타 휴무 관리] 메뉴에서 확인할 수 있으며, 매주 월요일 00:00 (KST)에 자동 반영됩니다.');
             closeStatusPopup();
-            localStorage.setItem('manager_dashboard_index', '0');
-            navigate('/managerdashboard?view=fixed_leave_management');
+            autoAdvanceSelection(user.id);
         } catch (e) {
             console.error(e);
             alert('고정 등록 실패: ' + e.message);
