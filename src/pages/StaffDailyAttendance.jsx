@@ -1274,7 +1274,20 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             if (error) throw error;
 
-            alert('매주 고정 일정이 등록되었습니다.\n[고정 기타 휴무 관리] 메뉴에서 확인할 수 있으며, 매주 월요일 00:00 (KST)에 자동 반영됩니다.');
+            const immediateUpserts = periodsToApply.map((p) => ({
+                user_id: user.id,
+                date: dateStr,
+                period: p,
+                status: finalReason
+            }));
+
+            const { error: applyError } = await supabase
+                .from('attendance_logs')
+                .upsert(immediateUpserts, { onConflict: 'user_id,date,period' });
+
+            if (applyError) throw applyError;
+
+            alert('매주 고정 일정이 등록되었고, 선택한 날짜에는 즉시 반영되었습니다.\n[고정 기타 휴무 관리] 메뉴에서 확인할 수 있으며, 매주 월요일 00:00 (KST)에 자동 반영됩니다.');
             closeStatusPopup();
             localStorage.setItem('manager_dashboard_index', '0');
             navigate('/managerdashboard?view=fixed_leave_management');
