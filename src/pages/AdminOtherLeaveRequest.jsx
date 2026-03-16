@@ -16,7 +16,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
     // Form State
     const [selectedDates, setSelectedDates] = useState([]); // Array of strings 'YYYY-MM-DD'
     const [selectedPeriods, setSelectedPeriods] = useState([]); // [1, 2, ..., 7]
-    const [reasonType, setReasonType] = useState('알바'); // '알바', '스터디', '병원', '개인'
+    const [reasonType, setReasonType] = useState('알바'); // '알바', '스터디', '병원', '예정'
     const [customReason, setCustomReason] = useState('');
 
     // History State
@@ -382,7 +382,7 @@ const AdminOtherLeaveRequest = ({ onBack }) => {
             <div style={{ marginBottom: '25px' }}>
                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
-                    {['지각', '병원', '외출', '쉼', '운동', '알바', '스터디', '집공', '개인', '아픔', '모의', '시험', '그만둠', '늦잠', '교회'].map(r => (
+                    {['지각', '병원', '카페', '쉼', '운동', '알바', '스터디', '집공', '예정', '아픔', '모의', '시험', '그만둠', '늦잠', '교회'].map(r => (
                         <button
                             key={r}
                             onClick={() => { setReasonType(r); setCustomReason(''); }}

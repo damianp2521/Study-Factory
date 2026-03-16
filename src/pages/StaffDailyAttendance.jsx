@@ -7,7 +7,7 @@ import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 // Special attendance statuses
-const SPECIAL_STATUSES = ['지각', '병원', '외출', '쉼', '운동', '알바', '스터디', '개인', '모의', '그만둠', '늦잠', '교회'];
+const SPECIAL_STATUSES = ['지각', '병원', '카페', '쉼', '운동', '알바', '스터디', '예정', '모의', '그만둠', '늦잠', '교회'];
 const VACATION_STATUS_KEYS = ['vacation_full', 'vacation_half_am', 'vacation_half_pm', 'vacation_cancel'];
 
 // Status Selection Popup
