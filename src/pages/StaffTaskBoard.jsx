@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2, ChevronDown, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 
+const NEW_HIRE_NOTICE_DISMISS_PREFIX = '__NEW_HIRE_NOTICE_DISMISSED__';
+
 const StaffTaskBoard = () => {
     const { user } = useAuth();
     const [view, setView] = useState(() => localStorage.getItem('staff_task_board_view') || 'tasks'); // 'tasks' | 'schedule'
@@ -95,9 +97,15 @@ const StaffTaskBoard = () => {
 
             if (pendingError) throw pendingError;
 
+            const dismissedNoticeKeys = new Set(
+                (todos || [])
+                    .filter(t => !t.pending_registration_id && typeof t.content === 'string' && t.content.startsWith(NEW_HIRE_NOTICE_DISMISS_PREFIX))
+                    .map(t => t.content.replace(`${NEW_HIRE_NOTICE_DISMISS_PREFIX}:`, '').trim())
+            );
+
             // 4. Merge & Format
             const formattedTodos = (todos || [])
-                .filter(t => !t.pending_registration_id)
+                .filter(t => !t.pending_registration_id && !(typeof t.content === 'string' && t.content.startsWith(NEW_HIRE_NOTICE_DISMISS_PREFIX)))
                 .map(t => ({
                 ...t,
                 type: 'staff',
@@ -116,17 +124,31 @@ const StaffTaskBoard = () => {
                         id: key,
                         content: `${shortDate} 신규 있음`,
                         is_urgent: false,
-                        status: 'pending',
                         created_at: `${reg.expected_start_date}T00:00:00`,
                         type: 'new_hire_notice',
                         authorName: '시스템',
                         branch: reg.branch || '알수없음',
-                        completerName: null
+                        completerName: null,
+                        pendingIds: []
                     };
                 }
+                groupedNewHireByDate[key].pendingIds.push(reg.id);
             });
 
-            const newHireNotices = Object.values(groupedNewHireByDate);
+            const pendingTodos = (todos || []).filter(t => t.pending_registration_id);
+
+            const newHireNotices = Object.values(groupedNewHireByDate)
+                .filter((notice) => !dismissedNoticeKeys.has(`${notice.branch}_${notice.created_at.slice(0, 10)}`))
+                .map((notice) => {
+                    const pendingIdSet = new Set(notice.pendingIds);
+                    const relatedTodos = pendingTodos.filter((t) => pendingIdSet.has(t.pending_registration_id));
+                    const allCompleted = relatedTodos.length > 0 && relatedTodos.every((t) => t.status === 'completed');
+                    return {
+                        ...notice,
+                        status: allCompleted ? 'completed' : 'pending',
+                        pendingTodoIds: relatedTodos.map((t) => t.id)
+                    };
+                });
 
             const formattedSuggestions = (suggestions || []).map(s => ({
                 id: s.id, // suggestion id
@@ -184,7 +206,29 @@ const StaffTaskBoard = () => {
     // Toggle Complete
     const handleToggleComplete = async (task) => {
         try {
-            if (task.type === 'new_hire_notice') return;
+            if (task.type === 'new_hire_notice') {
+                if (!task.pendingIds || task.pendingIds.length === 0) {
+                    alert('연결된 신규 체크리스트가 없습니다.');
+                    return;
+                }
+
+                const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+                const completedBy = newStatus === 'completed' ? user.id : null;
+                const completedAt = newStatus === 'completed' ? new Date().toISOString() : null;
+
+                const { error } = await supabase
+                    .from('staff_todos')
+                    .update({
+                        status: newStatus,
+                        completed_by: completedBy,
+                        completed_at: completedAt
+                    })
+                    .in('pending_registration_id', task.pendingIds);
+
+                if (error) throw error;
+                fetchData();
+                return;
+            }
 
             if (task.type === 'staff') {
                 const newStatus = task.status === 'completed' ? 'pending' : 'completed';
@@ -238,6 +282,8 @@ const StaffTaskBoard = () => {
         } else if (task.type === 'staff') {
             // Staff can only delete their own pending tasks
             if (task.status === 'pending' && task.created_by === user.id) canDelete = true;
+        } else if (task.type === 'new_hire_notice') {
+            canDelete = true;
         }
 
         if (!canDelete) {
@@ -247,9 +293,23 @@ const StaffTaskBoard = () => {
         }
 
         try {
-            const table = task.type === 'staff' ? 'staff_todos' : 'suggestions';
-            const { error } = await supabase.from(table).delete().eq('id', task.id);
-            if (error) throw error;
+            if (task.type === 'new_hire_notice') {
+                const marker = `${NEW_HIRE_NOTICE_DISMISS_PREFIX}:${task.branch}_${task.created_at.slice(0, 10)}`;
+                const { error } = await supabase
+                    .from('staff_todos')
+                    .insert({
+                        content: marker,
+                        is_urgent: false,
+                        status: 'completed',
+                        created_by: user.id,
+                        branch: task.branch
+                    });
+                if (error) throw error;
+            } else {
+                const table = task.type === 'staff' ? 'staff_todos' : 'suggestions';
+                const { error } = await supabase.from(table).delete().eq('id', task.id);
+                if (error) throw error;
+            }
             fetchData();
         } catch (error) {
             console.error('Error deleting task:', error);
@@ -550,23 +610,21 @@ const StaffTaskBoard = () => {
                                     >
                                         {/* Checkbox */}
                                         <div
-                                            onClick={() => {
-                                                if (!isNotice) handleToggleComplete(task);
-                                            }}
+                                            onClick={() => handleToggleComplete(task)}
                                             style={{
                                                 minWidth: '20px',
                                                 height: '20px',
                                                 borderRadius: '5px',
-                                                border: `2px solid ${isNotice ? style.text : (isCompleted ? '#cbd5e0' : style.text)}`,
+                                                border: `2px solid ${isCompleted ? '#cbd5e0' : style.text}`,
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                cursor: isNotice ? 'default' : 'pointer',
+                                                cursor: 'pointer',
                                                 flexShrink: 0,
-                                                backgroundColor: isNotice ? 'transparent' : (isCompleted ? '#cbd5e0' : 'white')
+                                                backgroundColor: isCompleted ? '#cbd5e0' : 'white'
                                             }}
                                         >
-                                            {isNotice ? <Calendar size={12} color={style.text} /> : (isCompleted && <Check size={12} color="white" />)}
+                                            {isCompleted && <Check size={12} color="white" />}
                                         </div>
 
                                         {/* Content - flexible width, wraps when needed */}
@@ -604,7 +662,7 @@ const StaffTaskBoard = () => {
                                                 <div style={{
                                                     fontSize: '0.9rem',
                                                     color: isCompleted ? '#718096' : '#2d3748',
-                                                    textDecoration: isCompleted && !isNotice ? 'line-through' : 'none',
+                                                    textDecoration: isCompleted ? 'line-through' : 'none',
                                                     wordBreak: 'break-word',
                                                     lineHeight: '1.4'
                                                 }}>
@@ -614,7 +672,7 @@ const StaffTaskBoard = () => {
                                         </div>
 
                                         {/* Right side: Author + Action Buttons */}
-                                        {!isEditing && !isNotice && (
+                                        {!isEditing && (
                                             <div style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -634,7 +692,23 @@ const StaffTaskBoard = () => {
                                                 </span>
 
                                                 {/* Action Buttons */}
-                                                {canModify && (
+                                                {isNotice ? (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
+                                                        style={{
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            color: isCompleted ? '#a0aec0' : '#e53e3e',
+                                                            cursor: 'pointer',
+                                                            padding: '2px',
+                                                            opacity: 0.6
+                                                        }}
+                                                        onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                                                        onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                ) : canModify && (
                                                     <>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); startEdit(task); }}

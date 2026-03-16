@@ -5,6 +5,31 @@ import { supabase } from '../lib/supabaseClient';
 import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
+const getKstNowParts = (timestamp = Date.now()) => {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    }).formatToParts(new Date(timestamp));
+
+    const partMap = {};
+    parts.forEach((part) => {
+        if (part.type !== 'literal') {
+            partMap[part.type] = part.value;
+        }
+    });
+
+    return {
+        dateStr: `${partMap.year}-${partMap.month}-${partMap.day}`,
+        hour: Number(partMap.hour || 0),
+        minute: Number(partMap.minute || 0)
+    };
+};
+
 // Special attendance statuses
 const SPECIAL_STATUSES = ['지각', '병원', '카페', '쉼', '운동', '알바', '스터디', '예정', '모의', '그만둠', '늦잠', '교회'];
 const VACATION_STATUS_KEYS = ['vacation_full', 'vacation_half_am', 'vacation_half_pm', 'vacation_cancel'];
@@ -793,6 +818,7 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [newMemo, setNewMemo] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [nowTick, setNowTick] = useState(Date.now());
 
     // Status popup state
     const createClosedPopupState = () => ({
@@ -832,6 +858,27 @@ const StaffDailyAttendance = ({ onBack }) => {
     const DAY_WIDTH = PERIOD_WIDTH * 7;
 
     const daysInView = useMemo(() => [currentViewDate], [currentViewDate]);
+    const currentDateStr = useMemo(() => format(currentViewDate, 'yyyy-MM-dd'), [currentViewDate]);
+    const kstNow = useMemo(() => getKstNowParts(nowTick), [nowTick]);
+    const shouldShowIncomingForDate = (dateStr) => {
+        if (!dateStr) return false;
+        if (dateStr > kstNow.dateStr) return true;
+        if (dateStr < kstNow.dateStr) return false;
+        if (kstNow.hour < 8) return true;
+        if (kstNow.hour === 8 && kstNow.minute < 59) return true;
+        return false;
+    };
+    const incomingBySeat = useMemo(() => {
+        const grouped = {};
+        (incomingEmployees || [])
+            .filter((emp) => emp.expected_start_date === currentDateStr && emp.seat_number)
+            .forEach((emp) => {
+                const seat = Number(emp.seat_number);
+                if (!grouped[seat]) grouped[seat] = [];
+                grouped[seat].push(emp);
+            });
+        return grouped;
+    }, [incomingEmployees, currentDateStr]);
 
     // Row Reordering REMOVED - just use displayRows
     const sortedRows = displayRows;
@@ -852,6 +899,11 @@ const StaffDailyAttendance = ({ onBack }) => {
             }
         }
     }, [highlightedUserId, HEADER_TOTAL_HEIGHT]);
+
+    useEffect(() => {
+        const timer = setInterval(() => setNowTick(Date.now()), 30000);
+        return () => clearInterval(timer);
+    }, []);
 
     const selectedUser = useMemo(() => {
         return displayRows.find(r => r.id === highlightedUserId);
@@ -906,11 +958,24 @@ const StaffDailyAttendance = ({ onBack }) => {
             })
             .subscribe();
 
+        const pendingTodoChannel = supabase
+            .channel('pending_todo_attendance_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'staff_todos',
+                filter: 'pending_registration_id=not.is.null'
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
         return () => {
             attendanceChannel.unsubscribe();
             vacationChannel.unsubscribe();
             memosChannel.unsubscribe();
             pendingChannel.unsubscribe();
+            pendingTodoChannel.unsubscribe();
         };
     }, [currentViewDate, branch]);
 
@@ -942,18 +1007,22 @@ const StaffDailyAttendance = ({ onBack }) => {
             const startDate = dateStr;
             const endDate = dateStr;
 
-            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, beverageRes] = await Promise.all([
+            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, beverageRes, todosRes] = await Promise.all([
                 supabase.from('profiles').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
                 supabase.from('attendance_memos').select('*').eq('date', dateStr).order('created_at', { ascending: true }),
                 supabase.from('member_memos').select('*').order('created_at', { ascending: true }),
                 supabase.from('pending_registrations').select('*').eq('branch', branch).order('expected_start_date', { ascending: true }),
-                supabase.from('beverage_options').select('id, name')
+                supabase.from('beverage_options').select('id, name'),
+                supabase.from('staff_todos').select('id, pending_registration_id, status').eq('branch', branch).not('pending_registration_id', 'is', null)
             ]);
 
             if (userRes.error) throw userRes.error;
             if (logRes.error) throw logRes.error;  // etc...
+            if (pendingRes.error) throw pendingRes.error;
+            if (beverageRes.error) throw beverageRes.error;
+            if (todosRes.error) throw todosRes.error;
 
             const MAX_SEATS = 102;
             const fullRows = [];
@@ -989,19 +1058,40 @@ const StaffDailyAttendance = ({ onBack }) => {
                 beverageNameMap[String(opt.id)] = opt.name;
             });
 
-            const systemIncomingMemos = (pendingRes.data || [])
+            const todosByPending = {};
+            (todosRes.data || []).forEach((todo) => {
+                if (!todo.pending_registration_id) return;
+                if (!todosByPending[todo.pending_registration_id]) {
+                    todosByPending[todo.pending_registration_id] = [];
+                }
+                todosByPending[todo.pending_registration_id].push(todo);
+            });
+            setPendingTodos(todosByPending);
+
+            const enrichedIncomingEmployees = (pendingRes.data || []).map((emp) => {
+                const relatedTodos = todosByPending[emp.id] || [];
+                const isChecked = relatedTodos.length > 0 && relatedTodos.every((todo) => todo.status === 'completed');
+                const beverageNames = [emp.selection_1, emp.selection_2, emp.selection_3]
+                    .map((id) => beverageNameMap[String(id)])
+                    .filter(Boolean);
+
+                return {
+                    ...emp,
+                    isChecked,
+                    plaqueText: emp.target_certificate || emp.name,
+                    beverageText: beverageNames.length > 0 ? beverageNames.join(', ') : '-'
+                };
+            });
+            setIncomingEmployees(enrichedIncomingEmployees);
+
+            const systemIncomingMemos = enrichedIncomingEmployees
                 .filter((emp) => emp.expected_start_date === dateStr)
                 .map((emp) => {
-                    const beverageNames = [emp.selection_1, emp.selection_2, emp.selection_3]
-                        .map((id) => beverageNameMap[String(id)])
-                        .filter(Boolean);
                     const seatText = emp.seat_number ? `${emp.seat_number}번 ` : '';
-                    const plaqueText = emp.target_certificate || emp.name;
-                    const beverageText = beverageNames.length > 0 ? beverageNames.join(', ') : '-';
 
                     return {
                         id: `incoming_${emp.id}_${dateStr}`,
-                        content: `신규 ${seatText}${emp.name}(${plaqueText}) ${beverageText}`.trim(),
+                        content: `신규 ${seatText}${emp.name}(${emp.plaqueText}) ${emp.beverageText}`.trim(),
                         isSystemIncoming: true
                     };
                 });
@@ -1689,16 +1779,57 @@ const StaffDailyAttendance = ({ onBack }) => {
                                         <div style={{ display: 'flex', position: 'relative' }}>
                                             {isRowHighlighted && <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: ROW_HEIGHT, borderTop: '2px solid #3182ce', borderBottom: '2px solid #3182ce', pointerEvents: 'none', zIndex: 5 }} />}
                                             {daysInView.map(date => {
+                                                const dateStr = format(date, 'yyyy-MM-dd');
+                                                const seatIncoming = incomingBySeat[Number(user.seat_number)] || [];
+                                                const shouldShowIncoming = !isDeactivated && seatIncoming.length > 0 && shouldShowIncomingForDate(dateStr);
+
+                                                if (shouldShowIncoming) {
+                                                    const allChecked = seatIncoming.every((emp) => emp.isChecked);
+                                                    const incomingBg = allChecked ? '#c6f6d5' : '#fefcbf';
+                                                    const incomingText = allChecked ? '#22543d' : '#975a16';
+                                                    const incomingBorder = allChecked ? '#9ae6b4' : '#f6e05e';
+                                                    const infoText = seatIncoming
+                                                        .map((emp) => `${format(new Date(`${emp.expected_start_date}T00:00:00`), 'M/d')} ${emp.name}(${emp.plaqueText}) ${emp.beverageText}`)
+                                                        .join(' / ');
+
+                                                    return (
+                                                        <div
+                                                            key={dateStr}
+                                                            style={{
+                                                                display: 'flex',
+                                                                height: ROW_HEIGHT,
+                                                                width: DAY_WIDTH,
+                                                                background: incomingBg,
+                                                                color: incomingText,
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontWeight: 'bold',
+                                                                fontSize: `${0.72 * scale}rem`,
+                                                                borderBottom: '1px solid #e2e8f0',
+                                                                borderRight: '1px solid #e2e8f0',
+                                                                borderLeft: `1px solid ${incomingBorder}`,
+                                                                whiteSpace: 'nowrap',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                padding: '0 6px',
+                                                                boxSizing: 'border-box'
+                                                            }}
+                                                        >
+                                                            {infoText}
+                                                        </div>
+                                                    );
+                                                }
+
                                                 return (
-                                                    <div key={format(date, 'yyyy-MM-dd')} style={{ display: 'flex', height: ROW_HEIGHT }}>
+                                                    <div key={dateStr} style={{ display: 'flex', height: ROW_HEIGHT }}>
                                                         {[1, 2, 3, 4, 5, 6, 7].map(p => (
                                                             <AttendanceCell
                                                                 key={p}
                                                                 user={user}
-                                                                dateStr={format(date, 'yyyy-MM-dd')}
+                                                                dateStr={dateStr}
                                                                 period={p}
                                                                 isRowHighlighted={isRowHighlighted}
-                                                                isSelected={selectedCell?.userId === user.id && selectedCell?.dateStr === format(date, 'yyyy-MM-dd') && selectedCell?.period === p}
+                                                                isSelected={selectedCell?.userId === user.id && selectedCell?.dateStr === dateStr && selectedCell?.period === p}
                                                                 onSelect={handleCellSelect}
                                                                 attendanceData={attendanceData}
                                                                 statusData={statusData}
