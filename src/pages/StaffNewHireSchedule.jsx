@@ -177,6 +177,24 @@ const StaffNewHireSchedule = ({ onBack }) => {
         return days;
     }, [currentMonth]);
 
+    const calendarWeeks = useMemo(() => {
+        const weeks = [];
+        for (let i = 0; i < calendarDays.length; i += 7) {
+            const weekDays = calendarDays.slice(i, i + 7);
+            const maxHireCount = Math.max(
+                0,
+                ...weekDays.map((day) => {
+                    const dateStr = format(day, 'yyyy-MM-dd');
+                    return (hiresByDate[dateStr] || []).length;
+                })
+            );
+            // No 신규 -> compact row, 1명 -> medium, 2명 이상 -> proportional growth.
+            const rowHeight = 52 + (maxHireCount * 26);
+            weeks.push({ weekDays, rowHeight });
+        }
+        return weeks;
+    }, [calendarDays, hiresByDate]);
+
     const handleToggleChecked = async (hire) => {
         const relatedTodos = todosByPending[hire.id] || [];
         if (relatedTodos.length === 0) {
@@ -215,7 +233,7 @@ const StaffNewHireSchedule = ({ onBack }) => {
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                 <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 8px 0 0', display: 'flex', alignItems: 'center' }}>
                     <ChevronLeft size={24} color="#2d3748" />
@@ -250,62 +268,66 @@ const StaffNewHireSchedule = ({ onBack }) => {
                     ))}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
-                    {calendarDays.map((day) => {
-                        const dateStr = format(day, 'yyyy-MM-dd');
-                        const dayHires = hiresByDate[dateStr] || [];
-                        const isToday = isSameDay(day, new Date());
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {calendarWeeks.map((week, weekIndex) => (
+                        <div key={`week_${weekIndex}`} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
+                            {week.weekDays.map((day) => {
+                                const dateStr = format(day, 'yyyy-MM-dd');
+                                const dayHires = hiresByDate[dateStr] || [];
+                                const isToday = isSameDay(day, new Date());
 
-                        return (
-                            <div
-                                key={dateStr}
-                                style={{
-                                    minHeight: '86px',
-                                    border: isToday ? '2px solid #267E82' : '1px solid #e2e8f0',
-                                    borderRadius: '10px',
-                                    padding: '4px',
-                                    background: isSameMonth(day, currentMonth) ? 'white' : '#f7fafc'
-                                }}
-                            >
-                                <div style={{
-                                    textAlign: 'right',
-                                    fontSize: '0.75rem',
-                                    color: isSameMonth(day, currentMonth) ? '#4a5568' : '#a0aec0',
-                                    marginBottom: '3px'
-                                }}>
-                                    {format(day, 'd')}
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                    {dayHires.map((hire) => {
-                                        const tone = getDateTone(dateStr, hire.isChecked);
-                                        const seatText = hire.seat_number ? `${hire.seat_number}번` : '좌석미정';
-                                        return (
-                                            <div
-                                                key={hire.id}
-                                                style={{
-                                                    background: tone.bg,
-                                                    border: `1px solid ${tone.border}`,
-                                                    color: tone.text,
-                                                    borderRadius: '6px',
-                                                    padding: '2px 3px',
-                                                    fontSize: '0.64rem',
-                                                    fontWeight: 'bold',
-                                                    lineHeight: 1.2,
-                                                    whiteSpace: 'pre-line'
-                                                }}
-                                            >
-                                                {`${seatText}\n${hire.name}`}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        );
-                    })}
+                                return (
+                                    <div
+                                        key={dateStr}
+                                        style={{
+                                            minHeight: `${week.rowHeight}px`,
+                                            border: isToday ? '2px solid #267E82' : '1px solid #e2e8f0',
+                                            borderRadius: '10px',
+                                            padding: '4px',
+                                            background: isSameMonth(day, currentMonth) ? 'white' : '#f7fafc'
+                                        }}
+                                    >
+                                        <div style={{
+                                            textAlign: 'right',
+                                            fontSize: '0.75rem',
+                                            color: isSameMonth(day, currentMonth) ? '#4a5568' : '#a0aec0',
+                                            marginBottom: '3px'
+                                        }}>
+                                            {format(day, 'd')}
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                            {dayHires.map((hire) => {
+                                                const tone = getDateTone(dateStr, hire.isChecked);
+                                                const seatText = hire.seat_number ? `${hire.seat_number}번` : '좌석미정';
+                                                return (
+                                                    <div
+                                                        key={hire.id}
+                                                        style={{
+                                                            background: tone.bg,
+                                                            border: `1px solid ${tone.border}`,
+                                                            color: tone.text,
+                                                            borderRadius: '6px',
+                                                            padding: '2px 3px',
+                                                            fontSize: '0.64rem',
+                                                            fontWeight: 'bold',
+                                                            lineHeight: 1.2,
+                                                            whiteSpace: 'pre-line'
+                                                        }}
+                                                    >
+                                                        {`${seatText}\n${hire.name}`}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '12px' }}>
+            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '12px', maxHeight: '42vh', overflowY: 'auto', marginBottom: '6px' }}>
                 <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#2d3748' }}>체크리스트</h4>
                 {loading ? (
                     <div style={{ textAlign: 'center', color: '#a0aec0', padding: '16px 0' }}>불러오는 중...</div>
