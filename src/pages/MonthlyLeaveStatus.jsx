@@ -80,17 +80,63 @@ const MonthlyLeaveStatus = () => {
         const endStr = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
 
         try {
-            const { data, error } = await supabase
-                .from('vacation_requests')
-                .select(`
-                    id, type, date, periods, reason, user_id,
-                    profiles (name, branch)
-                `)
-                .gte('date', startStr)
-                .lte('date', endStr);
+            const [vacRes, logRes] = await Promise.all([
+                supabase
+                    .from('vacation_requests')
+                    .select(`
+                        id, type, date, periods, reason, user_id,
+                        profiles (name, branch)
+                    `)
+                    .gte('date', startStr)
+                    .lte('date', endStr),
+                supabase
+                    .from('attendance_logs')
+                    .select(`
+                        user_id, date, period, status,
+                        profiles:user_id (name, branch)
+                    `)
+                    .gte('date', startStr)
+                    .lte('date', endStr)
+                    .not('status', 'is', null)
+            ]);
 
-            if (error) throw error;
-            setLeaves(data || []);
+            if (vacRes.error) throw vacRes.error;
+            if (logRes.error) throw logRes.error;
+
+            const vacations = vacRes.data || [];
+            const logs = logRes.data || [];
+
+            const groupedLogs = {};
+            logs.forEach((log) => {
+                const key = `${log.user_id}_${log.date}_${log.status}`;
+                if (!groupedLogs[key]) {
+                    groupedLogs[key] = {
+                        id: `log_${log.user_id}_${log.date}_${log.status}`,
+                        type: 'special_log',
+                        date: log.date,
+                        periods: [],
+                        reason: log.status,
+                        user_id: log.user_id,
+                        profiles: log.profiles
+                    };
+                }
+                groupedLogs[key].periods.push(log.period);
+            });
+
+            const specialLogs = Object.values(groupedLogs).map((item) => ({
+                ...item,
+                periods: item.periods.sort((a, b) => a - b)
+            }));
+
+            const vacationKeys = new Set(vacations.map((item) => `${item.user_id}_${item.date}`));
+            const redundantStatuses = new Set(['월차', '반차', '오전', '오후', '출석', '결석', 'O', 'X']);
+            const filteredSpecialLogs = specialLogs.filter((item) => {
+                if (!vacationKeys.has(`${item.user_id}_${item.date}`)) return true;
+                return !redundantStatuses.has(item.reason);
+            });
+
+            const combinedLeaves = [...vacations, ...filteredSpecialLogs];
+            setLeaves(combinedLeaves);
         } catch (err) {
             console.error('Error fetching monthly leaves:', err);
         }
@@ -260,6 +306,18 @@ const MonthlyLeaveStatus = () => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                         {dayLeaves.map(leaf => {
                                             const isSelected = selectedUserId === leaf.user_id;
+                                            const isSpecialLog = leaf.type === 'special_log';
+                                            const specialLabel = isSpecialLog
+                                                ? `${(leaf.periods || []).join(', ')}교시 ${leaf.reason || ''}`.trim()
+                                                : '';
+                                            const isLegacySpecial = leaf.type === 'special';
+                                            const typeText = (() => {
+                                                if (leaf.type === 'full') return '(월)';
+                                                if (leaf.type === 'half') return '(반)';
+                                                if (isSpecialLog) return `(기) ${specialLabel}`.trim();
+                                                if (isLegacySpecial) return `(기) ${leaf.reason || ''}`.trim();
+                                                return '(기)';
+                                            })();
                                             return (
                                                 <div
                                                     key={leaf.id}
@@ -271,10 +329,10 @@ const MonthlyLeaveStatus = () => {
                                                         cursor: 'pointer',
                                                         background: isSelected
                                                             ? '#fff'
-                                                            : leaf.type === 'full' ? '#e9d8fd' : leaf.type === 'special' ? '#fed7d7' : '#ebf8ff',
+                                                            : leaf.type === 'full' ? '#e9d8fd' : '#ebf8ff',
                                                         color: isSelected
                                                             ? '#000'
-                                                            : leaf.type === 'full' ? '#553c9a' : leaf.type === 'special' ? '#c53030' : '#2c5282',
+                                                            : leaf.type === 'full' ? '#553c9a' : '#2b6cb0',
                                                         border: isSelected ? '2px solid #d69e2e' : '1px solid transparent',
                                                         boxShadow: isSelected ? '0 0 8px rgba(214, 158, 46, 0.6)' : 'none',
                                                         fontWeight: isSelected ? 'bold' : 'normal',
@@ -286,9 +344,8 @@ const MonthlyLeaveStatus = () => {
                                                     <span style={{ fontWeight: 'bold' }}>
                                                         {leaf.profiles?.name || '??'}
                                                     </span>
-                                                    {' '}
-                                                    <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
-                                                        {leaf.type === 'full' ? '(월)' : leaf.type === 'special' ? '(특)' : '(반)'}
+                                                    <span style={{ fontSize: '0.75rem', opacity: 0.85, marginLeft: '4px' }}>
+                                                        {typeText}
                                                     </span>
                                                 </div>
                                             );
@@ -310,7 +367,7 @@ const MonthlyLeaveStatus = () => {
                     <div style={{ width: '12px', height: '12px', background: '#ebf8ff', borderRadius: '50%' }}></div> 반차
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <div style={{ width: '12px', height: '12px', background: '#fed7d7', borderRadius: '50%' }}></div> 특별휴가
+                    <div style={{ width: '12px', height: '12px', background: '#ebf8ff', borderRadius: '50%' }}></div> 기타휴무
                 </div>
             </div>
         </div>

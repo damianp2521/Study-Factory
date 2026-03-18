@@ -1089,7 +1089,25 @@ const StaffDailyAttendance = ({ onBack }) => {
             setStatusData(statusMap);
 
             const vacMap = {};
-            (vacRes.data || []).forEach(v => vacMap[`${v.user_id}_${v.date}`] = v);
+            (vacRes.data || []).forEach((v) => {
+                const key = `${v.user_id}_${v.date}`;
+                const existing = vacMap[key];
+                const isRegularVacation = v.type === 'full' || v.type === 'half';
+
+                if (!existing && isRegularVacation) {
+                    vacMap[key] = v;
+                    return;
+                }
+
+                if (!existing && !isRegularVacation) {
+                    vacMap[key] = v;
+                    return;
+                }
+
+                if (existing && (existing.type !== 'full' && existing.type !== 'half') && isRegularVacation) {
+                    vacMap[key] = v;
+                }
+            });
             setVacationData(vacMap);
 
             const beverageNameMap = {};
@@ -1242,6 +1260,7 @@ const StaffDailyAttendance = ({ onBack }) => {
             .select('id')
             .eq('user_id', userId)
             .eq('date', date)
+            .in('type', ['full', 'half'])
             .limit(1)
             .maybeSingle();
 
@@ -1304,7 +1323,8 @@ const StaffDailyAttendance = ({ onBack }) => {
                         .from('vacation_requests')
                         .delete({ count: 'exact' })
                         .eq('user_id', user.id)
-                        .in('date', targetDates);
+                        .in('date', targetDates)
+                        .in('type', ['full', 'half']);
 
                     if (error) throw error;
                     if (!count) {
@@ -1367,15 +1387,20 @@ const StaffDailyAttendance = ({ onBack }) => {
         const periodsToApply = Array.from(new Set(selectedPeriods)).sort((a, b) => a - b);
 
         try {
-            for (const targetDate of targetDates) {
-                await upsertVacationRequestByDate({
-                    userId: user.id,
+            const upserts = targetDates.flatMap((targetDate) => (
+                periodsToApply.map((p) => ({
+                    user_id: user.id,
                     date: targetDate,
-                    type: 'special',
-                    periods: periodsToApply,
-                    reason: finalReason
-                });
-            }
+                    period: p,
+                    status: finalReason
+                }))
+            ));
+
+            const { error } = await supabase
+                .from('attendance_logs')
+                .upsert(upserts, { onConflict: 'user_id,date,period' });
+
+            if (error) throw error;
         } catch (e) {
             console.error(e);
             alert(`기타휴가 신청에 실패했습니다: ${e.message}`);
@@ -1383,15 +1408,19 @@ const StaffDailyAttendance = ({ onBack }) => {
             return;
         }
 
-        setVacationData(prev => {
+        setAttendanceData(prev => {
+            const next = new Set(prev);
+            targetDates.forEach((targetDate) => {
+                periodsToApply.forEach((p) => next.add(`${user.id}_${targetDate}_${p}`));
+            });
+            return next;
+        });
+        setStatusData(prev => {
             const next = { ...prev };
             targetDates.forEach((targetDate) => {
-                next[`${user.id}_${targetDate}`] = {
-                    type: 'special',
-                    periods: periodsToApply,
-                    reason: finalReason,
-                    status: 'approved'
-                };
+                periodsToApply.forEach((p) => {
+                    next[`${user.id}_${targetDate}_${p}`] = finalReason;
+                });
             });
             return next;
         });
