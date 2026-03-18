@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, X, Plus, Calendar as CalendarIcon, Search, UserPlus, CheckSquare, Square, Trash, Save, CornerDownLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Plus, Search, UserPlus, CheckSquare, Square, Trash, Save, CornerDownLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { format, startOfMonth, endOfMonth, addDays, getDay } from 'date-fns';
+import { format, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import EmbeddedCalendar from '../components/EmbeddedCalendar';
 
 const getKstNowParts = (timestamp = Date.now()) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -30,14 +31,19 @@ const getKstNowParts = (timestamp = Date.now()) => {
     };
 };
 
-// Special attendance statuses
-const SPECIAL_STATUSES = ['지각', '병원', '카페', '쉼', '운동', '알바', '스터디', '예정', '모의', '그만둠', '늦잠', '교회'];
+const createDateFromYmd = (ymd) => {
+    const [year, month, day] = ymd.split('-').map(Number);
+    return new Date(year, month - 1, day);
+};
+
 const VACATION_STATUS_KEYS = ['vacation_full', 'vacation_half_am', 'vacation_half_pm', 'vacation_cancel'];
 
 // Status Selection Popup
 const StatusPopup = ({
     popup,
     onClose,
+    onToggleDate,
+    onCalendarMonthChange,
     onTogglePeriod,
     onReasonSelect,
     onCustomReasonChange,
@@ -46,7 +52,7 @@ const StatusPopup = ({
 }) => {
     if (!popup.open) return null;
 
-    const { user, selectedPeriods, selectedReason, customReason } = popup;
+    const { user, selectedDates, calendarMonth, selectedPeriods, selectedReason, customReason } = popup;
     const isAllSelected = selectedPeriods.length === 7;
     const isSelected = (reason) => selectedReason === reason;
 
@@ -73,7 +79,7 @@ const StatusPopup = ({
                     background: 'white',
                     borderRadius: '16px',
                     padding: '20px',
-                    width: 'min(430px, calc(100vw - 24px))',
+                    width: 'min(520px, calc(100vw - 24px))',
                     maxHeight: '85vh',
                     overflowY: 'auto',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
@@ -82,6 +88,23 @@ const StatusPopup = ({
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', marginBottom: '15px', textAlign: 'center' }}>
                     {user?.name || ''} 출석 상태 선택
                 </h3>
+
+                <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>날짜</label>
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px' }}>
+                        <EmbeddedCalendar
+                            selectedDates={selectedDates}
+                            onSelectDate={onToggleDate}
+                            currentMonth={calendarMonth}
+                            onMonthChange={onCalendarMonthChange}
+                        />
+                    </div>
+                    <div style={{ textAlign: 'center', marginTop: '8px', color: '#718096', fontSize: '0.85rem' }}>
+                        {selectedDates.length > 0 ? `${selectedDates.length}일 선택됨` : '날짜를 선택하세요 (다중 선택 가능)'}
+                    </div>
+                </div>
+
+                <div style={{ margin: '15px 0', borderTop: '1px solid #e2e8f0' }}></div>
 
                 <div style={{ marginBottom: '14px' }}>
                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>교시</label>
@@ -126,60 +149,21 @@ const StatusPopup = ({
                 <div style={{ margin: '15px 0', borderTop: '1px solid #e2e8f0' }}></div>
 
                 <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
-                        {SPECIAL_STATUSES.map((status) => (
-                            <button
-                                key={status}
-                                onClick={() => onReasonSelect(status)}
-                                style={{
-                                    padding: '12px 8px',
-                                    borderRadius: '10px',
-                                    border: isSelected(status) ? '2px solid #38a169' : '1px solid #e2e8f0',
-                                    background: isSelected(status) ? '#f0fff4' : 'white',
-                                    color: isSelected(status) ? '#276749' : '#a0aec0',
-                                    fontWeight: 'bold',
-                                    fontSize: '0.9rem',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {status}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button
-                            onClick={() => onReasonSelect('기타')}
-                            style={{
-                                padding: '10px 15px',
-                                borderRadius: '8px',
-                                border: isSelected('기타') ? '2px solid #d69e2e' : '1px solid #e2e8f0',
-                                background: isSelected('기타') ? '#fffff0' : 'white',
-                                color: isSelected('기타') ? '#975a16' : '#a0aec0',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap'
-                            }}
-                        >
-                            기타
-                        </button>
-                        <input
-                            type="text"
-                            value={customReason}
-                            onChange={(e) => onCustomReasonChange(e.target.value)}
-                            disabled={!isSelected('기타')}
-                            placeholder="3글자 이하 권장"
-                            style={{
-                                flex: 1,
-                                padding: '10px',
-                                borderRadius: '8px',
-                                border: '1px solid #e2e8f0',
-                                outline: 'none',
-                                background: isSelected('기타') ? 'white' : '#f7fafc'
-                            }}
-                        />
-                    </div>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유입력</label>
+                    <input
+                        type="text"
+                        value={customReason}
+                        onChange={(e) => onCustomReasonChange(e.target.value)}
+                        placeholder="3글자 이하 권장"
+                        style={{
+                            width: '100%',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            outline: 'none',
+                            boxSizing: 'border-box'
+                        }}
+                    />
                 </div>
 
                 <div style={{ margin: '15px 0', borderTop: '1px solid #e2e8f0' }}></div>
@@ -314,6 +298,15 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, is
                 bg = '#c6f6d5';
                 color = '#22543d';
                 content = '오후';
+            }
+        } else if (vac.type === 'special') {
+            const vacPeriods = Array.isArray(vac.periods) ? vac.periods : [];
+            const appliesThisPeriod = vacPeriods.length === 0 || vacPeriods.includes(period);
+
+            if (appliesThisPeriod) {
+                bg = '#c6f6d5';
+                color = '#c53030';
+                content = vac.reason || '특휴';
             }
         }
     }
@@ -821,15 +814,20 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [nowTick, setNowTick] = useState(Date.now());
 
     // Status popup state
-    const createClosedPopupState = () => ({
-        open: false,
-        user: null,
-        dateStr: '',
-        period: null,
-        selectedPeriods: [],
-        selectedReason: null,
-        customReason: ''
-    });
+    const createClosedPopupState = () => {
+        const todayDateStr = getKstNowParts().dateStr;
+        return {
+            open: false,
+            user: null,
+            dateStr: '',
+            period: null,
+            selectedDates: [todayDateStr],
+            calendarMonth: createDateFromYmd(todayDateStr),
+            selectedPeriods: [],
+            selectedReason: null,
+            customReason: ''
+        };
+    };
     const [statusPopup, setStatusPopup] = useState(createClosedPopupState());
     const [selectedCell, setSelectedCell] = useState(null); // { userId, dateStr, period }
 
@@ -1129,11 +1127,14 @@ const StaffDailyAttendance = ({ onBack }) => {
     };
 
     const openStatusPopup = (user, dateStr, period) => {
+        const todayDateStr = getKstNowParts().dateStr;
         setStatusPopup({
             open: true,
             user,
             dateStr,
             period,
+            selectedDates: [todayDateStr],
+            calendarMonth: createDateFromYmd(todayDateStr),
             selectedPeriods: period ? [period] : [],
             selectedReason: null,
             customReason: ''
@@ -1161,32 +1162,77 @@ const StaffDailyAttendance = ({ onBack }) => {
         });
     };
 
+    const toggleStatusPopupDate = (targetDateStr) => {
+        setStatusPopup(prev => {
+            const alreadySelected = prev.selectedDates.includes(targetDateStr);
+            const nextDates = alreadySelected
+                ? prev.selectedDates.filter((d) => d !== targetDateStr)
+                : [...prev.selectedDates, targetDateStr].sort();
+
+            return { ...prev, selectedDates: nextDates };
+        });
+    };
+
+    const handleStatusPopupMonthChange = (monthDate) => {
+        setStatusPopup(prev => ({ ...prev, calendarMonth: monthDate }));
+    };
+
     const handlePopupReasonSelect = (reason) => {
         setStatusPopup(prev => ({ ...prev, selectedReason: reason }));
     };
 
     const handlePopupCustomReasonChange = (value) => {
-        setStatusPopup(prev => ({ ...prev, customReason: value, selectedReason: '기타' }));
+        setStatusPopup(prev => ({ ...prev, customReason: value, selectedReason: null }));
     };
 
     const getValidatedPopupReason = () => {
-        const { selectedReason, customReason } = statusPopup;
-
-        if (!selectedReason) {
-            alert('사유를 선택해주세요.');
+        const { customReason } = statusPopup;
+        const trimmed = customReason.trim();
+        if (!trimmed) {
+            alert('사유를 입력해주세요.');
             return null;
         }
+        return trimmed;
+    };
 
-        if (selectedReason === '기타') {
-            const trimmed = customReason.trim();
-            if (!trimmed) {
-                alert('기타 사유를 입력해주세요.');
-                return null;
-            }
-            return trimmed;
+    const upsertVacationRequestByDate = async ({ userId, date, type, periods, reason }) => {
+        const { data: existingVacation, error: findError } = await supabase
+            .from('vacation_requests')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('date', date)
+            .limit(1)
+            .maybeSingle();
+
+        if (findError) throw findError;
+
+        if (existingVacation) {
+            const { error: updateError } = await supabase
+                .from('vacation_requests')
+                .update({
+                    type,
+                    periods,
+                    reason,
+                    status: 'approved'
+                })
+                .eq('id', existingVacation.id);
+
+            if (updateError) throw updateError;
+            return;
         }
 
-        return selectedReason;
+        const { error: insertError } = await supabase
+            .from('vacation_requests')
+            .insert({
+                user_id: userId,
+                date,
+                type,
+                periods,
+                reason,
+                status: 'approved'
+            });
+
+        if (insertError) throw insertError;
     };
 
     // Long press handler - opens status popup
@@ -1195,32 +1241,39 @@ const StaffDailyAttendance = ({ onBack }) => {
     };
 
     const handleStatusSubmit = async () => {
-        const { user, dateStr, selectedPeriods, selectedReason } = statusPopup;
+        const { user, selectedDates, selectedPeriods, selectedReason } = statusPopup;
         if (!user) return;
 
-        if (selectedPeriods.length === 0) {
+        const targetDates = Array.from(new Set(selectedDates)).sort();
+        if (targetDates.length === 0) {
+            alert('날짜를 선택해주세요.');
+            return;
+        }
+
+        const isVacationAction = VACATION_STATUS_KEYS.includes(selectedReason);
+        if (!isVacationAction && selectedPeriods.length === 0) {
             alert('교시를 선택해주세요.');
             return;
         }
 
-        const finalReason = getValidatedPopupReason();
-        if (!finalReason) return;
-
-        if (VACATION_STATUS_KEYS.includes(selectedReason)) {
+        if (isVacationAction) {
             try {
                 if (selectedReason === 'vacation_cancel') {
-                    const { count, error } = await supabase.from('vacation_requests')
+                    const { count, error } = await supabase
+                        .from('vacation_requests')
                         .delete({ count: 'exact' })
                         .eq('user_id', user.id)
-                        .eq('date', dateStr);
+                        .in('date', targetDates);
 
                     if (error) throw error;
-                    if (count === 0) {
+                    if (!count) {
                         alert('삭제된 휴가가 없습니다. 이미 삭제되었거나 권한이 없을 수 있습니다.');
                     } else {
                         setVacationData(prev => {
                             const next = { ...prev };
-                            delete next[`${user.id}_${dateStr}`];
+                            targetDates.forEach((targetDate) => {
+                                delete next[`${user.id}_${targetDate}`];
+                            });
                             return next;
                         });
                         alert('휴가가 취소되었습니다.');
@@ -1237,38 +1290,23 @@ const StaffDailyAttendance = ({ onBack }) => {
                         periods = [5, 6, 7];
                     }
 
-                    const { data: existingVacation } = await supabase.from('vacation_requests')
-                        .select('id')
-                        .eq('user_id', user.id)
-                        .eq('date', dateStr)
-                        .single();
-
-                    if (existingVacation) {
-                        const { error } = await supabase.from('vacation_requests')
-                            .update({
-                                type,
-                                periods,
-                                reason: null,
-                                status: 'approved'
-                            })
-                            .eq('id', existingVacation.id);
-                        if (error) throw error;
-                    } else {
-                        const { error } = await supabase.from('vacation_requests').insert({
-                            user_id: user.id,
-                            date: dateStr,
+                    for (const targetDate of targetDates) {
+                        await upsertVacationRequestByDate({
+                            userId: user.id,
+                            date: targetDate,
                             type,
                             periods,
-                            reason: null,
-                            status: 'approved'
+                            reason: null
                         });
-                        if (error) throw error;
                     }
 
-                    setVacationData(prev => ({
-                        ...prev,
-                        [`${user.id}_${dateStr}`]: { type, periods, reason: null, status: 'approved' }
-                    }));
+                    setVacationData(prev => {
+                        const next = { ...prev };
+                        targetDates.forEach((targetDate) => {
+                            next[`${user.id}_${targetDate}`] = { type, periods, reason: null, status: 'approved' };
+                        });
+                        return next;
+                    });
                 }
             } catch (e) {
                 console.error('Error creating vacation:', e);
@@ -1283,95 +1321,106 @@ const StaffDailyAttendance = ({ onBack }) => {
             return;
         }
 
+        const finalReason = getValidatedPopupReason();
+        if (!finalReason) return;
         const periodsToApply = Array.from(new Set(selectedPeriods)).sort((a, b) => a - b);
 
-        setAttendanceData(prev => {
-            const next = new Set(prev);
-            periodsToApply.forEach(p => next.add(`${user.id}_${dateStr}_${p}`));
-            return next;
-        });
-
-        setStatusData(prev => {
-            const next = { ...prev };
-            periodsToApply.forEach(p => {
-                next[`${user.id}_${dateStr}_${p}`] = finalReason;
-            });
-            return next;
-        });
-
         try {
-            const upserts = periodsToApply.map(p => ({
-                user_id: user.id,
-                date: dateStr,
-                period: p,
-                status: finalReason
-            }));
-
-            const { error } = await supabase
-                .from('attendance_logs')
-                .upsert(upserts, { onConflict: 'user_id,date,period' });
-
-            if (error) throw error;
+            for (const targetDate of targetDates) {
+                await upsertVacationRequestByDate({
+                    userId: user.id,
+                    date: targetDate,
+                    type: 'special',
+                    periods: periodsToApply,
+                    reason: finalReason
+                });
+            }
         } catch (e) {
             console.error(e);
-            alert('출석 상태 적용에 실패했습니다.');
+            alert(`기타휴가 신청에 실패했습니다: ${e.message}`);
             fetchData();
             return;
         }
 
+        setVacationData(prev => {
+            const next = { ...prev };
+            targetDates.forEach((targetDate) => {
+                next[`${user.id}_${targetDate}`] = {
+                    type: 'special',
+                    periods: periodsToApply,
+                    reason: finalReason,
+                    status: 'approved'
+                };
+            });
+            return next;
+        });
+
         closeStatusPopup();
         autoAdvanceSelection(user.id);
+        fetchData();
     };
 
     const handleFixedStatusSubmit = async () => {
-        const { user, dateStr, selectedPeriods, selectedReason } = statusPopup;
+        const { user, selectedDates, selectedPeriods, selectedReason } = statusPopup;
         if (!user) return;
 
+        const targetDates = Array.from(new Set(selectedDates)).sort();
+        if (targetDates.length === 0) {
+            alert('날짜를 선택해주세요.');
+            return;
+        }
         if (selectedPeriods.length === 0) {
             alert('교시를 선택해주세요.');
             return;
         }
-        if (!selectedReason) {
-            alert('사유를 선택해주세요.');
-            return;
-        }
         if (VACATION_STATUS_KEYS.includes(selectedReason)) {
-            alert('고정신청은 지각/병원/기타 등 출석 상태 사유에서만 가능합니다.');
+            alert('고정신청은 사유입력으로만 가능합니다.');
             return;
         }
 
         const finalReason = getValidatedPopupReason();
         if (!finalReason) return;
 
-        const dayOfWeek = getDay(new Date(`${dateStr}T00:00:00`));
-        const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
         const periodsToApply = Array.from(new Set(selectedPeriods)).sort((a, b) => a - b);
+        const dayNames = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+        const daysToRegister = new Set(
+            targetDates.map((targetDate) => getDay(createDateFromYmd(targetDate)))
+        );
+
+        const selectedDayNames = Array.from(daysToRegister)
+            .sort((a, b) => a - b)
+            .map((d) => dayNames[d])
+            .join(', ');
 
         const msg = `${user.name}님의 [매주 고정 일정]을 등록하시겠습니까?\n\n` +
-            `요일: ${dayNames[dayOfWeek]}\n` +
+            `요일: ${selectedDayNames}\n` +
             `사유: ${finalReason}\n` +
             `교시: ${periodsToApply.join(', ')}`;
 
         if (!confirm(msg)) return;
 
         try {
+            const fixedInserts = Array.from(daysToRegister).map((dayOfWeek) => ({
+                user_id: user.id,
+                day_of_week: dayOfWeek,
+                periods: periodsToApply,
+                reason: finalReason
+            }));
+
             const { error } = await supabase
                 .from('fixed_leave_requests')
-                .insert({
-                    user_id: user.id,
-                    day_of_week: dayOfWeek,
-                    periods: periodsToApply,
-                    reason: finalReason
-                });
+                .insert(fixedInserts);
 
             if (error) throw error;
 
-            const immediateUpserts = periodsToApply.map((p) => ({
-                user_id: user.id,
-                date: dateStr,
-                period: p,
-                status: finalReason
-            }));
+            const immediateUpserts = targetDates.flatMap((targetDate) => (
+                periodsToApply.map((p) => ({
+                    user_id: user.id,
+                    date: targetDate,
+                    period: p,
+                    status: finalReason
+                }))
+            ));
 
             const { error: applyError } = await supabase
                 .from('attendance_logs')
@@ -1379,16 +1428,19 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             if (applyError) throw applyError;
 
-            // Keep current screen and reflect selected-date cells immediately.
             setAttendanceData(prev => {
                 const next = new Set(prev);
-                periodsToApply.forEach((p) => next.add(`${user.id}_${dateStr}_${p}`));
+                targetDates.forEach((targetDate) => {
+                    periodsToApply.forEach((p) => next.add(`${user.id}_${targetDate}_${p}`));
+                });
                 return next;
             });
             setStatusData(prev => {
                 const next = { ...prev };
-                periodsToApply.forEach((p) => {
-                    next[`${user.id}_${dateStr}_${p}`] = finalReason;
+                targetDates.forEach((targetDate) => {
+                    periodsToApply.forEach((p) => {
+                        next[`${user.id}_${targetDate}_${p}`] = finalReason;
+                    });
                 });
                 return next;
             });
@@ -1396,6 +1448,7 @@ const StaffDailyAttendance = ({ onBack }) => {
             alert('매주 고정 일정이 등록되었고, 선택한 날짜에는 즉시 반영되었습니다.\n[고정 기타 휴무 관리] 메뉴에서 확인할 수 있으며, 매주 월요일 00:00 (KST)에 자동 반영됩니다.');
             closeStatusPopup();
             autoAdvanceSelection(user.id);
+            fetchData();
         } catch (e) {
             console.error(e);
             alert('고정 등록 실패: ' + e.message);
@@ -1904,6 +1957,8 @@ const StaffDailyAttendance = ({ onBack }) => {
             <StatusPopup
                 popup={statusPopup}
                 onClose={closeStatusPopup}
+                onToggleDate={toggleStatusPopupDate}
+                onCalendarMonthChange={handleStatusPopupMonthChange}
                 onTogglePeriod={toggleStatusPopupPeriod}
                 onReasonSelect={handlePopupReasonSelect}
                 onCustomReasonChange={handlePopupCustomReasonChange}
