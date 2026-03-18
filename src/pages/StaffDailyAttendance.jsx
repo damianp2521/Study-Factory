@@ -271,6 +271,8 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, is
 
     const longPressTimer = useRef(null);
     const isLongPress = useRef(false);
+    const isDragging = useRef(false);
+    const pointerStart = useRef(null);
 
     let bg = 'white';
     let content = null;
@@ -330,37 +332,76 @@ const AttendanceCell = React.memo(({ user, dateStr, period, isRowHighlighted, is
         }
     }
 
-    const handleStart = (e) => {
-        if (isDeactivated) return;
-        isLongPress.current = false;
-        longPressTimer.current = setTimeout(() => {
-            isLongPress.current = true;
-            onLongPress(user, dateStr, period);
-        }, 500);
-    };
-
-    const handleEnd = () => {
+    const clearLongPressTimer = () => {
         if (longPressTimer.current) {
             clearTimeout(longPressTimer.current);
             longPressTimer.current = null;
         }
     };
 
+    const getPointFromEvent = (e) => {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        if (typeof e.clientX === 'number' && typeof e.clientY === 'number') {
+            return { x: e.clientX, y: e.clientY };
+        }
+        return null;
+    };
+
+    const handleStart = (e) => {
+        if (isDeactivated) return;
+        isLongPress.current = false;
+        isDragging.current = false;
+        pointerStart.current = getPointFromEvent(e);
+        clearLongPressTimer();
+        longPressTimer.current = setTimeout(() => {
+            isLongPress.current = true;
+            onLongPress(user, dateStr, period);
+        }, 500);
+    };
+
+    const handleMove = (e) => {
+        if (!pointerStart.current || !longPressTimer.current) return;
+        const currentPoint = getPointFromEvent(e);
+        if (!currentPoint) return;
+
+        const dx = currentPoint.x - pointerStart.current.x;
+        const dy = currentPoint.y - pointerStart.current.y;
+        const movedEnough = Math.hypot(dx, dy) > 8;
+
+        if (movedEnough) {
+            isDragging.current = true;
+            clearLongPressTimer();
+        }
+    };
+
+    const handleEnd = () => {
+        clearLongPressTimer();
+        pointerStart.current = null;
+    };
+
     const handleClick = () => {
         if (isDeactivated) return;
-        if (!isLongPress.current) {
+        if (!isLongPress.current && !isDragging.current) {
             onSelect(user, dateStr, period);
         }
         isLongPress.current = false;
+        isDragging.current = false;
     };
 
     return (
         <div
             onMouseDown={handleStart}
+            onMouseMove={(e) => {
+                if (e.buttons === 1) handleMove(e);
+            }}
             onMouseUp={handleEnd}
             onMouseLeave={handleEnd}
             onTouchStart={handleStart}
+            onTouchMove={handleMove}
             onTouchEnd={handleEnd}
+            onTouchCancel={handleEnd}
             onClick={handleClick}
             onContextMenu={(e) => e.preventDefault()}
             style={{
