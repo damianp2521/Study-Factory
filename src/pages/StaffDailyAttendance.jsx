@@ -1217,13 +1217,14 @@ const StaffDailyAttendance = ({ onBack }) => {
 
     const openStatusPopup = (user, dateStr, period) => {
         const todayDateStr = getKstNowParts().dateStr;
+        const initialDateStr = /^\d{4}-\d{2}-\d{2}$/.test(dateStr || '') ? dateStr : todayDateStr;
         setStatusPopup({
             open: true,
             user,
-            dateStr,
+            dateStr: initialDateStr,
             period,
-            selectedDates: [todayDateStr],
-            calendarMonth: createDateFromYmd(todayDateStr),
+            selectedDates: [initialDateStr],
+            calendarMonth: createDateFromYmd(initialDateStr),
             selectedPeriods: period ? [period] : [],
             selectedReason: null,
             selectedPresetReason: null,
