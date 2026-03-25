@@ -37,6 +37,7 @@ const createDateFromYmd = (ymd) => {
 };
 
 const VACATION_STATUS_KEYS = ['vacation_full', 'vacation_half_am', 'vacation_half_pm', 'vacation_cancel'];
+const POPUP_PRESET_REASONS = ['지각', '늦잠', '쉼', '운동', '시험', '아픔'];
 
 // Status Selection Popup
 const StatusPopup = ({
@@ -46,15 +47,17 @@ const StatusPopup = ({
     onCalendarMonthChange,
     onTogglePeriod,
     onReasonSelect,
+    onPresetReasonSelect,
     onCustomReasonChange,
     onSubmit,
     onFixedSubmit
 }) => {
     if (!popup.open) return null;
 
-    const { user, selectedDates, calendarMonth, selectedPeriods, selectedReason, customReason } = popup;
+    const { user, selectedDates, calendarMonth, selectedPeriods, selectedReason, selectedPresetReason, customReason } = popup;
     const isAllSelected = selectedPeriods.length === 7;
     const isSelected = (reason) => selectedReason === reason;
+    const isPresetSelected = (reason) => selectedPresetReason === reason;
 
     return createPortal(
         <div
@@ -89,17 +92,19 @@ const StatusPopup = ({
                     {user?.name || ''} 출석 상태 선택
                 </h3>
 
-                <div style={{ marginBottom: '14px' }}>
+                <div style={{ marginBottom: '12px' }}>
                     <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>날짜</label>
-                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px' }}>
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '8px' }}>
                         <EmbeddedCalendar
                             selectedDates={selectedDates}
                             onSelectDate={onToggleDate}
                             currentMonth={calendarMonth}
                             onMonthChange={onCalendarMonthChange}
+                            compact={true}
+                            showEvents={false}
                         />
                     </div>
-                    <div style={{ textAlign: 'center', marginTop: '8px', color: '#718096', fontSize: '0.85rem' }}>
+                    <div style={{ textAlign: 'center', marginTop: '6px', color: '#718096', fontSize: '0.82rem' }}>
                         {selectedDates.length > 0 ? `${selectedDates.length}일 선택됨` : '날짜를 선택하세요 (다중 선택 가능)'}
                     </div>
                 </div>
@@ -148,8 +153,32 @@ const StatusPopup = ({
 
                 <div style={{ margin: '15px 0', borderTop: '1px solid #e2e8f0' }}></div>
 
+                <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유 선택</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                        {POPUP_PRESET_REASONS.map((reason) => (
+                            <button
+                                key={reason}
+                                onClick={() => onPresetReasonSelect(reason)}
+                                style={{
+                                    padding: '9px 0',
+                                    borderRadius: '9px',
+                                    border: isPresetSelected(reason) ? '2px solid #3182ce' : '1px solid #e2e8f0',
+                                    background: isPresetSelected(reason) ? '#ebf8ff' : 'white',
+                                    color: isPresetSelected(reason) ? '#2c5282' : '#4a5568',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.88rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {reason}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유입력</label>
+                    <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#4a5568' }}>사유 입력</label>
                     <input
                         type="text"
                         value={customReason}
@@ -866,6 +895,7 @@ const StaffDailyAttendance = ({ onBack }) => {
             calendarMonth: createDateFromYmd(todayDateStr),
             selectedPeriods: [],
             selectedReason: null,
+            selectedPresetReason: null,
             customReason: ''
         };
     };
@@ -1196,6 +1226,7 @@ const StaffDailyAttendance = ({ onBack }) => {
             calendarMonth: createDateFromYmd(todayDateStr),
             selectedPeriods: period ? [period] : [],
             selectedReason: null,
+            selectedPresetReason: null,
             customReason: ''
         });
     };
@@ -1237,11 +1268,26 @@ const StaffDailyAttendance = ({ onBack }) => {
     };
 
     const handlePopupReasonSelect = (reason) => {
-        setStatusPopup(prev => ({ ...prev, selectedReason: reason }));
+        setStatusPopup(prev => ({ ...prev, selectedReason: reason, selectedPresetReason: null }));
+    };
+
+    const handlePopupPresetReasonSelect = (reason) => {
+        setStatusPopup(prev => ({
+            ...prev,
+            selectedReason: null,
+            selectedPresetReason: reason,
+            customReason: reason
+        }));
     };
 
     const handlePopupCustomReasonChange = (value) => {
-        setStatusPopup(prev => ({ ...prev, customReason: value, selectedReason: null }));
+        const trimmed = value.trim();
+        setStatusPopup(prev => ({
+            ...prev,
+            customReason: value,
+            selectedReason: null,
+            selectedPresetReason: POPUP_PRESET_REASONS.includes(trimmed) ? trimmed : null
+        }));
     };
 
     const getValidatedPopupReason = () => {
@@ -2031,6 +2077,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                 onCalendarMonthChange={handleStatusPopupMonthChange}
                 onTogglePeriod={toggleStatusPopupPeriod}
                 onReasonSelect={handlePopupReasonSelect}
+                onPresetReasonSelect={handlePopupPresetReasonSelect}
                 onCustomReasonChange={handlePopupCustomReasonChange}
                 onSubmit={handleStatusSubmit}
                 onFixedSubmit={handleFixedStatusSubmit}

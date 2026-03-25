@@ -10,7 +10,9 @@ const EmbeddedCalendar = ({
     maxDate,
     // New props for controlled mode
     currentMonth: controlledMonth,
-    onMonthChange
+    onMonthChange,
+    compact = false,
+    showEvents = true
 }) => {
     // Internal state for uncontrolled mode
     const [internalMonth, setInternalMonth] = useState(() => {
@@ -78,7 +80,7 @@ const EmbeddedCalendar = ({
 
         // Add empty cells for padding before 1st day
         for (let i = 0; i < firstDay; i++) {
-            days.push(<div key={`empty-${i}`} style={{ minHeight: '48px' }}></div>);
+            days.push(<div key={`empty-${i}`} style={{ minHeight: compact ? '36px' : '48px' }}></div>);
         }
 
         // Render actual days
@@ -123,32 +125,33 @@ const EmbeddedCalendar = ({
                 cellBorderColor = '#cbd5e0';
             }
 
+            const shouldRenderEvents = showEvents && dayEvents.length > 0 && !isSelected;
             days.push(
                 <div
                     key={dateStr}
                     onClick={() => !disabled && onSelectDate(dateStr)}
                     style={{
-                        minHeight: '60px', // Increased height
+                        minHeight: compact ? '36px' : '60px',
                         height: 'auto',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'flex-start',
-                        gap: '4px', // Increased gap
-                        padding: '6px 4px', // Increased padding
+                        justifyContent: shouldRenderEvents ? 'flex-start' : 'center',
+                        gap: shouldRenderEvents ? '4px' : '0',
+                        padding: compact ? '3px 2px' : '6px 4px',
                         background: cellBgColor,
                         color: cellTextColor,
                         border: isSelected ? 'none' : `1px solid ${cellBorderColor}`,
-                        borderRadius: '12px', // More rounded
+                        borderRadius: compact ? '10px' : '12px',
                         fontWeight: fontWeight,
-                        fontSize: '0.9rem',
+                        fontSize: compact ? '0.85rem' : '0.9rem',
                         cursor: disabled ? 'not-allowed' : 'pointer',
                         transition: 'all 0.2s',
                         position: 'relative'
                     }}
                 >
-                    <span style={{ marginBottom: '2px', lineHeight: 1 }}>{d}</span>
-                    {dayEvents.length > 0 && !isSelected && (() => {
+                    <span style={{ marginBottom: shouldRenderEvents ? '2px' : 0, lineHeight: 1 }}>{d}</span>
+                    {shouldRenderEvents && (() => {
                         // Group events by unique labels to avoid duplicates on calendar
                         const uniqueLabels = [];
                         const seenLabels = new Set();
@@ -245,24 +248,24 @@ const EmbeddedCalendar = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                marginBottom: '10px',
-                gap: '15px'
+                marginBottom: compact ? '6px' : '10px',
+                gap: compact ? '10px' : '15px'
             }}>
                 <button
                     onClick={handlePrevMonth}
                     style={{
                         background: 'none',
                         border: 'none',
-                        padding: '5px',
+                        padding: compact ? '3px' : '5px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         color: '#4a5568'
                     }}
                 >
-                    <ChevronLeft size={24} />
+                    <ChevronLeft size={compact ? 20 : 24} />
                 </button>
-                <span style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
+                <span style={{ fontSize: compact ? '1rem' : '1.1rem', fontWeight: 'bold', color: '#2d3748' }}>
                     {currentMonth instanceof Date && !isNaN(currentMonth) ? `${currentMonth.getFullYear()}년 ${currentMonth.getMonth() + 1}월` : ''}
                 </span>
                 <button
@@ -270,14 +273,14 @@ const EmbeddedCalendar = ({
                     style={{
                         background: 'none',
                         border: 'none',
-                        padding: '5px',
+                        padding: compact ? '3px' : '5px',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         color: '#4a5568'
                     }}
                 >
-                    <ChevronRight size={24} />
+                    <ChevronRight size={compact ? 20 : 24} />
                 </button>
             </div>
 
@@ -285,15 +288,15 @@ const EmbeddedCalendar = ({
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(7, 1fr)',
-                marginBottom: '5px',
+                marginBottom: compact ? '2px' : '5px',
                 textAlign: 'center'
             }}>
                 {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
                     <div key={day} style={{
-                        fontSize: '0.8rem',
+                        fontSize: compact ? '0.75rem' : '0.8rem',
                         fontWeight: 'bold',
                         color: idx === 0 ? '#e53e3e' : idx === 6 ? '#3182ce' : '#718096',
-                        padding: '5px 0'
+                        padding: compact ? '2px 0' : '5px 0'
                     }}>
                         {day}
                     </div>
@@ -304,7 +307,7 @@ const EmbeddedCalendar = ({
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(7, 1fr)',
-                gap: '5px'
+                gap: compact ? '3px' : '5px'
             }}>
                 {renderCalendarDays()}
             </div>
