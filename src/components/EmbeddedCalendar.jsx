@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+const getKstDateStr = (timestamp = Date.now()) => {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).formatToParts(new Date(timestamp));
+
+    const partMap = {};
+    parts.forEach((part) => {
+        if (part.type !== 'literal') {
+            partMap[part.type] = part.value;
+        }
+    });
+
+    return `${partMap.year}-${partMap.month}-${partMap.day}`;
+};
+
 const EmbeddedCalendar = ({
     selectedDate,       // Single date (backward compatibility)
     selectedDates = [], // Array of dates for multi-select
@@ -75,6 +93,7 @@ const EmbeddedCalendar = ({
         const month = currentMonth.getMonth();
         const daysInMonth = getDaysInMonth(currentMonth);
         const firstDay = getFirstDayOfMonth(currentMonth);
+        const todayKst = getKstDateStr();
 
         const days = [];
 
@@ -94,7 +113,7 @@ const EmbeddedCalendar = ({
             const isSelected = selectedDate === dateStr || selectedDates.includes(dateStr);
 
             const disabled = isDateDisabled(dateStr);
-            const isToday = dateStr === new Date().toISOString().split('T')[0];
+            const isToday = dateStr === todayKst;
 
             // Determine cell base styles
             let cellBgColor = 'transparent';
