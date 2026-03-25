@@ -36,6 +36,12 @@ const createDateFromYmd = (ymd) => {
     return new Date(year, month - 1, day);
 };
 
+const formatYmdToKorean = (ymd) => {
+    const [year, month, day] = (ymd || '').split('-').map(Number);
+    if (!year || !month || !day) return ymd || '';
+    return `${year}년 ${month}월 ${day}일`;
+};
+
 const VACATION_STATUS_KEYS = ['vacation_full', 'vacation_half_am', 'vacation_half_pm', 'vacation_cancel'];
 const POPUP_PRESET_REASONS = ['지각', '늦잠', '쉼', '운동', '시험', '아픔'];
 
@@ -47,6 +53,7 @@ const StatusPopup = ({
     onCalendarMonthChange,
     onTogglePeriod,
     onReasonSelect,
+    onInstantCancel,
     onPresetReasonSelect,
     onCustomReasonChange,
     onSubmit,
@@ -239,10 +246,10 @@ const StatusPopup = ({
 
 
                 <button
-                    onClick={() => onReasonSelect('vacation_cancel')}
+                    onClick={onInstantCancel}
                     style={{
                         width: '100%', marginTop: '8px', padding: '10px', borderRadius: '10px',
-                        border: isSelected('vacation_cancel') ? '2px solid #4a5568' : '1px solid #cbd5e0',
+                        border: '1px solid #cbd5e0',
                         background: '#edf2f7',
                         color: '#4a5568', fontWeight: 'bold', fontSize: '0.9rem',
                         cursor: 'pointer'
@@ -867,6 +874,7 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [displayRows, setDisplayRows] = useState([]);
     const [attendanceData, setAttendanceData] = useState(new Set());
     const [statusData, setStatusData] = useState({}); // {key: status}
+    const [attendanceLogIdData, setAttendanceLogIdData] = useState({}); // {key: attendance_logs.id}
     const [vacationData, setVacationData] = useState({});
     const [dailyMemos, setDailyMemos] = useState([]);
     const [memberMemos, setMemberMemos] = useState([]);
@@ -1078,7 +1086,7 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, beverageRes, todosRes] = await Promise.all([
                 supabase.from('profiles').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
-                supabase.from('attendance_logs').select('user_id, date, period, status').gte('date', startDate).lte('date', endDate),
+                supabase.from('attendance_logs').select('id, user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
                 supabase.from('attendance_memos').select('*').eq('date', dateStr).order('created_at', { ascending: true }),
                 supabase.from('member_memos').select('*').order('created_at', { ascending: true }),
@@ -1110,13 +1118,16 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             const attSet = new Set();
             const statusMap = {};
+            const attendanceLogIdMap = {};
             (logRes.data || []).forEach(l => {
                 const key = `${l.user_id}_${l.date}_${l.period}`;
                 attSet.add(key);
+                attendanceLogIdMap[key] = l.id;
                 if (l.status) statusMap[key] = l.status;
             });
             setAttendanceData(attSet);
             setStatusData(statusMap);
+            setAttendanceLogIdData(attendanceLogIdMap);
 
             const vacMap = {};
             (vacRes.data || []).forEach((v) => {
@@ -1289,6 +1300,102 @@ const StaffDailyAttendance = ({ onBack }) => {
             selectedReason: null,
             selectedPresetReason: POPUP_PRESET_REASONS.includes(trimmed) ? trimmed : null
         }));
+    };
+
+    const handlePopupInstantCancel = async () => {
+        const { user, dateStr, period, selectedDates } = statusPopup;
+        if (!user) return;
+
+        const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(dateStr || '') ? dateStr : selectedDates[0];
+        const targetKey = targetDate && period ? `${user.id}_${targetDate}_${period}` : null;
+        const currentStatus = targetKey ? statusData[targetKey] : null;
+
+        if (targetKey && period && currentStatus) {
+            const message = `${user.name}의 ${formatYmdToKorean(targetDate)} ${period}교시 '${currentStatus}' 기타휴무를 취소하시겠습니까?`;
+            if (!confirm(message)) return;
+
+            try {
+                const targetLogId = attendanceLogIdData[targetKey];
+                let deleteQuery = supabase.from('attendance_logs').delete();
+
+                if (targetLogId) {
+                    deleteQuery = deleteQuery.eq('id', targetLogId);
+                } else {
+                    deleteQuery = deleteQuery
+                        .eq('user_id', user.id)
+                        .eq('date', targetDate)
+                        .eq('period', period)
+                        .eq('status', currentStatus);
+                }
+
+                const { error } = await deleteQuery;
+                if (error) throw error;
+
+                setAttendanceData(prev => {
+                    const next = new Set(prev);
+                    next.delete(targetKey);
+                    return next;
+                });
+                setStatusData(prev => {
+                    const next = { ...prev };
+                    delete next[targetKey];
+                    return next;
+                });
+                setAttendanceLogIdData(prev => {
+                    const next = { ...prev };
+                    delete next[targetKey];
+                    return next;
+                });
+
+                closeStatusPopup();
+                autoAdvanceSelection(user.id);
+                fetchData();
+            } catch (e) {
+                console.error(e);
+                alert(`기타휴무 취소에 실패했습니다: ${e.message}`);
+                fetchData();
+            }
+            return;
+        }
+
+        const targetDates = Array.from(new Set(selectedDates)).sort();
+        if (targetDates.length === 0) {
+            alert('취소할 날짜를 선택해주세요.');
+            return;
+        }
+
+        if (!confirm(`${user.name}님의 휴가를 취소하시겠습니까?\n날짜: ${targetDates.join(', ')}`)) return;
+
+        try {
+            const { count, error } = await supabase
+                .from('vacation_requests')
+                .delete({ count: 'exact' })
+                .eq('user_id', user.id)
+                .in('date', targetDates)
+                .in('type', ['full', 'half']);
+
+            if (error) throw error;
+            if (!count) {
+                alert('삭제된 휴가가 없습니다. 이미 삭제되었거나 권한이 없을 수 있습니다.');
+                return;
+            }
+
+            setVacationData(prev => {
+                const next = { ...prev };
+                targetDates.forEach((targetDate) => {
+                    delete next[`${user.id}_${targetDate}`];
+                });
+                return next;
+            });
+
+            closeStatusPopup();
+            autoAdvanceSelection(user.id);
+            fetchData();
+        } catch (e) {
+            console.error('Error canceling vacation:', e);
+            alert(`휴가 취소에 실패했습니다: ${e.message}`);
+            fetchData();
+        }
     };
 
     const getValidatedPopupReason = () => {
@@ -2078,6 +2185,7 @@ const StaffDailyAttendance = ({ onBack }) => {
                 onCalendarMonthChange={handleStatusPopupMonthChange}
                 onTogglePeriod={toggleStatusPopupPeriod}
                 onReasonSelect={handlePopupReasonSelect}
+                onInstantCancel={handlePopupInstantCancel}
                 onPresetReasonSelect={handlePopupPresetReasonSelect}
                 onCustomReasonChange={handlePopupCustomReasonChange}
                 onSubmit={handleStatusSubmit}
