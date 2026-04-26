@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Check, Trash2, AlertCircle, MessageCircle, Edit2, ChevronDown, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
+import { appendManagerReplyToContent, buildContentWithReplies, parseContentWithReplies } from '../utils/replyContent';
 
 const NEW_HIRE_NOTICE_DISMISS_PREFIX = '__NEW_HIRE_NOTICE_DISMISSED__';
 
@@ -17,6 +18,8 @@ const StaffTaskBoard = () => {
     const [isUrgent, setIsUrgent] = useState(false);
     const [editingTask, setEditingTask] = useState(null);
     const [editContent, setEditContent] = useState('');
+    const [replyingTask, setReplyingTask] = useState(null);
+    const [replyContent, setReplyContent] = useState('');
 
     // Persist view
     useEffect(() => {
@@ -106,13 +109,18 @@ const StaffTaskBoard = () => {
             // 4. Merge & Format
             const formattedTodos = (todos || [])
                 .filter(t => !t.pending_registration_id && !(typeof t.content === 'string' && t.content.startsWith(NEW_HIRE_NOTICE_DISMISS_PREFIX)))
-                .map(t => ({
-                ...t,
-                type: 'staff',
-                authorName: t.author?.name || '알수없음',
-                branch: t.branch || t.author?.branch || '알수없음', // Use stored branch, fallback to author's current branch
-                completerName: t.completer?.name
-                }));
+                .map((t) => {
+                    const { body, replies } = parseContentWithReplies(t.content);
+                    return {
+                        ...t,
+                        content: body,
+                        replies,
+                        type: 'staff',
+                        authorName: t.author?.name || '알수없음',
+                        branch: t.branch || t.author?.branch || '알수없음', // Use stored branch, fallback to author's current branch
+                        completerName: t.completer?.name
+                    };
+                });
 
             const groupedNewHireByDate = {};
             (pendingRegs || []).forEach((reg) => {
@@ -150,17 +158,21 @@ const StaffTaskBoard = () => {
                     };
                 });
 
-            const formattedSuggestions = (suggestions || []).map(s => ({
-                id: s.id, // suggestion id
-                content: s.content,
-                is_urgent: false, // Member suggestions are separate priority, but technically not "urgent staff todo"
-                status: s.status === 'resolved' ? 'completed' : 'pending',
-                created_at: s.created_at,
-                type: 'suggestion',
-                authorName: s.author?.name || '익명',
-                branch: s.author?.branch || '알수없음', // Suggestions still track user's *current* branch
-                completerName: s.completer?.name // Now fetching completer name from newly added relation
-            }));
+            const formattedSuggestions = (suggestions || []).map((s) => {
+                const { body, replies } = parseContentWithReplies(s.content);
+                return {
+                    id: s.id, // suggestion id
+                    content: body,
+                    replies,
+                    is_urgent: false, // Member suggestions are separate priority, but technically not "urgent staff todo"
+                    status: s.status === 'resolved' ? 'completed' : 'pending',
+                    created_at: s.created_at,
+                    type: 'suggestion',
+                    authorName: s.author?.name || '익명',
+                    branch: s.author?.branch || '알수없음', // Suggestions still track user's *current* branch
+                    completerName: s.completer?.name // Now fetching completer name from newly added relation
+                };
+            });
 
             setTasks([...newHireNotices, ...formattedTodos, ...formattedSuggestions]);
         } catch (error) {
@@ -322,9 +334,13 @@ const StaffTaskBoard = () => {
         if (!editContent.trim()) return;
         try {
             const table = task.type === 'staff' ? 'staff_todos' : 'suggestions';
+            const nextContent = buildContentWithReplies({
+                body: editContent,
+                replies: task.replies || []
+            });
             const { error } = await supabase
                 .from(table)
-                .update({ content: editContent })
+                .update({ content: nextContent })
                 .eq('id', task.id);
             if (error) throw error;
             setEditingTask(null);
@@ -340,6 +356,53 @@ const StaffTaskBoard = () => {
     const startEdit = (task) => {
         setEditingTask(task);
         setEditContent(task.content);
+        setReplyingTask(null);
+        setReplyContent('');
+    };
+
+    const getTaskKey = (task) => `${task.type}-${task.id}`;
+
+    const toggleReplyInput = (task) => {
+        const key = getTaskKey(task);
+        if (replyingTask === key) {
+            setReplyingTask(null);
+            setReplyContent('');
+            return;
+        }
+
+        setEditingTask(null);
+        setEditContent('');
+        setReplyingTask(key);
+        setReplyContent('');
+    };
+
+    const handleReplySave = async (task) => {
+        if (!replyContent.trim()) return;
+        try {
+            const table = task.type === 'staff' ? 'staff_todos' : 'suggestions';
+            const currentContent = buildContentWithReplies({
+                body: task.content,
+                replies: task.replies || []
+            });
+            const nextContent = appendManagerReplyToContent({
+                content: currentContent,
+                replyText: replyContent,
+                authorName: user?.name || '관리자'
+            });
+
+            const { error } = await supabase
+                .from(table)
+                .update({ content: nextContent })
+                .eq('id', task.id);
+            if (error) throw error;
+
+            setReplyingTask(null);
+            setReplyContent('');
+            fetchData();
+        } catch (error) {
+            console.error('Error saving reply:', error);
+            alert(`답글 저장 실패: ${error.message || error.details || JSON.stringify(error)}`);
+        }
     };
 
     // Sorting & Filtering
@@ -400,6 +463,22 @@ const StaffTaskBoard = () => {
             return true;
         }
         return false;
+    };
+
+    const canUserReply = (task) => {
+        if (task.type === 'new_hire_notice') return false;
+        return user.role === 'admin' || user.role === 'manager';
+    };
+
+    const formatReplyTime = (createdAt) => {
+        if (!createdAt) return '';
+        const date = new Date(createdAt);
+        return date.toLocaleString('ko-KR', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     return (
@@ -592,14 +671,18 @@ const StaffTaskBoard = () => {
                                 const isNotice = task.type === 'new_hire_notice';
                                 const isCompleted = task.status === 'completed';
                                 const canModify = canUserModify(task);
+                                const canReply = canUserReply(task);
                                 const isEditing = editingTask?.id === task.id && editingTask?.type === task.type;
+                                const taskKey = getTaskKey(task);
+                                const isReplying = replyingTask === taskKey;
+                                const hasReplies = Array.isArray(task.replies) && task.replies.length > 0;
 
                                 return (
                                     <div
-                                        key={`${task.type}-${task.id}`}
+                                        key={taskKey}
                                         style={{
                                             display: 'flex',
-                                            alignItems: 'flex-start',
+                                            flexDirection: 'column',
                                             padding: '8px 10px',
                                             borderRadius: '12px',
                                             border: `1px solid ${style.borderColor}`,
@@ -608,123 +691,92 @@ const StaffTaskBoard = () => {
                                             gap: '8px'
                                         }}
                                     >
-                                        {/* Checkbox */}
-                                        <div
-                                            onClick={() => handleToggleComplete(task)}
-                                            style={{
-                                                minWidth: '20px',
-                                                height: '20px',
-                                                borderRadius: '5px',
-                                                border: `2px solid ${isCompleted ? '#cbd5e0' : style.text}`,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                cursor: 'pointer',
-                                                flexShrink: 0,
-                                                backgroundColor: isCompleted ? '#cbd5e0' : 'white'
-                                            }}
-                                        >
-                                            {isCompleted && <Check size={12} color="white" />}
-                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                            {/* Checkbox */}
+                                            <div
+                                                onClick={() => handleToggleComplete(task)}
+                                                style={{
+                                                    minWidth: '20px',
+                                                    height: '20px',
+                                                    borderRadius: '5px',
+                                                    border: `2px solid ${isCompleted ? '#cbd5e0' : style.text}`,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    flexShrink: 0,
+                                                    backgroundColor: isCompleted ? '#cbd5e0' : 'white'
+                                                }}
+                                            >
+                                                {isCompleted && <Check size={12} color="white" />}
+                                            </div>
 
-                                        {/* Content - flexible width, wraps when needed */}
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            {isEditing ? (
-                                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                                    <input
-                                                        type="text"
-                                                        value={editContent}
-                                                        onChange={(e) => setEditContent(e.target.value)}
-                                                        autoFocus
-                                                        style={{
-                                                            flex: 1,
-                                                            minWidth: '150px',
-                                                            padding: '4px 8px',
-                                                            borderRadius: '6px',
-                                                            border: '1px solid #cbd5e0',
-                                                            fontSize: '0.9rem'
-                                                        }}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') handleEdit(task);
-                                                            if (e.key === 'Escape') { setEditingTask(null); setEditContent(''); }
-                                                        }}
-                                                    />
-                                                    <button
-                                                        onClick={() => handleEdit(task)}
-                                                        style={{ padding: '3px 8px', borderRadius: '5px', background: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                                    >저장</button>
-                                                    <button
-                                                        onClick={() => { setEditingTask(null); setEditContent(''); }}
-                                                        style={{ padding: '3px 8px', borderRadius: '5px', background: '#e2e8f0', color: '#4a5568', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
-                                                    >취소</button>
-                                                </div>
-                                            ) : (
-                                                <div style={{
-                                                    fontSize: '0.9rem',
-                                                    color: isCompleted ? '#718096' : '#2d3748',
-                                                    textDecoration: isCompleted ? 'line-through' : 'none',
-                                                    wordBreak: 'break-word',
-                                                    lineHeight: '1.4'
-                                                }}>
-                                                    {task.content}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Right side: Author + Action Buttons */}
-                                        {!isEditing && (
-                                            <div style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '6px',
-                                                flexShrink: 0,
-                                                marginLeft: 'auto'
-                                            }}>
-                                                {/* Author Info */}
-                                                <span style={{
-                                                    fontSize: '0.7rem',
-                                                    color: isCompleted ? '#a0aec0' : style.text,
-                                                    opacity: 0.8,
-                                                    whiteSpace: 'nowrap'
-                                                }}>
-                                                    {task.type === 'suggestion' ? `요청:${task.authorName}` : `작성:${task.authorName}`}
-                                                    {task.completerName && ` /완료:${task.completerName}`}
-                                                </span>
-
-                                                {/* Action Buttons */}
-                                                {isNotice ? (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
-                                                        style={{
-                                                            background: 'none',
-                                                            border: 'none',
-                                                            color: isCompleted ? '#a0aec0' : '#e53e3e',
-                                                            cursor: 'pointer',
-                                                            padding: '2px',
-                                                            opacity: 0.6
-                                                        }}
-                                                        onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                                                        onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                ) : canModify && (
-                                                    <>
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); startEdit(task); }}
+                                            {/* Content - flexible width, wraps when needed */}
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                {isEditing ? (
+                                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                        <input
+                                                            type="text"
+                                                            value={editContent}
+                                                            onChange={(e) => setEditContent(e.target.value)}
+                                                            autoFocus
                                                             style={{
-                                                                background: 'none',
-                                                                border: 'none',
-                                                                color: isCompleted ? '#a0aec0' : '#3182ce',
-                                                                cursor: 'pointer',
-                                                                padding: '2px',
-                                                                opacity: 0.6
+                                                                flex: 1,
+                                                                minWidth: '150px',
+                                                                padding: '4px 8px',
+                                                                borderRadius: '6px',
+                                                                border: '1px solid #cbd5e0',
+                                                                fontSize: '0.9rem'
                                                             }}
-                                                            onMouseOver={(e) => e.currentTarget.style.opacity = 1}
-                                                            onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
-                                                        >
-                                                            <Edit2 size={14} />
-                                                        </button>
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') handleEdit(task);
+                                                                if (e.key === 'Escape') { setEditingTask(null); setEditContent(''); }
+                                                            }}
+                                                        />
+                                                        <button
+                                                            onClick={() => handleEdit(task)}
+                                                            style={{ padding: '3px 8px', borderRadius: '5px', background: 'var(--color-primary)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                                        >저장</button>
+                                                        <button
+                                                            onClick={() => { setEditingTask(null); setEditContent(''); }}
+                                                            style={{ padding: '3px 8px', borderRadius: '5px', background: '#e2e8f0', color: '#4a5568', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                                                        >취소</button>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{
+                                                        fontSize: '0.9rem',
+                                                        color: isCompleted ? '#718096' : '#2d3748',
+                                                        textDecoration: isCompleted ? 'line-through' : 'none',
+                                                        wordBreak: 'break-word',
+                                                        lineHeight: '1.4'
+                                                    }}>
+                                                        {task.content}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Right side: Author + Action Buttons */}
+                                            {!isEditing && (
+                                                <div style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    flexShrink: 0,
+                                                    marginLeft: 'auto'
+                                                }}>
+                                                    {/* Author Info */}
+                                                    <span style={{
+                                                        fontSize: '0.7rem',
+                                                        color: isCompleted ? '#a0aec0' : style.text,
+                                                        opacity: 0.8,
+                                                        whiteSpace: 'nowrap'
+                                                    }}>
+                                                        {task.type === 'suggestion' ? `요청:${task.authorName}` : `작성:${task.authorName}`}
+                                                        {task.completerName && ` /완료:${task.completerName}`}
+                                                    </span>
+
+                                                    {/* Action Buttons */}
+                                                    {isNotice ? (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
                                                             style={{
@@ -740,8 +792,154 @@ const StaffTaskBoard = () => {
                                                         >
                                                             <Trash2 size={14} />
                                                         </button>
-                                                    </>
-                                                )}
+                                                    ) : (
+                                                        <>
+                                                            {canReply && (
+                                                                <button
+                                                                    onClick={(e) => { e.stopPropagation(); toggleReplyInput(task); }}
+                                                                    style={{
+                                                                        border: '1px solid #cbd5e0',
+                                                                        background: isReplying ? '#edf2f7' : 'white',
+                                                                        color: '#4a5568',
+                                                                        cursor: 'pointer',
+                                                                        padding: '2px 6px',
+                                                                        borderRadius: '999px',
+                                                                        fontSize: '0.72rem',
+                                                                        fontWeight: '700'
+                                                                    }}
+                                                                >
+                                                                    답글
+                                                                </button>
+                                                            )}
+                                                            {canModify && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); startEdit(task); }}
+                                                                        style={{
+                                                                            background: 'none',
+                                                                            border: 'none',
+                                                                            color: isCompleted ? '#a0aec0' : '#3182ce',
+                                                                            cursor: 'pointer',
+                                                                            padding: '2px',
+                                                                            opacity: 0.6
+                                                                        }}
+                                                                        onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                                                                        onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
+                                                                    >
+                                                                        <Edit2 size={14} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); handleDelete(task); }}
+                                                                        style={{
+                                                                            background: 'none',
+                                                                            border: 'none',
+                                                                            color: isCompleted ? '#a0aec0' : '#e53e3e',
+                                                                            cursor: 'pointer',
+                                                                            padding: '2px',
+                                                                            opacity: 0.6
+                                                                        }}
+                                                                        onMouseOver={(e) => e.currentTarget.style.opacity = 1}
+                                                                        onMouseOut={(e) => e.currentTarget.style.opacity = 0.6}
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {hasReplies && (
+                                            <div style={{ marginLeft: '28px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                {task.replies.map((reply) => (
+                                                    <div
+                                                        key={reply.id}
+                                                        style={{
+                                                            background: 'white',
+                                                            border: '1px solid #e2e8f0',
+                                                            borderRadius: '10px',
+                                                            padding: '8px 10px'
+                                                        }}
+                                                    >
+                                                        <div style={{ fontSize: '0.72rem', color: '#718096', marginBottom: '4px' }}>
+                                                            답글 · {reply.authorName} · {formatReplyTime(reply.createdAt)}
+                                                        </div>
+                                                        <div style={{ fontSize: '0.84rem', color: '#2d3748', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                            {reply.text}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {isReplying && (
+                                            <div
+                                                style={{
+                                                    marginLeft: '28px',
+                                                    background: 'white',
+                                                    border: '1px solid #e2e8f0',
+                                                    borderRadius: '10px',
+                                                    padding: '10px',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '8px'
+                                                }}
+                                            >
+                                                <textarea
+                                                    value={replyContent}
+                                                    onChange={(e) => setReplyContent(e.target.value)}
+                                                    placeholder="답변을 입력하세요..."
+                                                    rows={3}
+                                                    autoFocus
+                                                    style={{
+                                                        width: '100%',
+                                                        resize: 'vertical',
+                                                        border: '1px solid #cbd5e0',
+                                                        borderRadius: '8px',
+                                                        padding: '8px',
+                                                        fontSize: '0.88rem',
+                                                        fontFamily: 'inherit',
+                                                        boxSizing: 'border-box'
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                                            e.preventDefault();
+                                                            handleReplySave(task);
+                                                        }
+                                                    }}
+                                                />
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                                                    <button
+                                                        onClick={() => handleReplySave(task)}
+                                                        style={{
+                                                            padding: '6px 10px',
+                                                            borderRadius: '6px',
+                                                            border: 'none',
+                                                            background: 'var(--color-primary)',
+                                                            color: 'white',
+                                                            fontSize: '0.8rem',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        저장
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setReplyingTask(null); setReplyContent(''); }}
+                                                        style={{
+                                                            padding: '6px 10px',
+                                                            borderRadius: '6px',
+                                                            border: '1px solid #cbd5e0',
+                                                            background: 'white',
+                                                            color: '#4a5568',
+                                                            fontSize: '0.8rem',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        취소
+                                                    </button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

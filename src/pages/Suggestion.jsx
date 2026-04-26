@@ -4,6 +4,7 @@ import { Send, CheckCircle, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import PageTemplate from '../components/PageTemplate';
+import { parseContentWithReplies } from '../utils/replyContent';
 
 const Suggestion = () => {
     const navigate = useNavigate();
@@ -99,10 +100,6 @@ const Suggestion = () => {
         }
     };
 
-    const handleBack = () => {
-        navigate('/memberdashboard');
-    };
-
     return (
         <PageTemplate
             title={selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : '건의사항'}
@@ -135,41 +132,67 @@ const Suggestion = () => {
                             아직 건의한 내역이 없습니다.
                         </div>
                     ) : (
-                        mySuggestions.map((item) => (
-                            <div
-                                key={item.id}
-                                style={{
-                                    background: 'white',
-                                    borderRadius: '12px',
-                                    padding: '20px',
-                                    boxShadow: 'var(--shadow-sm)',
-                                    borderLeft: `5px solid ${item.status === 'resolved' ? 'var(--color-success)' : '#ddd'}`
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                                    <span style={{ fontSize: '0.85rem', color: '#999' }}>
-                                        {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                    <span style={{
-                                        fontSize: '0.85rem',
-                                        fontWeight: 'bold',
-                                        color: item.status === 'resolved' ? 'var(--color-success)' : '#999',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '4px'
-                                    }}>
-                                        {item.status === 'resolved' ? (
-                                            <><CheckCircle size={14} /> 처리완료</>
-                                        ) : (
-                                            <><Clock size={14} /> 대기중</>
-                                        )}
-                                    </span>
+                        mySuggestions.map((item) => {
+                            const { body, replies } = parseContentWithReplies(item.content);
+                            return (
+                                <div
+                                    key={item.id}
+                                    style={{
+                                        background: 'white',
+                                        borderRadius: '12px',
+                                        padding: '20px',
+                                        boxShadow: 'var(--shadow-sm)',
+                                        borderLeft: `5px solid ${item.status === 'resolved' ? 'var(--color-success)' : '#ddd'}`
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                        <span style={{ fontSize: '0.85rem', color: '#999' }}>
+                                            {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                        <span style={{
+                                            fontSize: '0.85rem',
+                                            fontWeight: 'bold',
+                                            color: item.status === 'resolved' ? 'var(--color-success)' : '#999',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}>
+                                            {item.status === 'resolved' ? (
+                                                <><CheckCircle size={14} /> 처리완료</>
+                                            ) : (
+                                                <><Clock size={14} /> 대기중</>
+                                            )}
+                                        </span>
+                                    </div>
+                                    <p style={{ fontSize: '1rem', color: 'var(--color-text-main)', marginBottom: replies.length > 0 ? '12px' : 0 }}>
+                                        {body}
+                                    </p>
+
+                                    {replies.length > 0 && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {replies.map((reply) => (
+                                                <div
+                                                    key={reply.id}
+                                                    style={{
+                                                        background: '#f8fafc',
+                                                        border: '1px solid #e2e8f0',
+                                                        borderRadius: '10px',
+                                                        padding: '10px'
+                                                    }}
+                                                >
+                                                    <div style={{ fontSize: '0.75rem', color: '#718096', marginBottom: '4px' }}>
+                                                        답변 · {reply.authorName}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.9rem', color: '#2d3748', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                        {reply.text}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                                <p style={{ fontSize: '1rem', color: 'var(--color-text-main)' }}>
-                                    {item.content}
-                                </p>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             ) : (
