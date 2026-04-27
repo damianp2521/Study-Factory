@@ -1,413 +1,476 @@
-import React, { useState, useEffect } from 'react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, isBefore, startOfToday } from 'date-fns';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+    addDays,
+    addMonths,
+    endOfMonth,
+    endOfWeek,
+    format,
+    startOfMonth,
+    startOfWeek,
+    subMonths
+} from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, CheckCircle, Circle, Trash2, Users, Lock, Unlock, Eye } from 'lucide-react';
+import {
+    CheckCircle,
+    ChevronLeft,
+    ChevronRight,
+    Circle,
+    Pencil,
+    Plus,
+    Save,
+    Trash2
+} from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
-import SharedTodoModal from './SharedTodoModal';
 
-const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName = null }) => {
+const getWeekStart = (date) => startOfWeek(date, { weekStartsOn: 1 });
+
+const DailyWorkPlan = () => {
     const { user } = useAuth();
+
+    const [selectedWeekStart, setSelectedWeekStart] = useState(getWeekStart(new Date()));
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [selectedDate, setSelectedDate] = useState(new Date());
+
+    const [currentPlan, setCurrentPlan] = useState(null);
     const [todos, setTodos] = useState([]);
-    const [monthStats, setMonthStats] = useState({}); // { '2024-01-01': { total: 5, completed: 3 } }
     const [newTask, setNewTask] = useState('');
-    const [isPublic, setIsPublic] = useState(false);
-    const [showSharedModal, setShowSharedModal] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [editingTodoId, setEditingTodoId] = useState(null);
+    const [editingText, setEditingText] = useState('');
 
-    // If targetUserId is provided (viewing others), use it. Otherwise use logged-in user.
-    const effectiveUserId = targetUserId || user?.id;
+    const [weekCards, setWeekCards] = useState([]);
+    const [loadingWeek, setLoadingWeek] = useState(false);
+    const [loadingMonth, setLoadingMonth] = useState(false);
+    const [submittingReport, setSubmittingReport] = useState(false);
 
-    // Initial Fetch
-    useEffect(() => {
-        if (effectiveUserId) {
-            // Only fetch visibility if it's my own plan
-            if (!isReadOnly) {
-                fetchVisibility();
-                checkDailyRollover();
-            }
-            fetchMonthStats(currentMonth);
-            fetchTodos(selectedDate);
-        }
-    }, [effectiveUserId]);
+    const selectedWeekEnd = useMemo(() => addDays(selectedWeekStart, 6), [selectedWeekStart]);
 
-    // Fetch stats when month changes
-    useEffect(() => {
-        if (effectiveUserId) {
-            fetchMonthStats(currentMonth);
-        }
-    }, [currentMonth, effectiveUserId]);
+    const activeStats = useMemo(() => {
+        const activeTodos = todos.filter((todo) => !todo.deleted_at);
+        const total = activeTodos.length;
+        const completed = activeTodos.filter((todo) => todo.is_completed).length;
+        return {
+            total,
+            completed,
+            percent: total > 0 ? Math.round((completed / total) * 100) : 0
+        };
+    }, [todos]);
 
-    // Fetch todos when date changes
-    useEffect(() => {
-        if (effectiveUserId) {
-            fetchTodos(selectedDate);
-        }
+    const recordActivity = async ({
+        planId,
+        targetUserId,
+        todoId = null,
+        actionType,
+        detail,
+        beforeData = {},
+        afterData = {}
+    }) => {
+        if (!planId || !targetUserId || !user?.id) return;
 
-        // Real-time subscription for daily todos
-        if (effectiveUserId) {
-            const todosChannel = supabase
-                .channel('daily_todos_changes')
-                .on('postgres_changes', {
-                    event: '*',
-                    schema: 'public',
-                    table: 'daily_todos',
-                    filter: `user_id=eq.${effectiveUserId}`
-                }, () => {
-                    fetchTodos(selectedDate);
-                    fetchMonthStats(currentMonth);
-                })
-                .subscribe();
-
-            return () => {
-                todosChannel.unsubscribe();
-            };
-        }
-    }, [selectedDate, effectiveUserId]);
-
-    const fetchVisibility = async () => {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('is_public_todo')
-                .eq('id', effectiveUserId)
-                .single();
-            if (data) setIsPublic(data.is_public_todo);
+            await supabase
+                .from('weekly_work_plan_activity_logs')
+                .insert([{
+                    plan_id: planId,
+                    todo_id: todoId,
+                    user_id: targetUserId,
+                    actor_id: user.id,
+                    action_type: actionType,
+                    action_detail: detail,
+                    before_data: beforeData,
+                    after_data: afterData
+                }]);
         } catch (error) {
-            console.error('Error fetching visibility:', error);
+            console.error('활동 이력 저장 실패:', error);
         }
     };
 
-    const toggleVisibility = async () => {
-        if (isReadOnly) return; // Guard
-        try {
-            const newValue = !isPublic;
-            // Optimistic update
-            setIsPublic(newValue);
+    const loadSelectedWeek = useCallback(async (createIfMissing = true) => {
+        if (!user?.id) return null;
 
-            // Use RPC if RLS blocks direct update, or try direct update first
-            const { error } = await supabase
-                .from('profiles')
-                .update({ is_public_todo: newValue })
-                .eq('id', effectiveUserId);
-
-            if (error) throw error;
-        } catch (error) {
-            console.error('Error toggling visibility:', error);
-            setIsPublic(!isPublic); // Revert
-            alert('설정 변경에 실패했습니다.');
-        }
-    };
-
-    const checkDailyRollover = async () => {
-        try {
-            const { data, error } = await supabase.rpc('perform_daily_rollover', {
-                target_user_id: effectiveUserId
-            });
-            if (error) console.error('Rollover check failed:', error);
-            else if (data?.count > 0) {
-                console.log('Rollover performed:', data);
-                // Refresh stats and todos if needed (though useEffect handles fetchTodos on selectedDate change, 
-                // and fetchMonthStats on mount. We might want to re-fetch if today was affected)
-                fetchMonthStats(currentMonth);
-                if (isSameDay(selectedDate, new Date())) {
-                    fetchTodos(selectedDate);
-                }
-            }
-        } catch (e) {
-            console.error('Rollover exception:', e);
-        }
-    };
-
-    const fetchMonthStats = async (monthDate) => {
-        const start = format(startOfMonth(monthDate), 'yyyy-MM-dd');
-        const end = format(endOfMonth(monthDate), 'yyyy-MM-dd');
+        setLoadingWeek(true);
+        const weekStartStr = format(selectedWeekStart, 'yyyy-MM-dd');
 
         try {
-            const { data, error } = await supabase
-                .from('daily_todos')
-                .select('date, is_completed')
-                .eq('user_id', effectiveUserId)
-                .gte('date', start)
-                .lte('date', end);
-
-            if (error) throw error;
-
-            const stats = {};
-            data.forEach(item => {
-                const dateKey = item.date;
-                if (!stats[dateKey]) stats[dateKey] = { total: 0, completed: 0 };
-                stats[dateKey].total += 1;
-                if (item.is_completed) stats[dateKey].completed += 1;
-            });
-            setMonthStats(stats);
-        } catch (error) {
-            console.error('Error fetching month stats:', error);
-        }
-    };
-
-    const fetchTodos = async (date) => {
-        setLoading(true);
-        const dateStr = format(date, 'yyyy-MM-dd');
-        try {
-            const { data, error } = await supabase
-                .from('daily_todos')
+            let { data: plan, error } = await supabase
+                .from('weekly_work_plans')
                 .select('*')
-                .eq('user_id', effectiveUserId)
-                .eq('date', dateStr)
+                .eq('user_id', user.id)
+                .eq('week_start_date', weekStartStr)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!plan && createIfMissing) {
+                const { data: createdPlan, error: createError } = await supabase
+                    .from('weekly_work_plans')
+                    .insert([{
+                        user_id: user.id,
+                        week_start_date: weekStartStr,
+                        report_status: 'draft'
+                    }])
+                    .select()
+                    .single();
+
+                if (createError) throw createError;
+                plan = createdPlan;
+            }
+
+            if (!plan) {
+                setCurrentPlan(null);
+                setTodos([]);
+                return null;
+            }
+
+            setCurrentPlan(plan);
+
+            const { data: weekTodos, error: todosError } = await supabase
+                .from('weekly_work_plan_todos')
+                .select('*')
+                .eq('plan_id', plan.id)
+                .is('deleted_at', null)
+                .order('display_order', { ascending: true })
                 .order('created_at', { ascending: true });
 
-            if (error) throw error;
-            setTodos(data || []);
-        } catch (error) {
-            console.error('Error fetching todos:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+            if (todosError) throw todosError;
+            setTodos(weekTodos || []);
 
-    const handleAddTask = async () => {
-        // Prevent editing past dates (Strictly Date comparison)
-        if (isBefore(selectedDate, startOfToday())) {
-            alert('지난 날짜의 계획은 수정할 수 없습니다.');
-            return;
+            return plan;
+        } catch (error) {
+            console.error('주간 계획 불러오기 실패:', error);
+            return null;
+        } finally {
+            setLoadingWeek(false);
         }
-        if (isReadOnly || !newTask.trim()) return;
-        const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    }, [selectedWeekStart, user?.id]);
+
+    const loadMonthSummaries = useCallback(async (monthDate) => {
+        if (!user?.id) return;
+
+        setLoadingMonth(true);
+
+        const monthStartWeek = startOfWeek(startOfMonth(monthDate), { weekStartsOn: 1 });
+        const monthEndWeek = endOfWeek(endOfMonth(monthDate), { weekStartsOn: 1 });
+
+        const startStr = format(monthStartWeek, 'yyyy-MM-dd');
+        const endStr = format(monthEndWeek, 'yyyy-MM-dd');
 
         try {
+            const { data: plans, error: plansError } = await supabase
+                .from('weekly_work_plans')
+                .select('id, week_start_date, report_status, reported_at, last_re_reported_at, admin_evaluation')
+                .eq('user_id', user.id)
+                .gte('week_start_date', startStr)
+                .lte('week_start_date', endStr)
+                .order('week_start_date', { ascending: true });
+
+            if (plansError) throw plansError;
+
+            const planList = plans || [];
+            const planIds = planList.map((plan) => plan.id);
+
+            const statsByPlanId = {};
+
+            if (planIds.length > 0) {
+                const { data: todosData, error: todosError } = await supabase
+                    .from('weekly_work_plan_todos')
+                    .select('plan_id, is_completed, deleted_at')
+                    .in('plan_id', planIds)
+                    .is('deleted_at', null);
+
+                if (todosError) throw todosError;
+
+                (todosData || []).forEach((todo) => {
+                    if (!statsByPlanId[todo.plan_id]) {
+                        statsByPlanId[todo.plan_id] = { total: 0, completed: 0 };
+                    }
+                    statsByPlanId[todo.plan_id].total += 1;
+                    if (todo.is_completed) {
+                        statsByPlanId[todo.plan_id].completed += 1;
+                    }
+                });
+            }
+
+            const planByWeek = {};
+            planList.forEach((plan) => {
+                planByWeek[plan.week_start_date] = plan;
+            });
+
+            const cards = [];
+            let cursor = monthStartWeek;
+
+            while (cursor <= monthEndWeek) {
+                const weekKey = format(cursor, 'yyyy-MM-dd');
+                const matchingPlan = planByWeek[weekKey];
+                const planStats = matchingPlan ? (statsByPlanId[matchingPlan.id] || { total: 0, completed: 0 }) : { total: 0, completed: 0 };
+                const completionRate = planStats.total > 0 ? Math.round((planStats.completed / planStats.total) * 100) : 0;
+
+                cards.push({
+                    weekKey,
+                    weekStart: cursor,
+                    weekEnd: addDays(cursor, 6),
+                    reportStatus: matchingPlan?.report_status || 'draft',
+                    evaluation: matchingPlan?.admin_evaluation || '',
+                    total: planStats.total,
+                    completed: planStats.completed,
+                    completionRate
+                });
+
+                cursor = addDays(cursor, 7);
+            }
+
+            setWeekCards(cards);
+        } catch (error) {
+            console.error('월간 요약 불러오기 실패:', error);
+            setWeekCards([]);
+        } finally {
+            setLoadingMonth(false);
+        }
+    }, [user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        loadSelectedWeek(false);
+    }, [loadSelectedWeek, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        loadMonthSummaries(currentMonth);
+    }, [currentMonth, loadMonthSummaries, user?.id]);
+
+    const handleAddTask = async () => {
+        const content = newTask.trim();
+        if (!content || !user?.id) return;
+
+        try {
+            let plan = currentPlan;
+            if (!plan) {
+                plan = await loadSelectedWeek(true);
+            }
+            if (!plan) {
+                alert('주간 계획을 생성하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+                return;
+            }
+
+            const nextOrder = todos.length > 0
+                ? Math.max(...todos.map((todo) => todo.display_order || 0)) + 1
+                : 1;
+
             const { data, error } = await supabase
-                .from('daily_todos')
+                .from('weekly_work_plan_todos')
                 .insert([{
-                    user_id: effectiveUserId,
-                    content: newTask,
-                    date: dateStr,
-                    is_completed: false
+                    plan_id: plan.id,
+                    content,
+                    is_completed: false,
+                    display_order: nextOrder
                 }])
                 .select()
                 .single();
 
             if (error) throw error;
 
-            setTodos([...todos, data]);
+            setTodos((prev) => [...prev, data]);
             setNewTask('');
 
-            // Update stats locally
-            setMonthStats(prev => ({
-                ...prev,
-                [dateStr]: {
-                    total: (prev[dateStr]?.total || 0) + 1,
-                    completed: (prev[dateStr]?.completed || 0)
-                }
-            }));
+            recordActivity({
+                planId: plan.id,
+                targetUserId: plan.user_id,
+                todoId: data.id,
+                actionType: 'CREATE_TODO',
+                detail: '투두를 생성했습니다.',
+                afterData: { content: data.content }
+            });
+
+            loadMonthSummaries(currentMonth);
         } catch (error) {
-            console.error('Error adding task:', error);
-            alert('추가 실패');
+            console.error('투두 추가 실패:', error);
+            alert('투두 추가에 실패했습니다.');
         }
     };
 
-    const toggleTodo = async (todo) => {
-        // Prevent editing past dates
-        if (isBefore(parseISO(todo.date), startOfToday())) return;
-        if (isReadOnly) return; // Prevent toggling in read-only mode
+    const handleToggleTodo = async (todo) => {
+        if (!currentPlan) return;
+
+        const nextCompleted = !todo.is_completed;
+        const nextCompletedAt = nextCompleted ? new Date().toISOString() : null;
 
         try {
-            const newCompleted = !todo.is_completed;
-            const completedAt = newCompleted ? new Date().toISOString() : null;
-            const dateStr = todo.date;
-
-            // Optimistic update
-            setTodos(todos.map(t => t.id === todo.id ? { ...t, is_completed: newCompleted, completed_at: completedAt } : t));
-            setMonthStats(prev => ({
-                ...prev,
-                [dateStr]: {
-                    total: prev[dateStr]?.total || 0,
-                    completed: (prev[dateStr]?.completed || 0) + (newCompleted ? 1 : -1)
-                }
-            }));
-
             const { error } = await supabase
-                .from('daily_todos')
-                .update({ is_completed: newCompleted, completed_at: completedAt })
+                .from('weekly_work_plan_todos')
+                .update({
+                    is_completed: nextCompleted,
+                    completed_at: nextCompletedAt
+                })
                 .eq('id', todo.id);
 
             if (error) throw error;
+
+            setTodos((prev) => prev.map((item) => (
+                item.id === todo.id
+                    ? { ...item, is_completed: nextCompleted, completed_at: nextCompletedAt }
+                    : item
+            )));
+
+            recordActivity({
+                planId: currentPlan.id,
+                targetUserId: currentPlan.user_id,
+                todoId: todo.id,
+                actionType: 'TOGGLE_TODO',
+                detail: nextCompleted ? '투두를 완료 처리했습니다.' : '투두 완료를 해제했습니다.',
+                beforeData: { is_completed: todo.is_completed },
+                afterData: { is_completed: nextCompleted }
+            });
+
+            loadMonthSummaries(currentMonth);
         } catch (error) {
-            console.error('Error toggling todo:', error);
-            fetchTodos(selectedDate); // Revert on error
-            fetchMonthStats(currentMonth);
+            console.error('투두 완료 상태 변경 실패:', error);
+            alert('완료 상태 변경에 실패했습니다.');
         }
     };
 
-    const deleteTodo = async (id, dateStr, isCompleted) => {
-        // Allow deleting copied/failed tasks? User said "completed ones... failed ones copied... delete copied".
-        // Use general rule: If it's today or future, allow. If past, disallow.
-        const targetDate = parseISO(dateStr);
-        if (isBefore(targetDate, startOfToday())) {
-            alert('지난 날짜의 기록은 삭제할 수 없습니다.');
-            return;
-        }
+    const handleDeleteTodo = async (todo) => {
+        if (!currentPlan) return;
+        if (!confirm('이 투두를 삭제할까요?')) return;
 
-        if (isReadOnly) return;
-        if (!confirm('삭제하시겠습니까?')) return;
         try {
+            const deletedAt = new Date().toISOString();
+
             const { error } = await supabase
-                .from('daily_todos')
-                .delete()
-                .eq('id', id);
+                .from('weekly_work_plan_todos')
+                .update({ deleted_at: deletedAt })
+                .eq('id', todo.id);
 
             if (error) throw error;
 
-            setTodos(todos.filter(t => t.id !== id));
+            setTodos((prev) => prev.filter((item) => item.id !== todo.id));
 
-            // Update stats locally
-            setMonthStats(prev => {
-                const current = prev[dateStr];
-                if (!current) return prev;
-                return {
-                    ...prev,
-                    [dateStr]: {
-                        total: Math.max(0, current.total - 1),
-                        completed: Math.max(0, current.completed - (isCompleted ? 1 : 0))
-                    }
-                };
+            recordActivity({
+                planId: currentPlan.id,
+                targetUserId: currentPlan.user_id,
+                todoId: todo.id,
+                actionType: 'DELETE_TODO',
+                detail: '투두를 삭제했습니다.',
+                beforeData: { content: todo.content, is_completed: todo.is_completed }
             });
+
+            loadMonthSummaries(currentMonth);
         } catch (error) {
-            console.error('Error deleting todo:', error);
+            console.error('투두 삭제 실패:', error);
+            alert('삭제에 실패했습니다.');
         }
     };
 
-    // Calendar Render Helpers
-    const renderHeader = () => {
-        return (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                    <ChevronLeft size={24} color="#4a5568" />
-                </button>
-                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748' }}>
-                    {format(currentMonth, 'yyyy년 M월')}
-                </span>
-                <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                    <ChevronRight size={24} color="#4a5568" />
-                </button>
-            </div>
-        );
-    };
+    const handleSaveTodoEdit = async (todo) => {
+        if (!currentPlan) return;
+        const nextContent = editingText.trim();
 
-    const renderDays = () => {
-        const dateFormat = "E";
-        const days = [];
-        let startDate = startOfWeek(currentMonth, { weekStartsOn: 0 }); // Sunday start
-
-        for (let i = 0; i < 7; i++) {
-            days.push(
-                <div key={i} style={{ textAlign: 'center', fontWeight: 'bold', color: '#a0aec0', fontSize: '0.8rem', paddingBottom: '10px' }}>
-                    {format(addDays(startDate, i), dateFormat, { locale: ko })}
-                </div>
-            );
+        if (!nextContent) {
+            alert('투두 내용을 입력해 주세요.');
+            return;
         }
-        return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: '5px' }}>{days}</div>;
-    };
 
-    const renderCells = () => {
-        const monthStart = startOfMonth(currentMonth);
-        const monthEnd = endOfMonth(monthStart);
-        const startDate = startOfWeek(monthStart, { weekStartsOn: 0 });
-        const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 });
-
-        const dateFormat = "d";
-        const rows = [];
-        let days = [];
-        let day = startDate;
-        let formattedDate = "";
-
-        while (day <= endDate) {
-            for (let i = 0; i < 7; i++) {
-                formattedDate = format(day, dateFormat);
-                const cloneDay = day;
-                const isSelected = isSameDay(day, selectedDate);
-                const isCurrentMonth = isSameMonth(day, monthStart);
-                const dateKey = format(day, 'yyyy-MM-dd');
-                const stat = monthStats[dateKey];
-
-                days.push(
-                    <div
-                        key={day}
-                        onClick={() => setSelectedDate(cloneDay)}
-                        style={{
-                            minHeight: '60px', // Narrower height (was 70px fixed)
-                            height: 'auto',
-                            borderTop: '1px solid transparent', // Remove top border or make transparent
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            cursor: 'pointer',
-                            background: isSelected ? 'var(--color-primary)' : 'transparent', // Selected fills cell
-                            color: !isCurrentMonth ? '#cbd5e0' : (isSelected ? 'white' : '#2d3748'),
-                            position: 'relative',
-                            padding: '6px 4px',
-                            gap: '4px',
-                            borderRadius: '12px', // Rounded
-                            transition: 'all 0.2s',
-                            border: isSelected ? 'none' : '1px solid transparent' // Placeholder for alignment
-                        }}
-                    >
-                        <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? 'bold' : 'normal', lineHeight: 1 }}>
-                            {formattedDate}
-                        </span>
-
-                        {/* Stats Pill */}
-                        {stat && stat.total > 0 && (
-                            <div style={{
-                                marginTop: 'auto',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '4px',
-                                background: isSelected ? 'rgba(255,255,255,0.2)' : 'white',
-                                borderRadius: '12px',
-                                padding: '3px 8px',
-                                width: '100%',
-                                border: isSelected ? '1px solid rgba(255,255,255,0.3)' : '1px solid #e2e8f0',
-                                boxShadow: isSelected ? 'none' : '0 1px 2px rgba(0,0,0,0.05)',
-                                fontSize: '0.7rem'
-                            }}>
-                                {isBefore(cloneDay, startOfToday()) ? (
-                                    // Past: Show Percentage
-                                    <span style={{
-                                        color: isSelected ? 'white' : '#a0aec0',
-                                        fontWeight: 'bold'
-                                    }}>
-                                        {Math.round((stat.completed / stat.total) * 100)}%
-                                    </span>
-                                ) : (
-                                    // Future/Today: Show Count
-                                    <>
-                                        <span style={{ color: isSelected ? 'white' : '#48bb78', fontWeight: 'bold' }}>{stat.completed}</span>
-                                        <span style={{ color: isSelected ? 'rgba(255,255,255,0.8)' : '#a0aec0', fontWeight: 'normal' }}> / {stat.total}</span>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                );
-                day = addDays(day, 1);
-            }
-            rows.push(
-                <div key={day} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
-                    {days}
-                </div>
-            );
-            days = [];
+        if (nextContent === todo.content) {
+            setEditingTodoId(null);
+            setEditingText('');
+            return;
         }
-        return <div>{rows}</div>;
+
+        try {
+            const { error } = await supabase
+                .from('weekly_work_plan_todos')
+                .update({ content: nextContent })
+                .eq('id', todo.id);
+
+            if (error) throw error;
+
+            setTodos((prev) => prev.map((item) => (
+                item.id === todo.id
+                    ? { ...item, content: nextContent }
+                    : item
+            )));
+
+            recordActivity({
+                planId: currentPlan.id,
+                targetUserId: currentPlan.user_id,
+                todoId: todo.id,
+                actionType: 'UPDATE_TODO',
+                detail: '투두 내용을 수정했습니다.',
+                beforeData: { content: todo.content },
+                afterData: { content: nextContent }
+            });
+
+            setEditingTodoId(null);
+            setEditingText('');
+        } catch (error) {
+            console.error('투두 수정 실패:', error);
+            alert('수정에 실패했습니다.');
+        }
     };
 
-    // Calculate Completion Raito
-    const todayStats = monthStats[format(selectedDate, 'yyyy-MM-dd')] || { total: 0, completed: 0 };
-    const completionRate = todayStats.total > 0 ? Math.round((todayStats.completed / todayStats.total) * 100) : 0;
+    const handleSubmitPlan = async (isRereport) => {
+        if (!currentPlan) return;
+
+        if (todos.length === 0) {
+            alert('먼저 이번 주 투두를 작성해 주세요.');
+            return;
+        }
+
+        if (isRereport && currentPlan.report_status === 'draft') {
+            alert('먼저 [보고하기]로 최초 보고를 진행해 주세요.');
+            return;
+        }
+
+        const confirmText = isRereport
+            ? '현재 내용을 다시 보고할까요?'
+            : '현재 내용을 이번 주 작업계획으로 보고할까요?';
+
+        if (!confirm(confirmText)) return;
+
+        setSubmittingReport(true);
+
+        const nowIso = new Date().toISOString();
+        const nextStatus = isRereport ? 're_reported' : 'reported';
+
+        try {
+            const updatePayload = isRereport
+                ? {
+                    report_status: nextStatus,
+                    last_re_reported_at: nowIso
+                }
+                : {
+                    report_status: nextStatus,
+                    reported_at: nowIso
+                };
+
+            const { data, error } = await supabase
+                .from('weekly_work_plans')
+                .update(updatePayload)
+                .eq('id', currentPlan.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            setCurrentPlan(data);
+
+            recordActivity({
+                planId: currentPlan.id,
+                targetUserId: currentPlan.user_id,
+                actionType: isRereport ? 'REREPORT' : 'REPORT',
+                detail: isRereport ? '주간 계획을 다시 보고했습니다.' : '주간 계획을 보고했습니다.',
+                afterData: { report_status: nextStatus }
+            });
+
+            alert(isRereport ? '다시보고가 완료되었습니다.' : '보고가 완료되었습니다.');
+            await loadMonthSummaries(currentMonth);
+        } catch (error) {
+            console.error('보고 처리 실패:', error);
+            alert('보고 처리에 실패했습니다.');
+        } finally {
+            setSubmittingReport(false);
+        }
+    };
+
+    const selectedWeekLabel = `${format(selectedWeekStart, 'M월 d일 eee', { locale: ko })} ~ ${format(selectedWeekEnd, 'd일 eee', { locale: ko })}`;
 
     return (
         <div style={{
@@ -415,197 +478,431 @@ const DailyWorkPlan = ({ targetUserId = null, isReadOnly = false, targetUserName
             borderRadius: '16px',
             padding: '20px',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            height: '100%', // Fixed height matching parent
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
-            overflow: 'hidden' // Main container no scroll
+            overflow: 'hidden'
         }}>
-            {/* Top Bar handles - Fixed */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', flexShrink: 0 }}>
-                {isReadOnly ? (
-                    // Read Only Header: Just the name
-                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#2d3748' }}>
-                        {targetUserName ? `${targetUserName}님의 작업계획` : '회원님의 작업계획'}
-                    </div>
-                ) : (
-                    // My Work Plan Header: View Others + Toggle
-                    <>
-                        <button
-                            onClick={() => setShowSharedModal(true)}
-                            style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: '#edf2f7', border: 'none', padding: '10px', borderRadius: '50%', // Circle/Icon only
-                                color: '#4a5568', cursor: 'pointer',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                            }}
-                            title="다른 회원 보기"
-                        >
-                            <Users size={20} />
-                        </button>
-
-                        <button
-                            onClick={toggleVisibility}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '4px',
-                                background: isPublic ? '#e6fffa' : '#edf2f7',
-                                border: '1px solid', borderColor: isPublic ? '#38b2ac' : 'transparent',
-                                padding: '4px 10px', borderRadius: '15px',
-                                color: isPublic ? '#319795' : '#718096', fontWeight: 'bold', fontSize: '0.75rem', cursor: 'pointer',
-                                height: 'fit-content'
-                            }}>
-                            {isPublic ? <Unlock size={14} /> : <Lock size={14} />}
-                            <span>{isPublic ? '공개중' : '비공개'}</span>
-                        </button>
-                    </>
-                )}
-            </div>
-
             <div style={{
                 flex: 1,
                 overflowY: 'auto',
                 paddingRight: '2px',
-                scrollbarWidth: 'none', // Firefox
-                msOverflowStyle: 'none',  // IE/Edge
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
             }}>
-                <style>{`
-                    div::-webkit-scrollbar { display: none; }
-                `}</style>
+                <style>{`div::-webkit-scrollbar { display: none; }`}</style>
 
-                {/* Calendar (Moved to Top) */}
-                <div style={{ marginBottom: '20px' }}>
-                    {renderHeader()}
-                    {renderDays()}
-                    {renderCells()}
+                {/* 1) Week Selector (Top) */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '8px 10px',
+                    marginBottom: '14px'
+                }}>
+                    <button
+                        onClick={() => setSelectedWeekStart((prev) => addDays(prev, -7))}
+                        style={iconButtonStyle}
+                    >
+                        <ChevronLeft size={20} />
+                    </button>
+
+                    <div style={{
+                        fontSize: '0.96rem',
+                        fontWeight: '700',
+                        color: '#2d3748',
+                        textAlign: 'center'
+                    }}>
+                        {selectedWeekLabel}
+                    </div>
+
+                    <button
+                        onClick={() => setSelectedWeekStart((prev) => addDays(prev, 7))}
+                        style={iconButtonStyle}
+                    >
+                        <ChevronRight size={20} />
+                    </button>
                 </div>
 
-                <div style={{ height: '1px', background: '#edf2f7', marginBottom: '20px' }}></div>
-
-                {/* To-Do List Section */}
-                <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2d3748', margin: 0 }}>
-                            {format(selectedDate, 'M월 d일')} 계획
+                {/* 2) Weekly Todo Input + List */}
+                <div style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '14px',
+                    marginBottom: '14px'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '10px',
+                        gap: '10px'
+                    }}>
+                        <h3 style={{ margin: 0, fontSize: '1rem', color: '#2d3748' }}>
+                            이번 주 투두리스트
                         </h3>
-                        <div style={{ fontSize: '0.85rem', color: '#718096' }}>
-                            <span style={{ color: '#48bb78', fontWeight: 'bold' }}>{todayStats.completed}</span>
-                            <span style={{ margin: '0 4px' }}>/</span>
-                            <span>{todayStats.total}</span>
-                            <span style={{ marginLeft: '8px', fontSize: '0.75rem', background: '#f7fafc', padding: '2px 6px', borderRadius: '4px' }}>
-                                {completionRate}%
-                            </span>
+                        <div style={{
+                            fontSize: '0.8rem',
+                            color: '#4a5568',
+                            background: '#f7fafc',
+                            borderRadius: '999px',
+                            padding: '4px 10px',
+                            border: '1px solid #e2e8f0',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            {activeStats.completed}/{activeStats.total} ({activeStats.percent}%)
                         </div>
                     </div>
 
-                    {/* Input - Hide if Read Only OR Past Date */}
-                    {!isReadOnly && !isBefore(selectedDate, startOfToday()) && (
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                            <input
-                                type="text"
-                                value={newTask}
-                                onChange={(e) => setNewTask(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleAddTask()}
-                                placeholder="할 일을 입력하세요..."
-                                style={{
-                                    flex: 1,
-                                    padding: '10px',
-                                    borderRadius: '8px',
-                                    border: '1px solid #e2e8f0',
-                                    fontSize: '0.9rem',
-                                    outline: 'none'
-                                }}
-                            />
-                            <button
-                                onClick={handleAddTask}
-                                disabled={!newTask.trim()}
-                                style={{
-                                    background: 'var(--color-primary)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    width: '40px',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    cursor: newTask.trim() ? 'pointer' : 'default',
-                                    opacity: newTask.trim() ? 1 : 0.5
-                                }}
-                            >
-                                <Plus size={20} />
-                            </button>
-                        </div>
-                    )}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                        <input
+                            type="text"
+                            value={newTask}
+                            onChange={(e) => setNewTask(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddTask();
+                                }
+                            }}
+                            placeholder="이번 주 할 일을 입력하세요"
+                            style={todoInputStyle}
+                        />
+                        <button
+                            onClick={handleAddTask}
+                            disabled={!newTask.trim()}
+                            style={{
+                                ...primarySquareButton,
+                                opacity: newTask.trim() ? 1 : 0.5,
+                                cursor: newTask.trim() ? 'pointer' : 'default'
+                            }}
+                        >
+                            <Plus size={18} />
+                        </button>
+                    </div>
 
-                    {/* List */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {loading ? (
-                            <div style={{ textAlign: 'center', color: '#a0aec0', padding: '15px' }}>로딩 중...</div>
+                        {loadingWeek ? (
+                            <div style={emptyMessageStyle}>불러오는 중...</div>
                         ) : todos.length === 0 ? (
-                            <div style={{ textAlign: 'center', color: '#cbd5e0', padding: '15px', fontSize: '0.85rem' }}>
-                                등록된 할 일이 없습니다.
-                            </div>
+                            <div style={emptyMessageStyle}>이번 주 투두를 작성해 주세요.</div>
                         ) : (
-                            todos.map(todo => (
-                                <div key={todo.id} style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    padding: '10px',
-                                    background: '#f8fafc',
-                                    borderRadius: '8px',
-                                    transition: 'all 0.2s',
-                                    borderLeft: todo.is_completed ? '3px solid #48bb78' : '3px solid #cbd5e0',
-                                    opacity: isBefore(parseISO(todo.date), startOfToday()) ? 0.8 : 1 // Slight fade for past items
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            todos.map((todo) => (
+                                <div
+                                    key={todo.id}
+                                    style={{
+                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '10px',
+                                        background: '#f8fafc',
+                                        padding: '8px 10px'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <button
-                                            onClick={() => toggleTodo(todo)}
-                                            style={{
-                                                background: 'none',
-                                                border: 'none',
-                                                cursor: (isReadOnly || isBefore(parseISO(todo.date), startOfToday())) ? 'default' : 'pointer',
-                                                padding: 0,
-                                                display: 'flex',
-                                                flexShrink: 0
-                                            }}
-                                            disabled={isReadOnly || isBefore(parseISO(todo.date), startOfToday())}
+                                            onClick={() => handleToggleTodo(todo)}
+                                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}
                                         >
-                                            {todo.is_completed ?
-                                                <CheckCircle size={18} color="#48bb78" fill="#e6fffa" /> :
-                                                <Circle size={18} color="#cbd5e0" />
+                                            {todo.is_completed
+                                                ? <CheckCircle size={18} color="#38a169" fill="#e6fffa" />
+                                                : <Circle size={18} color="#a0aec0" />
                                             }
                                         </button>
-                                        <span style={{
-                                            flex: 1,
-                                            fontSize: '0.9rem',
-                                            color: todo.is_completed ? '#a0aec0' : '#2d3748',
-                                            textDecoration: todo.is_completed ? 'line-through' : 'none',
-                                            wordBreak: 'break-all'
-                                        }}>
-                                            {todo.content}
-                                        </span>
-                                        {!isReadOnly && !isBefore(parseISO(todo.date), startOfToday()) && (
+
+                                        {editingTodoId === todo.id ? (
+                                            <input
+                                                type="text"
+                                                value={editingText}
+                                                onChange={(e) => setEditingText(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleSaveTodoEdit(todo);
+                                                    }
+                                                }}
+                                                style={{
+                                                    ...todoInputStyle,
+                                                    padding: '7px 9px',
+                                                    fontSize: '0.88rem'
+                                                }}
+                                            />
+                                        ) : (
+                                            <div style={{
+                                                flex: 1,
+                                                fontSize: '0.92rem',
+                                                color: todo.is_completed ? '#90a0b5' : '#2d3748',
+                                                textDecoration: todo.is_completed ? 'line-through' : 'none',
+                                                wordBreak: 'break-word'
+                                            }}>
+                                                {todo.content}
+                                            </div>
+                                        )}
+
+                                        {editingTodoId === todo.id ? (
                                             <button
-                                                onClick={() => deleteTodo(todo.id, todo.date, todo.is_completed)}
-                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#fc8181', display: 'flex' }}
+                                                onClick={() => handleSaveTodoEdit(todo)}
+                                                style={smallIconButtonStyle}
+                                                title="저장"
                                             >
-                                                <Trash2 size={16} />
+                                                <Save size={16} color="#2f855a" />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    setEditingTodoId(todo.id);
+                                                    setEditingText(todo.content);
+                                                }}
+                                                style={smallIconButtonStyle}
+                                                title="수정"
+                                            >
+                                                <Pencil size={16} color="#2b6cb0" />
                                             </button>
                                         )}
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px', fontSize: '0.65rem', color: '#cbd5e0', marginTop: '2px', paddingRight: '2px' }}>
-                                        <span>생성: {todo.created_at ? format(new Date(todo.created_at), 'yy.MM.dd(eee) HH:mm', { locale: ko }) : ''}</span>
-                                        {todo.completed_at && <span>완료: {format(new Date(todo.completed_at), 'yy.MM.dd(eee) HH:mm', { locale: ko })}</span>}
+
+                                        <button
+                                            onClick={() => handleDeleteTodo(todo)}
+                                            style={smallIconButtonStyle}
+                                            title="삭제"
+                                        >
+                                            <Trash2 size={16} color="#e53e3e" />
+                                        </button>
                                     </div>
                                 </div>
                             ))
                         )}
                     </div>
                 </div>
-            </div>
 
-            {/* Modal - Only render if not in read only mode (prevent recursion) */}
-            {!isReadOnly && showSharedModal && (
-                <SharedTodoModal onClose={() => setShowSharedModal(false)} />
-            )}
+                {/* 3) Notice + Report Buttons */}
+                <div style={{
+                    borderRadius: '12px',
+                    border: '1px solid #cbd5e0',
+                    background: '#f7fafc',
+                    padding: '12px',
+                    marginBottom: '10px',
+                    color: '#2d3748',
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    textAlign: 'center'
+                }}>
+                    제출하신 작업계획은 공장 중앙 본부로 전달, 관리됩니다.
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                    <button
+                        onClick={() => handleSubmitPlan(false)}
+                        disabled={submittingReport || !currentPlan}
+                        style={{
+                            ...reportButtonStyle,
+                            background: '#2b6cb0'
+                        }}
+                    >
+                        보고하기
+                    </button>
+                    <button
+                        onClick={() => handleSubmitPlan(true)}
+                        disabled={submittingReport || !currentPlan}
+                        style={{
+                            ...reportButtonStyle,
+                            background: '#2c7a7b'
+                        }}
+                    >
+                        다시보고하기
+                    </button>
+                </div>
+
+                <div style={{ height: '1px', background: '#edf2f7', marginBottom: '16px' }} />
+
+                {/* 4) Monthly Weekly Calendar (Bottom) */}
+                <div style={{ marginBottom: '6px' }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '10px'
+                    }}>
+                        <button
+                            onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
+                            style={iconButtonStyle}
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
+
+                        <div style={{ fontSize: '1rem', fontWeight: '700', color: '#2d3748' }}>
+                            {format(currentMonth, 'yyyy년 M월')}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
+                            style={iconButtonStyle}
+                        >
+                            <ChevronRight size={18} />
+                        </button>
+                    </div>
+
+                    {loadingMonth ? (
+                        <div style={emptyMessageStyle}>월별 주차 현황을 불러오는 중...</div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {weekCards.map((weekCard) => {
+                                const selected = format(selectedWeekStart, 'yyyy-MM-dd') === weekCard.weekKey;
+                                const reportLabel = weekCard.reportStatus === 're_reported'
+                                    ? '다시보고'
+                                    : weekCard.reportStatus === 'reported'
+                                        ? '보고완료'
+                                        : '미보고';
+
+                                return (
+                                    <button
+                                        key={weekCard.weekKey}
+                                        onClick={() => setSelectedWeekStart(weekCard.weekStart)}
+                                        style={{
+                                            border: selected ? '2px solid #2b6cb0' : '1px solid #d2dbe5',
+                                            borderRadius: '12px',
+                                            background: selected ? '#f0f7ff' : 'white',
+                                            padding: '10px',
+                                            textAlign: 'left',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            marginBottom: '8px'
+                                        }}>
+                                            <div style={{ fontSize: '0.86rem', fontWeight: '700', color: '#2d3748' }}>
+                                                {format(weekCard.weekStart, 'M월 d일(eee)', { locale: ko })} ~ {format(weekCard.weekEnd, 'd일(eee)', { locale: ko })}
+                                            </div>
+                                            <span style={{
+                                                fontSize: '0.72rem',
+                                                fontWeight: '700',
+                                                color: weekCard.reportStatus === 'draft' ? '#718096' : '#2c5282',
+                                                background: weekCard.reportStatus === 'draft' ? '#edf2f7' : '#bee3f8',
+                                                borderRadius: '999px',
+                                                padding: '3px 8px'
+                                            }}>
+                                                {reportLabel}
+                                            </span>
+                                        </div>
+
+                                        <div style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: '54px minmax(90px, 140px) 1fr',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}>
+                                            <div style={{
+                                                fontWeight: '700',
+                                                color: '#2b6cb0',
+                                                fontSize: '0.9rem',
+                                                textAlign: 'right'
+                                            }}>
+                                                {weekCard.completionRate}%
+                                            </div>
+
+                                            <div style={{
+                                                position: 'relative',
+                                                height: '12px',
+                                                borderRadius: '999px',
+                                                background: '#e2e8f0',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <div style={{
+                                                    width: `${weekCard.completionRate}%`,
+                                                    height: '100%',
+                                                    borderRadius: '999px',
+                                                    background: weekCard.completionRate >= 80
+                                                        ? '#38a169'
+                                                        : weekCard.completionRate >= 40
+                                                            ? '#3182ce'
+                                                            : '#d69e2e'
+                                                }} />
+                                            </div>
+
+                                            <div style={{
+                                                fontSize: '0.82rem',
+                                                color: weekCard.evaluation ? '#2d3748' : '#9aa9bc',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                            }}>
+                                                {weekCard.evaluation || '평가 대기중'}
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
+};
+
+const iconButtonStyle = {
+    width: '34px',
+    height: '34px',
+    borderRadius: '10px',
+    border: '1px solid #e2e8f0',
+    background: 'white',
+    color: '#4a5568',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer'
+};
+
+const primarySquareButton = {
+    width: '40px',
+    borderRadius: '10px',
+    border: 'none',
+    background: 'var(--color-primary)',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+};
+
+const reportButtonStyle = {
+    border: 'none',
+    borderRadius: '10px',
+    color: 'white',
+    fontWeight: '700',
+    padding: '11px 10px',
+    cursor: 'pointer'
+};
+
+const smallIconButtonStyle = {
+    background: 'none',
+    border: 'none',
+    padding: '3px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+};
+
+const todoInputStyle = {
+    flex: 1,
+    border: '1px solid #d2dbe5',
+    borderRadius: '10px',
+    padding: '9px 10px',
+    outline: 'none',
+    fontSize: '0.9rem'
+};
+
+const emptyMessageStyle = {
+    textAlign: 'center',
+    color: '#9aa9bc',
+    padding: '15px 8px',
+    fontSize: '0.85rem',
+    border: '1px dashed #dbe5ee',
+    borderRadius: '10px',
+    background: '#fbfdff'
 };
 
 export default DailyWorkPlan;
