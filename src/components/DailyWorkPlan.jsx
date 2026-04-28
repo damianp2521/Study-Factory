@@ -410,7 +410,7 @@ const DailyWorkPlan = () => {
         if (!currentPlan) return;
 
         if (todos.length === 0) {
-            alert('먼저 이번 주 투두를 작성해 주세요.');
+            alert('먼저 이번 주 작업예정을 작성해 주세요.');
             return;
         }
 
@@ -470,7 +470,15 @@ const DailyWorkPlan = () => {
         }
     };
 
-    const selectedWeekLabel = `${format(selectedWeekStart, 'M월 d일 eee', { locale: ko })} ~ ${format(selectedWeekEnd, 'd일 eee', { locale: ko })}`;
+    const renderWeekday = (date) => {
+        const weekdayText = format(date, 'eee', { locale: ko });
+        const isSunday = date.getDay() === 0;
+        return (
+            <span style={{ color: isSunday ? '#e53e3e' : 'inherit' }}>
+                ({weekdayText})
+            </span>
+        );
+    };
 
     return (
         <div style={{
@@ -516,7 +524,8 @@ const DailyWorkPlan = () => {
                         color: '#2d3748',
                         textAlign: 'center'
                     }}>
-                        {selectedWeekLabel}
+                        <span>{format(selectedWeekStart, 'M월 d일')}</span>{renderWeekday(selectedWeekStart)} ~{' '}
+                        <span>{format(selectedWeekEnd, 'd일')}</span>{renderWeekday(selectedWeekEnd)}
                     </div>
 
                     <button
@@ -542,7 +551,7 @@ const DailyWorkPlan = () => {
                         gap: '10px'
                     }}>
                         <h3 style={{ margin: 0, fontSize: '1rem', color: '#2d3748' }}>
-                            이번 주 투두리스트
+                            이번 주 작업예정
                         </h3>
                         <div style={{
                             fontSize: '0.8rem',
@@ -568,7 +577,7 @@ const DailyWorkPlan = () => {
                                     handleAddTask();
                                 }
                             }}
-                            placeholder="이번 주 할 일을 입력하세요"
+                            placeholder="작업계획을 입력하세요"
                             style={todoInputStyle}
                         />
                         <button
@@ -588,7 +597,7 @@ const DailyWorkPlan = () => {
                         {loadingWeek ? (
                             <div style={emptyMessageStyle}>불러오는 중...</div>
                         ) : todos.length === 0 ? (
-                            <div style={emptyMessageStyle}>이번 주 투두를 작성해 주세요.</div>
+                            <div style={emptyMessageStyle}>이번 주 작업예정을 작성해 주세요.</div>
                         ) : (
                             todos.map((todo) => (
                                 <div
@@ -683,11 +692,23 @@ const DailyWorkPlan = () => {
                     padding: '12px',
                     marginBottom: '10px',
                     color: '#2d3748',
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    textAlign: 'center'
+                    fontSize: '0.78rem',
+                    fontWeight: '500',
+                    textAlign: 'left',
+                    lineHeight: 1.5
                 }}>
-                    제출하신 작업계획은 공장 중앙 본부로 전달, 관리됩니다.
+                    <div style={{ fontSize: '0.84rem', fontWeight: '700', marginBottom: '4px' }}>
+                        작성요령
+                    </div>
+                    <div>한 주에 할 작업 목록을 계획해주세요</div>
+                    <div style={{ marginTop: '4px', color: '#e53e3e' }}>ex) 재무회계 기본서 28p-928p (×)</div>
+                    <div style={{ marginTop: '2px', color: '#2b6cb0' }}>ex) 재무회계 기본서 5강이상 듣고 80%는 이해하기 (0)</div>
+                    <div style={{ marginTop: '8px' }}>
+                        한 주가 지나면 자동으로 완료%가 계산되며, 주중 수정하거나 추가 할 수 있습니다.
+                    </div>
+                    <div style={{ marginTop: '8px' }}>제출하신 작업 예정,결과는</div>
+                    <div>해당 지점 공장장에게 보고되며</div>
+                    <div>회원님의 관리에 참고됩니다.(필수아님)</div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
@@ -709,7 +730,7 @@ const DailyWorkPlan = () => {
                             background: '#2c7a7b'
                         }}
                     >
-                        다시보고하기
+                        수정보고
                     </button>
                 </div>
 
@@ -774,7 +795,8 @@ const DailyWorkPlan = () => {
                                             marginBottom: '8px'
                                         }}>
                                             <div style={{ fontSize: '0.86rem', fontWeight: '700', color: '#2d3748' }}>
-                                                {format(weekCard.weekStart, 'M월 d일(eee)', { locale: ko })} ~ {format(weekCard.weekEnd, 'd일(eee)', { locale: ko })}
+                                                <span>{format(weekCard.weekStart, 'M월 d일')}</span>{renderWeekday(weekCard.weekStart)} ~{' '}
+                                                <span>{format(weekCard.weekEnd, 'd일')}</span>{renderWeekday(weekCard.weekEnd)}
                                             </div>
                                             <span style={{
                                                 fontSize: '0.72rem',
