@@ -472,9 +472,8 @@ const DailyWorkPlan = () => {
 
     const renderWeekday = (date) => {
         const weekdayText = format(date, 'eee', { locale: ko });
-        const isSunday = date.getDay() === 0;
         return (
-            <span style={{ color: isSunday ? '#e53e3e' : 'inherit' }}>
+            <span style={{ color: 'inherit' }}>
                 ({weekdayText})
             </span>
         );
@@ -700,7 +699,7 @@ const DailyWorkPlan = () => {
                     <div style={{ fontSize: '0.84rem', fontWeight: '700', marginBottom: '4px' }}>
                         작성요령
                     </div>
-                    <div>한 주에 할 작업 목록을 계획해주세요</div>
+                    <div>한주에 할 목록을 대충 계획해주세요</div>
                     <div style={{ marginTop: '4px', color: '#e53e3e' }}>ex) 재무회계 기본서 28p-928p (×)</div>
                     <div style={{ marginTop: '2px', color: '#2b6cb0' }}>ex) 재무회계 기본서 5강이상 듣고 80%는 이해하기 (0)</div>
                     <div style={{ marginTop: '8px' }}>
