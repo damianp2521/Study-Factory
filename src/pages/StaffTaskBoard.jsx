@@ -81,18 +81,7 @@ const StaffTaskBoard = () => {
 
             if (todoError) throw todoError;
 
-            // 2. Fetch Member Suggestions
-            const { data: suggestions, error: suggestionError } = await supabase
-                .from('suggestions')
-                .select(`
-                    *,
-                    author:user_id ( name, branch ),
-                    completer:completed_by ( name )
-                `);
-
-            if (suggestionError) throw suggestionError;
-
-            // 3. Fetch Pending Registrations for "신규 있음" notices
+            // 2. Fetch Pending Registrations for "신규 있음" notices
             const { data: pendingRegs, error: pendingError } = await supabase
                 .from('pending_registrations')
                 .select('id, branch, expected_start_date')
@@ -158,23 +147,7 @@ const StaffTaskBoard = () => {
                     };
                 });
 
-            const formattedSuggestions = (suggestions || []).map((s) => {
-                const { body, replies } = parseContentWithReplies(s.content);
-                return {
-                    id: s.id, // suggestion id
-                    content: body,
-                    replies,
-                    is_urgent: false, // Member suggestions are separate priority, but technically not "urgent staff todo"
-                    status: s.status === 'resolved' ? 'completed' : 'pending',
-                    created_at: s.created_at,
-                    type: 'suggestion',
-                    authorName: s.author?.name || '익명',
-                    branch: s.author?.branch || '알수없음', // Suggestions still track user's *current* branch
-                    completerName: s.completer?.name // Now fetching completer name from newly added relation
-                };
-            });
-
-            setTasks([...newHireNotices, ...formattedTodos, ...formattedSuggestions]);
+            setTasks([...newHireNotices, ...formattedTodos]);
         } catch (error) {
             console.error('Error fetching tasks:', error);
         } finally {
@@ -256,20 +229,6 @@ const StaffTaskBoard = () => {
                     })
                     .eq('id', task.id);
                 if (error) throw error;
-
-            } else if (task.type === 'suggestion') {
-                const newStatus = task.status === 'completed' ? 'pending' : 'resolved'; // 'resolved' matches suggestion table
-                const completedBy = newStatus === 'resolved' ? user.id : null;
-                // Note: suggestions table might not track completed_at, but we track completed_by now.
-
-                const { error } = await supabase
-                    .from('suggestions')
-                    .update({
-                        status: newStatus,
-                        completed_by: completedBy
-                    })
-                    .eq('id', task.id);
-                if (error) throw error;
             }
             fetchData();
         } catch (error) {
@@ -318,8 +277,7 @@ const StaffTaskBoard = () => {
                     });
                 if (error) throw error;
             } else {
-                const table = task.type === 'staff' ? 'staff_todos' : 'suggestions';
-                const { error } = await supabase.from(table).delete().eq('id', task.id);
+                const { error } = await supabase.from('staff_todos').delete().eq('id', task.id);
                 if (error) throw error;
             }
             fetchData();
@@ -333,13 +291,12 @@ const StaffTaskBoard = () => {
     const handleEdit = async (task) => {
         if (!editContent.trim()) return;
         try {
-            const table = task.type === 'staff' ? 'staff_todos' : 'suggestions';
             const nextContent = buildContentWithReplies({
                 body: editContent,
                 replies: task.replies || []
             });
             const { error } = await supabase
-                .from(table)
+                .from('staff_todos')
                 .update({ content: nextContent })
                 .eq('id', task.id);
             if (error) throw error;
@@ -379,7 +336,6 @@ const StaffTaskBoard = () => {
     const handleReplySave = async (task) => {
         if (!replyContent.trim()) return;
         try {
-            const table = task.type === 'staff' ? 'staff_todos' : 'suggestions';
             const currentContent = buildContentWithReplies({
                 body: task.content,
                 replies: task.replies || []
@@ -391,7 +347,7 @@ const StaffTaskBoard = () => {
             });
 
             const { error } = await supabase
-                .from(table)
+                .from('staff_todos')
                 .update({ content: nextContent })
                 .eq('id', task.id);
             if (error) throw error;
@@ -422,7 +378,6 @@ const StaffTaskBoard = () => {
                 const getPriority = (t) => {
                     if (t.type === 'staff' && t.is_urgent) return 3;
                     if (t.type === 'new_hire_notice') return 2;
-                    if (t.type === 'suggestion') return 2;
                     return 1;
                 };
                 const pA = getPriority(a);
@@ -445,9 +400,6 @@ const StaffTaskBoard = () => {
         }
         if (task.type === 'staff' && task.is_urgent) {
             return { borderColor: '#feb2b2', bg: '#fff5f5', text: '#c53030' }; // Red
-        }
-        if (task.type === 'suggestion') {
-            return { borderColor: '#9ae6b4', bg: '#f0fff4', text: '#276749' }; // Green
         }
         return { borderColor: '#bee3f8', bg: '#ebf8ff', text: '#2c5282' }; // Blue
     };
@@ -771,7 +723,7 @@ const StaffTaskBoard = () => {
                                                         opacity: 0.8,
                                                         whiteSpace: 'nowrap'
                                                     }}>
-                                                        {task.type === 'suggestion' ? `요청:${task.authorName}` : `작성:${task.authorName}`}
+                                                        {`작성:${task.authorName}`}
                                                         {task.completerName && ` /완료:${task.completerName}`}
                                                     </span>
 

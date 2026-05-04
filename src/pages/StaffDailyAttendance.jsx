@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { format, addDays, getDay } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import EmbeddedCalendar from '../components/EmbeddedCalendar';
+import { parseContentWithReplies } from '../utils/replyContent';
 
 const getKstNowParts = (timestamp = Date.now()) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -878,6 +879,7 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [vacationData, setVacationData] = useState({});
     const [dailyMemos, setDailyMemos] = useState([]);
     const [memberMemos, setMemberMemos] = useState([]);
+    const [memberSuggestions, setMemberSuggestions] = useState([]);
     const [incomingEmployees, setIncomingEmployees] = useState([]);
     const [pendingTodos, setPendingTodos] = useState({}); // {pending_registration_id: [todos]}
 
@@ -885,6 +887,7 @@ const StaffDailyAttendance = ({ onBack }) => {
     const [highlightedUserId, setHighlightedUserId] = useState(null);
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [showMemoModal, setShowMemoModal] = useState(false);
+    const [showSuggestionModal, setShowSuggestionModal] = useState(false);
     const [showIncomingModal, setShowIncomingModal] = useState(false);
     const [newMemo, setNewMemo] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -986,6 +989,35 @@ const StaffDailyAttendance = ({ onBack }) => {
         return displayRows.find(r => r.id === highlightedUserId);
     }, [displayRows, highlightedUserId]);
 
+    const sortedMemberSuggestions = useMemo(() => {
+        return [...memberSuggestions]
+            .filter((suggestion) => {
+                if (branch === '전체') return true;
+                return suggestion.branch === branch;
+            })
+            .sort((a, b) => {
+                if (a.status !== b.status) {
+                    return a.status === 'pending' ? -1 : 1;
+                }
+                return new Date(a.created_at) - new Date(b.created_at);
+            });
+    }, [memberSuggestions, branch]);
+
+    const pendingSuggestionCount = useMemo(() => {
+        return sortedMemberSuggestions.filter((suggestion) => suggestion.status === 'pending').length;
+    }, [sortedMemberSuggestions]);
+
+    const formatSuggestionReplyTime = (createdAt) => {
+        if (!createdAt) return '';
+        const date = new Date(createdAt);
+        return date.toLocaleString('ko-KR', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     // Fetch on Date Change
     useEffect(() => {
         fetchData();
@@ -1047,12 +1079,24 @@ const StaffDailyAttendance = ({ onBack }) => {
             })
             .subscribe();
 
+        const suggestionsChannel = supabase
+            .channel('suggestions_attendance_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'suggestions'
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
         return () => {
             attendanceChannel.unsubscribe();
             vacationChannel.unsubscribe();
             memosChannel.unsubscribe();
             pendingChannel.unsubscribe();
             pendingTodoChannel.unsubscribe();
+            suggestionsChannel.unsubscribe();
         };
     }, [currentViewDate, branch]);
 
@@ -1084,7 +1128,7 @@ const StaffDailyAttendance = ({ onBack }) => {
             const startDate = dateStr;
             const endDate = dateStr;
 
-            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, beverageRes, todosRes] = await Promise.all([
+            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, beverageRes, todosRes, suggestionsRes] = await Promise.all([
                 supabase.from('profiles').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('id, user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
@@ -1092,7 +1136,15 @@ const StaffDailyAttendance = ({ onBack }) => {
                 supabase.from('member_memos').select('*').order('created_at', { ascending: true }),
                 supabase.from('pending_registrations').select('*').eq('branch', branch).order('expected_start_date', { ascending: true }),
                 supabase.from('beverage_options').select('id, name'),
-                supabase.from('staff_todos').select('id, pending_registration_id, status').eq('branch', branch).not('pending_registration_id', 'is', null)
+                supabase.from('staff_todos').select('id, pending_registration_id, status').eq('branch', branch).not('pending_registration_id', 'is', null),
+                supabase.from('suggestions').select(`
+                    id,
+                    content,
+                    status,
+                    created_at,
+                    author:user_id ( name, branch ),
+                    completer:completed_by ( name )
+                `)
             ]);
 
             if (userRes.error) throw userRes.error;
@@ -1100,6 +1152,7 @@ const StaffDailyAttendance = ({ onBack }) => {
             if (pendingRes.error) throw pendingRes.error;
             if (beverageRes.error) throw beverageRes.error;
             if (todosRes.error) throw todosRes.error;
+            if (suggestionsRes.error) throw suggestionsRes.error;
 
             const MAX_SEATS = 102;
             const fullRows = [];
@@ -1196,6 +1249,21 @@ const StaffDailyAttendance = ({ onBack }) => {
 
             setDailyMemos([...systemIncomingMemos, ...(dailyMemoRes.data || [])]);
             setMemberMemos(memberMemoRes.data || []);
+
+            const formattedSuggestions = (suggestionsRes.data || []).map((suggestion) => {
+                const { body, replies } = parseContentWithReplies(suggestion.content);
+                return {
+                    id: suggestion.id,
+                    content: body,
+                    replies,
+                    status: suggestion.status === 'resolved' ? 'completed' : 'pending',
+                    created_at: suggestion.created_at,
+                    authorName: suggestion.author?.name || '익명',
+                    branch: suggestion.author?.branch || '알수없음',
+                    completerName: suggestion.completer?.name || null
+                };
+            });
+            setMemberSuggestions(formattedSuggestions);
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -1695,6 +1763,27 @@ const StaffDailyAttendance = ({ onBack }) => {
         } catch (e) { alert('삭제 실패'); }
     };
 
+    const toggleSuggestionComplete = async (suggestion) => {
+        try {
+            const nextDbStatus = suggestion.status === 'completed' ? 'pending' : 'resolved';
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+
+            const { error } = await supabase
+                .from('suggestions')
+                .update({
+                    status: nextDbStatus,
+                    completed_by: nextDbStatus === 'resolved' ? authUser?.id : null
+                })
+                .eq('id', suggestion.id);
+
+            if (error) throw error;
+            fetchData();
+        } catch (error) {
+            console.error('Error updating suggestion:', error);
+            alert('건의사항 상태 업데이트에 실패했습니다.');
+        }
+    };
+
     const handleSaveMemo = async (userId, content) => {
         try {
             // 1. Delete existing memos for this user
@@ -1972,6 +2061,27 @@ const StaffDailyAttendance = ({ onBack }) => {
 
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 1, minWidth: 0 }}>
                         <button
+                            onClick={() => setShowSuggestionModal(true)}
+                            style={{
+                                background: '#f0fff4', border: '1px solid #9ae6b4', borderRadius: '16px',
+                                padding: '6px 10px', fontSize: 'clamp(0.6rem, 2.5vw, 0.85rem)', color: '#2f855a', fontWeight: 'bold',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer',
+                                height: '32px', whiteSpace: 'nowrap', flexShrink: 1, minWidth: 0
+                            }}
+                        >
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>회원 건의사항</span>
+                            {pendingSuggestionCount > 0 && (
+                                <span style={{
+                                    color: '#2f855a', background: 'white', width: '18px', height: '18px',
+                                    borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '0.7rem', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', flexShrink: 0
+                                }}>
+                                    {pendingSuggestionCount}
+                                </span>
+                            )}
+                        </button>
+
+                        <button
                             onClick={() => setShowMemoModal(true)}
                             style={{
                                 background: '#ebf8ff', border: '1px solid #bee3f8', borderRadius: '16px',
@@ -2145,6 +2255,100 @@ const StaffDailyAttendance = ({ onBack }) => {
                         }}
                     />
                 </div>
+            )}
+
+            {/* Member Suggestions Modal */}
+            {showSuggestionModal && createPortal(
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '460px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                        <div style={{ padding: '15px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#2f855a' }}>회원 건의사항</h3>
+                            <button onClick={() => setShowSuggestionModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><X size={24} color="#a0aec0" /></button>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#f7fafc' }}>
+                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {sortedMemberSuggestions.length === 0 && <li style={{ color: '#a0aec0', textAlign: 'center' }}>등록된 건의사항이 없습니다.</li>}
+                                {sortedMemberSuggestions.map((suggestion) => {
+                                    const isCompleted = suggestion.status === 'completed';
+
+                                    return (
+                                        <li
+                                            key={suggestion.id}
+                                            style={{
+                                                background: isCompleted ? 'white' : '#f0fff4',
+                                                border: `1px solid ${isCompleted ? '#e2e8f0' : '#9ae6b4'}`,
+                                                borderRadius: '12px',
+                                                padding: '12px',
+                                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                                                <button
+                                                    onClick={() => toggleSuggestionComplete(suggestion)}
+                                                    style={{
+                                                        border: 'none',
+                                                        background: 'none',
+                                                        cursor: 'pointer',
+                                                        color: isCompleted ? '#a0aec0' : '#2f855a',
+                                                        padding: 0,
+                                                        marginTop: '2px',
+                                                        display: 'flex',
+                                                        alignItems: 'center'
+                                                    }}
+                                                >
+                                                    {isCompleted ? <CheckSquare size={18} /> : <Square size={18} />}
+                                                </button>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{
+                                                        fontSize: '0.95rem',
+                                                        color: isCompleted ? '#718096' : '#2d3748',
+                                                        textDecoration: isCompleted ? 'line-through' : 'none',
+                                                        whiteSpace: 'pre-wrap',
+                                                        wordBreak: 'break-word',
+                                                        lineHeight: 1.4
+                                                    }}>
+                                                        {suggestion.content}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.72rem', color: '#718096', marginTop: '5px' }}>
+                                                        요청:{suggestion.authorName}
+                                                        {suggestion.completerName && ` /완료:${suggestion.completerName}`}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {Array.isArray(suggestion.replies) && suggestion.replies.length > 0 && (
+                                                <div style={{ marginLeft: '26px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                    {suggestion.replies.map((reply) => (
+                                                        <div
+                                                            key={reply.id}
+                                                            style={{
+                                                                border: '1px solid #e2e8f0',
+                                                                borderRadius: '10px',
+                                                                background: 'white',
+                                                                padding: '8px 10px'
+                                                            }}
+                                                        >
+                                                            <div style={{ fontSize: '0.72rem', color: '#718096', marginBottom: '4px' }}>
+                                                                답글 · {reply.authorName} · {formatSuggestionReplyTime(reply.createdAt)}
+                                                            </div>
+                                                            <div style={{ fontSize: '0.84rem', color: '#2d3748', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                                                {reply.text}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
 
             {/* Daily Memos Modal */}
