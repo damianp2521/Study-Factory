@@ -39,7 +39,7 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
         try {
             let requestQuery = supabase
                 .from('new_beverage_requests')
-                .select('user_id, beverage_1_choice, beverage_2_choice, beverage_2_custom, use_personal_tumbler, updated_at')
+                .select('user_id, beverage_1_choice, beverage_2_choice, beverage_2_custom, use_personal_tumbler, request_note, updated_at')
                 .order('updated_at', { ascending: false });
 
             const { data: requestData, error: requestError } = await requestQuery;
@@ -74,6 +74,7 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
                         branch: user.branch,
                         beverage1: row.beverage_1_choice,
                         beverage2: formatBeverage2(row),
+                        requestNote: row.request_note || '',
                         updatedAt: row.updated_at
                     };
                 })
@@ -170,15 +171,29 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
                                     <div style={{ fontWeight: 'bold', color: '#2d3748', fontSize: '0.95rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
                                         {(item.seatNumber || '-')}번 {item.name}
                                     </div>
-                                    <div style={{
-                                        color: '#4a5568',
-                                        fontSize: '0.85rem',
-                                        whiteSpace: 'nowrap',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        textAlign: 'right'
-                                    }}>
-                                        {item.beverage1}, {item.beverage2}
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: 0 }}>
+                                        <div style={{
+                                            color: '#4a5568',
+                                            fontSize: '0.85rem',
+                                            whiteSpace: 'nowrap',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            textAlign: 'right'
+                                        }}>
+                                            {item.beverage1}, {item.beverage2}
+                                        </div>
+                                        {item.requestNote && (
+                                            <div style={{
+                                                color: '#718096',
+                                                fontSize: '0.76rem',
+                                                marginTop: '2px',
+                                                whiteSpace: 'normal',
+                                                wordBreak: 'break-word',
+                                                textAlign: 'right'
+                                            }}>
+                                                요청사항: {item.requestNote}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

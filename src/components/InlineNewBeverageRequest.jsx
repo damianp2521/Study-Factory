@@ -61,6 +61,7 @@ const InlineNewBeverageRequest = () => {
     const [beverage1, setBeverage1] = useState('');
     const [beverage2, setBeverage2] = useState('');
     const [beverage2Etc, setBeverage2Etc] = useState('');
+    const [requestNote, setRequestNote] = useState('');
     const [usePersonalTumbler, setUsePersonalTumbler] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -71,7 +72,7 @@ const InlineNewBeverageRequest = () => {
             try {
                 const { data, error } = await supabase
                     .from('new_beverage_requests')
-                    .select('beverage_1_choice, beverage_2_choice, beverage_2_custom, use_personal_tumbler')
+                    .select('beverage_1_choice, beverage_2_choice, beverage_2_custom, use_personal_tumbler, request_note')
                     .eq('user_id', user.id)
                     .maybeSingle();
 
@@ -82,6 +83,7 @@ const InlineNewBeverageRequest = () => {
                 setBeverage2(data.beverage_2_choice || '');
                 setBeverage2Etc(data.beverage_2_custom || '');
                 setUsePersonalTumbler(Boolean(data.use_personal_tumbler));
+                setRequestNote(data.request_note || '');
             } catch (error) {
                 console.error('Error fetching new beverage request:', error);
             }
@@ -126,7 +128,8 @@ const InlineNewBeverageRequest = () => {
                     beverage_1_choice: beverage1,
                     beverage_2_choice: beverage2,
                     beverage_2_custom: beverage2 === '기타' ? beverage2Etc.trim() : null,
-                    use_personal_tumbler: beverage2 === '안먹음' ? false : usePersonalTumbler
+                    use_personal_tumbler: beverage2 === '안먹음' ? false : usePersonalTumbler,
+                    request_note: requestNote.trim() ? requestNote.trim() : null
                 }, { onConflict: 'user_id' });
 
             if (error) throw error;
@@ -146,6 +149,9 @@ const InlineNewBeverageRequest = () => {
 
             <p style={{ margin: '0 0 14px 0', fontSize: '1rem', fontWeight: '700', color: '#2d3748' }}>
                 드실 음료를 선택해주세요
+            </p>
+            <p style={{ margin: '0 0 12px 2px', fontSize: '0.84rem', color: '#9aa3af', fontWeight: '600' }}>
+                * 음료1, 음료2 모두 필수 체크
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -220,6 +226,27 @@ const InlineNewBeverageRequest = () => {
                             );
                         })}
                     </div>
+                </div>
+
+                <div style={panelStyle}>
+                    <h4 style={{ margin: '0 0 10px 0', fontSize: '1rem', fontWeight: '800', color: '#1f2937' }}>요청사항</h4>
+                    <textarea
+                        value={requestNote}
+                        onChange={(e) => setRequestNote(e.target.value)}
+                        placeholder="음료 관련 요청사항이 있을 경우 적어주세요"
+                        rows={3}
+                        style={{
+                            width: '100%',
+                            resize: 'vertical',
+                            minHeight: '86px',
+                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            border: '1px solid #cbd5e0',
+                            fontSize: '0.92rem',
+                            outline: 'none',
+                            background: 'white'
+                        }}
+                    />
                 </div>
             </div>
 
