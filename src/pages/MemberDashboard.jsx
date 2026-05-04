@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import InlineVacationRequest from '../components/InlineVacationRequest';
 import InlineSuggestion from '../components/InlineSuggestion';
 import DailyWorkPlan from '../components/DailyWorkPlan';
+import InlineNewBeverageRequest from '../components/InlineNewBeverageRequest';
 
 const MemberDashboard = () => {
     const navigate = useNavigate();
@@ -30,6 +31,7 @@ const MemberDashboard = () => {
     const slides = [
         { title: '작업계획', component: <DailyWorkPlan /> },
         { title: '휴무계획', component: <InlineVacationRequest /> },
+        { title: '음료신청', component: <InlineNewBeverageRequest /> },
         { title: '건의사항', component: <InlineSuggestion /> },
     ];
 

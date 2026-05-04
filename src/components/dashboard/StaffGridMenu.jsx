@@ -13,6 +13,7 @@ import StaffBeverageManagement from '../../pages/StaffBeverageManagement';
 import StaffBeverageOrderList from '../../pages/StaffBeverageOrderList';
 import StaffBeverageServingSheet from '../../pages/StaffBeverageServingSheet';
 import StaffNewHireSchedule from '../../pages/StaffNewHireSchedule';
+import StaffNewBeverageRequestList from '../../pages/StaffNewBeverageRequestList';
 
 const StaffGridMenu = () => {
     const { currentView, navigateTo, goBack } = useDashboardNavigation('grid');
@@ -95,6 +96,7 @@ const StaffGridMenu = () => {
     if (currentView === 'attendance') return renderWithPadding(<StaffDailyAttendance onBack={goBack} />);
     if (currentView === 'seat_management') return renderWithPadding(<StaffSeatManagement onBack={goBack} />);
     if (currentView === 'beverage_management') return renderWithPadding(<StaffBeverageManagement onBack={goBack} />);
+    if (currentView === 'new_beverage_request_list') return renderWithPadding(<StaffNewBeverageRequestList onBack={goBack} />);
     if (currentView === 'beverage_order_list') return renderWithPadding(<StaffBeverageOrderList onBack={goBack} />);
     if (currentView === 'beverage_serving_sheet') return renderWithPadding(<StaffBeverageServingSheet onBack={goBack} />);
     if (currentView === 'new_hire_schedule') return renderWithPadding(<StaffNewHireSchedule onBack={goBack} />);
@@ -166,6 +168,13 @@ const StaffGridMenu = () => {
                             <Coffee size={24} />
                         </div>
                         <span style={{ ...labelStyle, lineHeight: '1.2' }}>사원<br />음료 관리</span>
+                    </button>
+
+                    <button onClick={() => navigateTo('new_beverage_request_list')} style={menuButtonStyle}>
+                        <div style={{ ...iconContainerStyle, background: '#ebf8ff', color: '#2b6cb0' }}>
+                            <ClipboardList size={24} />
+                        </div>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>신음료<br />신청</span>
                     </button>
                 </div>
             </div>
