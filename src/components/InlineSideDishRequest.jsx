@@ -8,6 +8,8 @@ const createEmptyRequestState = () => ({
     submittedAt: null
 });
 
+const DEADLINE_LIMIT_DISABLED = true;
+
 const getKstNowParts = (timestamp = Date.now()) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Seoul',
@@ -35,11 +37,15 @@ const getKstNowParts = (timestamp = Date.now()) => {
 
 const getDeadlineInfo = (period, nowParts) => {
     if (period === 'am') {
-        const closed = nowParts.hour > 10 || (nowParts.hour === 10 && nowParts.minute >= 45);
+        const closed = DEADLINE_LIMIT_DISABLED
+            ? false
+            : nowParts.hour > 10 || (nowParts.hour === 10 && nowParts.minute >= 45);
         return { closed, text: '오전 10:45 마감', closedMessage: '오전 반찬 신청 마감' };
     }
 
-    const closed = nowParts.hour > 16 || (nowParts.hour === 16 && nowParts.minute >= 30);
+    const closed = DEADLINE_LIMIT_DISABLED
+        ? false
+        : nowParts.hour > 16 || (nowParts.hour === 16 && nowParts.minute >= 30);
     return { closed, text: '오후 16:30 마감', closedMessage: '오후 반찬 신청 마감' };
 };
 
