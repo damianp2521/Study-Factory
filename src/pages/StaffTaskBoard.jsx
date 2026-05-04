@@ -46,6 +46,7 @@ const StaffTaskBoard = () => {
     const [replyContent, setReplyContent] = useState('');
     const [sideDishRequests, setSideDishRequests] = useState([]);
     const [isSideDishPopupOpen, setIsSideDishPopupOpen] = useState(false);
+    const [kstToday, setKstToday] = useState(() => getKstTodayString());
 
     useEffect(() => {
         if (!isSideDishPopupOpen || typeof document === 'undefined') return undefined;
@@ -57,6 +58,17 @@ const StaffTaskBoard = () => {
             document.body.style.overflow = prevOverflow;
         };
     }, [isSideDishPopupOpen]);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setKstToday((prev) => {
+                const now = getKstTodayString();
+                return prev === now ? prev : now;
+            });
+        }, 30000);
+
+        return () => clearInterval(timer);
+    }, []);
 
     // Persist view
     useEffect(() => {
@@ -137,7 +149,7 @@ const StaffTaskBoard = () => {
                     submitted_at,
                     requester:user_id ( name, branch, seat_number )
                 `)
-                .eq('request_date', getKstTodayString())
+                .eq('request_date', kstToday)
                 .order('submitted_at', { ascending: true });
 
             if (sideDishError) {
@@ -240,7 +252,7 @@ const StaffTaskBoard = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [kstToday]);
 
     // Add Staff Todo
     const handleAddTodo = async () => {
