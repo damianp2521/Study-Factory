@@ -8,6 +8,29 @@ import { appendManagerReplyToContent, buildContentWithReplies, parseContentWithR
 
 const NEW_HIRE_NOTICE_DISMISS_PREFIX = '__NEW_HIRE_NOTICE_DISMISSED__';
 
+const getKstTodayString = () => {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).formatToParts(new Date());
+
+    const map = {};
+    parts.forEach((part) => {
+        if (part.type !== 'literal') {
+            map[part.type] = part.value;
+        }
+    });
+
+    return `${map.year}-${map.month}-${map.day}`;
+};
+
+const parseSideDishAmount = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
+};
+
 const StaffTaskBoard = () => {
     const { user } = useAuth();
     const [view, setView] = useState(() => localStorage.getItem('staff_task_board_view') || 'tasks'); // 'tasks' | 'schedule'
@@ -20,6 +43,7 @@ const StaffTaskBoard = () => {
     const [editContent, setEditContent] = useState('');
     const [replyingTask, setReplyingTask] = useState(null);
     const [replyContent, setReplyContent] = useState('');
+    const [sideDishRequests, setSideDishRequests] = useState([]);
 
     // Persist view
     useEffect(() => {
@@ -88,6 +112,52 @@ const StaffTaskBoard = () => {
                 .is('linked_user_id', null);
 
             if (pendingError) throw pendingError;
+
+            const { data: sideDishData, error: sideDishError } = await supabase
+                .from('side_dish_requests')
+                .select(`
+                    id,
+                    period,
+                    items,
+                    total_amount,
+                    payment_completed,
+                    submitted_at,
+                    requester:user_id ( name, branch, seat_number )
+                `)
+                .eq('request_date', getKstTodayString())
+                .order('submitted_at', { ascending: true });
+
+            if (sideDishError) {
+                console.warn('Side dish requests unavailable:', sideDishError.message);
+                setSideDishRequests([]);
+            } else {
+                const normalizedSideDish = (sideDishData || [])
+                    .filter((row) => row.payment_completed && row.submitted_at)
+                    .map((row) => {
+                        const normalizedItems = Array.isArray(row.items)
+                            ? row.items
+                                .map((item) => ({
+                                    name: item?.name || '',
+                                    amount: parseSideDishAmount(item?.amount)
+                                }))
+                                .filter((item) => item.name && item.amount > 0)
+                            : [];
+
+                        const calculatedTotal = normalizedItems.reduce((sum, item) => sum + item.amount, 0);
+
+                        return {
+                            id: row.id,
+                            period: row.period,
+                            items: normalizedItems,
+                            totalAmount: row.total_amount || calculatedTotal,
+                            requesterName: row.requester?.name || '알수없음',
+                            requesterBranch: row.requester?.branch || '알수없음',
+                            seatNumber: row.requester?.seat_number || null,
+                            submittedAt: row.submitted_at
+                        };
+                    });
+                setSideDishRequests(normalizedSideDish);
+            }
 
             const dismissedNoticeKeys = new Set(
                 (todos || [])
@@ -389,6 +459,24 @@ const StaffTaskBoard = () => {
             return new Date(a.created_at) - new Date(b.created_at);
         });
 
+    const groupedSideDishRequests = React.useMemo(() => {
+        const filtered = sideDishRequests
+            .filter((request) => selectedBranch === '전체' || request.requesterBranch === selectedBranch)
+            .sort((a, b) => {
+                if (a.seatNumber && b.seatNumber) return a.seatNumber - b.seatNumber;
+                if (a.seatNumber) return -1;
+                if (b.seatNumber) return 1;
+                return a.requesterName.localeCompare(b.requesterName, 'ko');
+            });
+
+        return {
+            am: filtered.filter((request) => request.period === 'am'),
+            pm: filtered.filter((request) => request.period === 'pm')
+        };
+    }, [selectedBranch, sideDishRequests]);
+
+    const formatWon = (amount) => `${Number(amount || 0).toLocaleString('ko-KR')}원`;
+
 
     // Render Helper
     const getTaskStyle = (task) => {
@@ -543,6 +631,73 @@ const StaffTaskBoard = () => {
 
             {view === 'tasks' ? (
                 <>
+                    <div style={{
+                        marginBottom: '10px',
+                        background: '#f5f3ff',
+                        border: '1px solid #d8b4fe',
+                        borderRadius: '12px',
+                        padding: '8px'
+                    }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#6d28d9', marginBottom: '6px' }}>
+                            반찬신청
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            {[{ key: 'am', label: '오전' }, { key: 'pm', label: '오후' }].map((period) => {
+                                const list = groupedSideDishRequests[period.key];
+                                return (
+                                    <div
+                                        key={period.key}
+                                        style={{
+                                            background: '#ede9fe',
+                                            border: '1px solid #c4b5fd',
+                                            borderRadius: '9px',
+                                            padding: '6px',
+                                            minHeight: '90px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '4px'
+                                        }}
+                                    >
+                                        <div style={{ fontSize: '0.74rem', fontWeight: '800', color: '#5b21b6' }}>
+                                            {period.label} 반찬 신청
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '180px', overflowY: 'auto' }}>
+                                            {list.length === 0 ? (
+                                                <div style={{ fontSize: '0.7rem', color: '#8b5cf6' }}>신청 없음</div>
+                                            ) : (
+                                                list.map((request) => (
+                                                    <div
+                                                        key={request.id}
+                                                        style={{
+                                                            background: 'white',
+                                                            border: '1px solid #ddd6fe',
+                                                            borderRadius: '7px',
+                                                            padding: '4px'
+                                                        }}
+                                                    >
+                                                        <div style={{ fontSize: '0.68rem', fontWeight: '700', color: '#4c1d95', marginBottom: '2px' }}>
+                                                            {request.seatNumber ? `${request.seatNumber}번 ` : ''}{request.requesterName}
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                                            {request.items.map((item, idx) => (
+                                                                <div key={`${request.id}-${idx}`} style={{ fontSize: '0.66rem', color: '#5b21b6', lineHeight: 1.25 }}>
+                                                                    {idx + 1}. {item.name} {formatWon(item.amount)}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div style={{ marginTop: '2px', fontSize: '0.67rem', fontWeight: '800', color: '#6d28d9' }}>
+                                                            합계 {formatWon(request.totalAmount)}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {/* Add Todo Input */}
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                         {/* ... (rest of the input code) */}
