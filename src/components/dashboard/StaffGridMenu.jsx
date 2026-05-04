@@ -174,7 +174,7 @@ const StaffGridMenu = () => {
                         <div style={{ ...iconContainerStyle, background: '#ebf8ff', color: '#2b6cb0' }}>
                             <ClipboardList size={24} />
                         </div>
-                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>신음료<br />신청</span>
+                        <span style={{ ...labelStyle, lineHeight: '1.2' }}>새로운 음료<br />신청</span>
                     </button>
                 </div>
             </div>

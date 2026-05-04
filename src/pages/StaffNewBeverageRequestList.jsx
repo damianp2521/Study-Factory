@@ -82,7 +82,7 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
             setRequests(merged);
         } catch (error) {
             console.error('Error fetching new beverage requests:', error);
-            alert('신음료 신청 데이터를 불러오지 못했습니다.');
+            alert('새로운 음료 신청 데이터를 불러오지 못했습니다.');
         } finally {
             setLoading(false);
         }
@@ -132,7 +132,7 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
                 >
                     <ChevronLeft size={24} color="#2d3748" />
                 </button>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>신음료 신청</h3>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold' }}>새로운 음료 신청</h3>
             </div>
 
             <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
@@ -161,7 +161,7 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
                 {loading ? (
                     <div style={{ textAlign: 'center', marginTop: '20px', color: '#a0aec0' }}>로딩 중...</div>
                 ) : requests.length === 0 ? (
-                    <div style={{ textAlign: 'center', marginTop: '20px', color: '#a0aec0' }}>신음료 신청 내역이 없습니다.</div>
+                    <div style={{ textAlign: 'center', marginTop: '20px', color: '#a0aec0' }}>새로운 음료 신청 내역이 없습니다.</div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {sortedRequests.map((item) => (
