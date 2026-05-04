@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../lib/supabaseClient';
 import { BRANCH_OPTIONS } from '../constants/branches';
 import { useAuth } from '../context/AuthContext';
@@ -45,6 +46,17 @@ const StaffTaskBoard = () => {
     const [replyContent, setReplyContent] = useState('');
     const [sideDishRequests, setSideDishRequests] = useState([]);
     const [isSideDishPopupOpen, setIsSideDishPopupOpen] = useState(false);
+
+    useEffect(() => {
+        if (!isSideDishPopupOpen || typeof document === 'undefined') return undefined;
+
+        const prevOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        return () => {
+            document.body.style.overflow = prevOverflow;
+        };
+    }, [isSideDishPopupOpen]);
 
     // Persist view
     useEffect(() => {
@@ -565,6 +577,66 @@ const StaffTaskBoard = () => {
         </div>
     );
 
+    const sideDishPopup = (isSideDishPopupOpen && typeof document !== 'undefined')
+        ? createPortal(
+            <div
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) {
+                        setIsSideDishPopupOpen(false);
+                    }
+                }}
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(15, 23, 42, 0.45)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    padding: '12px'
+                }}
+            >
+                <div
+                    style={{
+                        width: 'min(560px, calc(100vw - 24px))',
+                        maxHeight: 'calc(100dvh - 24px)',
+                        overflowY: 'auto',
+                        background: 'white',
+                        borderRadius: '14px',
+                        border: '1px solid #e2e8f0',
+                        padding: '14px'
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#1e293b' }}>반찬신청 목록</div>
+                        <button
+                            type="button"
+                            onClick={() => setIsSideDishPopupOpen(false)}
+                            style={{
+                                border: '1px solid #cbd5e0',
+                                background: 'white',
+                                color: '#475569',
+                                borderRadius: '8px',
+                                padding: '4px 8px',
+                                fontSize: '0.78rem',
+                                fontWeight: '700',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            닫기
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {renderSideDishPeriodList('오전 반찬 신청', sideDishSummary.am)}
+                        {renderSideDishPeriodList('오후 반찬 신청', sideDishSummary.pm)}
+                    </div>
+                </div>
+            </div>,
+            document.body
+        )
+        : null;
+
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '20px' }}>
             {/* Header Controls: Branch + View Toggle */}
@@ -1067,63 +1139,7 @@ const StaffTaskBoard = () => {
                 />
             )}
 
-            {isSideDishPopupOpen && (
-                <div
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) {
-                            setIsSideDishPopupOpen(false);
-                        }
-                    }}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(15, 23, 42, 0.45)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 2000,
-                        padding: '20px'
-                    }}
-                >
-                    <div
-                        style={{
-                            width: '100%',
-                            maxWidth: '560px',
-                            maxHeight: '80vh',
-                            overflowY: 'auto',
-                            background: 'white',
-                            borderRadius: '14px',
-                            border: '1px solid #e2e8f0',
-                            padding: '14px'
-                        }}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#1e293b' }}>반찬신청 목록</div>
-                            <button
-                                type="button"
-                                onClick={() => setIsSideDishPopupOpen(false)}
-                                style={{
-                                    border: '1px solid #cbd5e0',
-                                    background: 'white',
-                                    color: '#475569',
-                                    borderRadius: '8px',
-                                    padding: '4px 8px',
-                                    fontSize: '0.78rem',
-                                    fontWeight: '700',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                닫기
-                            </button>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {renderSideDishPeriodList('오전 반찬 신청', sideDishSummary.am)}
-                            {renderSideDishPeriodList('오후 반찬 신청', sideDishSummary.pm)}
-                        </div>
-                    </div>
-                </div>
-            )}
+            {sideDishPopup}
         </div>
     );
 };
