@@ -37,6 +37,25 @@ const optionButtonStyle = (isSelected) => ({
     cursor: 'pointer'
 });
 
+const expandableOptionStyle = (isSelected) => ({
+    border: isSelected ? '2px solid #267E82' : '1px solid #d9e2ec',
+    background: isSelected ? '#e6fffa' : 'white',
+    borderRadius: '10px',
+    transition: 'all 0.2s ease'
+});
+
+const expandableOptionHeaderStyle = {
+    width: '100%',
+    textAlign: 'left',
+    border: 'none',
+    background: 'transparent',
+    color: '#2d3748',
+    padding: '11px 12px',
+    fontSize: '0.95rem',
+    fontWeight: '700',
+    cursor: 'pointer'
+};
+
 const InlineNewBeverageRequest = () => {
     const { user } = useAuth();
     const [beverage1, setBeverage1] = useState('');
@@ -162,35 +181,45 @@ const InlineNewBeverageRequest = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {BEVERAGE_2_OPTIONS.map((option, index) => (
-                            <button
-                                key={option}
-                                type="button"
-                                onClick={() => handleSelectBeverage2(option)}
-                                style={optionButtonStyle(beverage2 === option)}
-                            >
-                                {index + 1}. {option}
-                            </button>
-                        ))}
-                    </div>
+                        {BEVERAGE_2_OPTIONS.map((option, index) => {
+                            const isSelected = beverage2 === option;
+                            const isEtcSelected = isSelected && option === '기타';
 
-                    {beverage2 === '기타' && (
-                        <input
-                            type="text"
-                            value={beverage2Etc}
-                            onChange={(e) => setBeverage2Etc(e.target.value)}
-                            placeholder="원하는 음료를 입력해주세요"
-                            style={{
-                                width: '100%',
-                                marginTop: '10px',
-                                padding: '10px 12px',
-                                borderRadius: '10px',
-                                border: '1px solid #cbd5e0',
-                                fontSize: '0.92rem',
-                                outline: 'none'
-                            }}
-                        />
-                    )}
+                            return (
+                                <div key={option} style={expandableOptionStyle(isSelected)}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSelectBeverage2(option)}
+                                        style={expandableOptionHeaderStyle}
+                                    >
+                                        {index + 1}. {option}
+                                    </button>
+
+                                    {isEtcSelected && (
+                                        <div style={{ padding: '0 12px 12px 12px' }}>
+                                            <textarea
+                                                value={beverage2Etc}
+                                                onChange={(e) => setBeverage2Etc(e.target.value)}
+                                                placeholder="원하는 음료를 입력해주세요"
+                                                rows={2}
+                                                style={{
+                                                    width: '100%',
+                                                    resize: 'vertical',
+                                                    minHeight: '64px',
+                                                    padding: '10px 12px',
+                                                    borderRadius: '10px',
+                                                    border: '1px solid #8fbfc2',
+                                                    fontSize: '0.92rem',
+                                                    outline: 'none',
+                                                    background: 'white'
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
 
