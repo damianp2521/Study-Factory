@@ -8,7 +8,7 @@ const createEmptyRequestState = () => ({
     submittedAt: null
 });
 
-const DEADLINE_LIMIT_DISABLED = true;
+const DEADLINE_LIMIT_DISABLED = false;
 
 const getKstNowParts = (timestamp = Date.now()) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
