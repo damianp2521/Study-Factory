@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
-import { BRANCH_OPTIONS } from '../constants/branches';
 
 const formatBeverage2 = (request) => {
     if (!request) return '-';
@@ -23,18 +22,16 @@ const formatBeverage2 = (request) => {
 
 const cardStyle = {
     background: 'white',
-    borderRadius: '12px',
+    borderRadius: '10px',
     border: '1px solid #e2e8f0',
-    padding: '14px 16px',
+    padding: '10px 12px',
     boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
 };
 
 const StaffNewBeverageRequestList = ({ onBack }) => {
     const [loading, setLoading] = useState(true);
     const [requests, setRequests] = useState([]);
-    const [selectedBranch, setSelectedBranch] = useState('전체');
-
-    const branches = useMemo(() => BRANCH_OPTIONS, []);
+    const [sortMode, setSortMode] = useState('seat'); // seat | name
 
     const fetchRequests = useCallback(async () => {
         setLoading(true);
@@ -57,16 +54,10 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
 
             const userIds = rows.map((row) => row.user_id);
 
-            let usersQuery = supabase
+            const { data: userData, error: userError } = await supabase
                 .from('authorized_users')
                 .select('id, name, seat_number, branch')
                 .in('id', userIds);
-
-            if (selectedBranch !== '전체') {
-                usersQuery = usersQuery.eq('branch', selectedBranch);
-            }
-
-            const { data: userData, error: userError } = await usersQuery;
             if (userError) throw userError;
 
             const userMap = new Map((userData || []).map((user) => [user.id, user]));
@@ -86,13 +77,7 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
                         updatedAt: row.updated_at
                     };
                 })
-                .filter(Boolean)
-                .sort((a, b) => {
-                    if (a.seatNumber && b.seatNumber) return a.seatNumber - b.seatNumber;
-                    if (a.seatNumber) return -1;
-                    if (b.seatNumber) return 1;
-                    return a.name.localeCompare(b.name, 'ko');
-                });
+                .filter(Boolean);
 
             setRequests(merged);
         } catch (error) {
@@ -101,11 +86,35 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
         } finally {
             setLoading(false);
         }
-    }, [selectedBranch]);
+    }, []);
 
     useEffect(() => {
         fetchRequests();
     }, [fetchRequests]);
+
+    const sortedRequests = useMemo(() => {
+        const list = [...requests];
+
+        if (sortMode === 'name') {
+            list.sort((a, b) => {
+                const nameCmp = (a.name || '').localeCompare(b.name || '', 'ko');
+                if (nameCmp !== 0) return nameCmp;
+                if (a.seatNumber && b.seatNumber) return a.seatNumber - b.seatNumber;
+                if (a.seatNumber) return -1;
+                if (b.seatNumber) return 1;
+                return 0;
+            });
+            return list;
+        }
+
+        list.sort((a, b) => {
+            if (a.seatNumber && b.seatNumber) return a.seatNumber - b.seatNumber;
+            if (a.seatNumber) return -1;
+            if (b.seatNumber) return 1;
+            return (a.name || '').localeCompare(b.name || '', 'ko');
+        });
+        return list;
+    }, [requests, sortMode]);
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -127,23 +136,23 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
             </div>
 
             <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
-                {branches.map((branch) => (
+                {[{ key: 'name', label: '이름순' }, { key: 'seat', label: '번호순' }].map((sort) => (
                     <button
-                        key={branch}
-                        onClick={() => setSelectedBranch(branch)}
+                        key={sort.key}
+                        onClick={() => setSortMode(sort.key)}
                         style={{
                             padding: '6px 12px',
                             borderRadius: '20px',
-                            border: selectedBranch === branch ? 'none' : '1px solid #e2e8f0',
-                            background: selectedBranch === branch ? 'var(--color-primary)' : 'white',
-                            color: selectedBranch === branch ? 'white' : '#718096',
+                            border: sortMode === sort.key ? 'none' : '1px solid #e2e8f0',
+                            background: sortMode === sort.key ? 'var(--color-primary)' : 'white',
+                            color: sortMode === sort.key ? 'white' : '#718096',
                             fontSize: '0.85rem',
                             fontWeight: 'bold',
                             cursor: 'pointer',
                             whiteSpace: 'nowrap'
                         }}
                     >
-                        {branch}
+                        {sort.label}
                     </button>
                 ))}
             </div>
@@ -154,14 +163,23 @@ const StaffNewBeverageRequestList = ({ onBack }) => {
                 ) : requests.length === 0 ? (
                     <div style={{ textAlign: 'center', marginTop: '20px', color: '#a0aec0' }}>신음료 신청 내역이 없습니다.</div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {requests.map((item) => (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {sortedRequests.map((item) => (
                             <div key={item.id} style={cardStyle}>
-                                <div style={{ fontWeight: 'bold', color: '#2d3748', marginBottom: '6px' }}>
-                                    {(item.seatNumber || '-')}번 {item.name}
-                                </div>
-                                <div style={{ color: '#4a5568', fontSize: '0.95rem' }}>
-                                    {item.beverage1}, {item.beverage2}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                                    <div style={{ fontWeight: 'bold', color: '#2d3748', fontSize: '0.95rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                        {(item.seatNumber || '-')}번 {item.name}
+                                    </div>
+                                    <div style={{
+                                        color: '#4a5568',
+                                        fontSize: '0.85rem',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        textAlign: 'right'
+                                    }}>
+                                        {item.beverage1}, {item.beverage2}
+                                    </div>
                                 </div>
                             </div>
                         ))}
