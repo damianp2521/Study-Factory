@@ -30,7 +30,8 @@ const EmbeddedCalendar = ({
     currentMonth: controlledMonth,
     onMonthChange,
     compact = false,
-    showEvents = true
+    showEvents = true,
+    topAlignedDays = false
 }) => {
     // Internal state for uncontrolled mode
     const [internalMonth, setInternalMonth] = useState(() => {
@@ -145,6 +146,7 @@ const EmbeddedCalendar = ({
             }
 
             const shouldRenderEvents = showEvents && dayEvents.length > 0 && !isSelected;
+            const alignTop = topAlignedDays || shouldRenderEvents;
             days.push(
                 <div
                     key={dateStr}
@@ -155,8 +157,8 @@ const EmbeddedCalendar = ({
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: shouldRenderEvents ? 'flex-start' : 'center',
-                        gap: shouldRenderEvents ? '4px' : '0',
+                        justifyContent: alignTop ? 'flex-start' : 'center',
+                        gap: alignTop ? '4px' : '0',
                         padding: compact ? '3px 2px' : '6px 4px',
                         background: cellBgColor,
                         color: cellTextColor,
@@ -169,7 +171,7 @@ const EmbeddedCalendar = ({
                         position: 'relative'
                     }}
                 >
-                    <span style={{ marginBottom: shouldRenderEvents ? '2px' : 0, lineHeight: 1 }}>{d}</span>
+                    <span style={{ marginBottom: alignTop ? '2px' : 0, lineHeight: 1 }}>{d}</span>
                     {shouldRenderEvents && (() => {
                         // Group events by unique labels to avoid duplicates on calendar
                         const uniqueLabels = [];
@@ -211,10 +213,16 @@ const EmbeddedCalendar = ({
                             // 2. Reason Override
                             if (event.reason) {
                                 label = event.reason;
-                                // Default Gray Style for other reasons
-                                itemBgColor = '#ffffff';
-                                itemTextColor = '#4A5568';
-                                itemBorderColor = '#CBD5E0';
+                                if (event.reason === '신청') {
+                                    itemBgColor = '#ffffff';
+                                    itemTextColor = '#2f855a';
+                                    itemBorderColor = '#9ae6b4';
+                                } else {
+                                    // Default Gray Style for other reasons
+                                    itemBgColor = '#ffffff';
+                                    itemTextColor = '#4A5568';
+                                    itemBorderColor = '#CBD5E0';
+                                }
                             }
 
                             // Only add if we haven't seen this label

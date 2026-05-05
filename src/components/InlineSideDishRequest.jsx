@@ -93,6 +93,7 @@ const InlineSideDishRequest = () => {
     const [loading, setLoading] = useState(true);
     const [savingPeriod, setSavingPeriod] = useState('');
     const [factoryTotals, setFactoryTotals] = useState({ am: 0, pm: 0 });
+    const [calendarEvents, setCalendarEvents] = useState([]);
 
     const nowParts = useMemo(() => getKstNowParts(nowTick), [nowTick]);
     const todayKst = nowParts.dateStr;
@@ -109,6 +110,33 @@ const InlineSideDishRequest = () => {
         const timer = setInterval(() => setNowTick(Date.now()), 30000);
         return () => clearInterval(timer);
     }, []);
+
+    const loadCalendarEvents = useCallback(async () => {
+        if (!user?.id) return;
+        try {
+            const { data, error } = await supabase
+                .from('side_dish_requests')
+                .select('request_date')
+                .eq('user_id', user.id);
+
+            if (error) {
+                console.warn('Error loading side dish calendar events:', error);
+                setCalendarEvents([]);
+                return;
+            }
+
+            const uniqueDateSet = new Set((data || []).map((row) => row.request_date).filter(Boolean));
+            const nextEvents = Array.from(uniqueDateSet).map((date) => ({
+                date,
+                type: 'special',
+                reason: '신청'
+            }));
+            setCalendarEvents(nextEvents);
+        } catch (error) {
+            console.warn('Error loading side dish calendar events:', error);
+            setCalendarEvents([]);
+        }
+    }, [user?.id]);
 
     const fetchFactoryTotals = useCallback(async () => {
         if (!selectedDate) return;
@@ -176,12 +204,13 @@ const InlineSideDishRequest = () => {
             setAmRequest(nextAm);
             setPmRequest(nextPm);
             await fetchFactoryTotals();
+            await loadCalendarEvents();
         } catch (error) {
             console.error('Error loading side dish requests:', error);
         } finally {
             setLoading(false);
         }
-    }, [fetchFactoryTotals, selectedDate, user?.id]);
+    }, [fetchFactoryTotals, loadCalendarEvents, selectedDate, user?.id]);
 
     useEffect(() => {
         loadSelectedDateRequests();
@@ -439,9 +468,6 @@ const InlineSideDishRequest = () => {
                     합계: {formatAmount(totalAmount)}
                 </div>
 
-                <div style={{ marginTop: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#334155' }}>
-                    사장님 카카오페이 OR 계좌이체
-                </div>
                 <div style={{ marginTop: '6px', display: 'flex', gap: '8px' }}>
                     <button
                         type="button"
@@ -531,15 +557,19 @@ const InlineSideDishRequest = () => {
                 marginBottom: '12px'
             }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0f766e', marginBottom: '8px' }}>
-                    [현재 주문중인 반찬집 : 손찬반찬백화점]
+                    현재 주문중인 반찬집 : 손찬반찬백화점
                 </div>
                 <a
                     href={COUPANG_EATS_LINK}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                        display: 'inline-block',
-                        padding: '8px 12px',
+                        display: 'block',
+                        width: 'calc(100% - 8px)',
+                        margin: '0 auto',
+                        boxSizing: 'border-box',
+                        textAlign: 'center',
+                        padding: '10px 12px',
                         borderRadius: '8px',
                         textDecoration: 'none',
                         background: '#267E82',
@@ -555,7 +585,7 @@ const InlineSideDishRequest = () => {
                 </div>
             </div>
 
-            <div style={{ marginBottom: '14px', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '10px' }}>
+            <div style={{ marginBottom: '14px', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '8px' }}>
                 <EmbeddedCalendar
                     selectedDate={selectedDate}
                     onSelectDate={(dateStr) => {
@@ -566,7 +596,10 @@ const InlineSideDishRequest = () => {
                         setSelectedDate(dateStr);
                     }}
                     minDate={todayKst}
-                    showEvents={false}
+                    compact={true}
+                    events={calendarEvents}
+                    showEvents={true}
+                    topAlignedDays={true}
                 />
             </div>
 

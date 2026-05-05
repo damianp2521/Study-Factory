@@ -654,19 +654,19 @@ const StaffTaskBoard = () => {
             {/* Header Controls: Branch + View Toggle */}
             <div style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
                 gap: '10px',
                 marginBottom: '15px'
             }}>
                 {/* Compact Branch Filter Dropdown (No Label) */}
-                <div style={{ position: 'relative', width: 'fit-content' }}>
+                <div style={{ position: 'relative', flex: '1 1 120px', minWidth: '120px', maxWidth: '220px' }}>
                     <select
                         value={selectedBranch}
                         onChange={(e) => setSelectedBranch(e.target.value)}
                         style={{
-                            width: 'auto',
-                            minWidth: '110px',
+                            width: '100%',
                             height: '34px', // Reduced height
                             padding: '0 28px 0 12px',
                             borderRadius: '10px', // Slightly smaller radius
@@ -701,14 +701,15 @@ const StaffTaskBoard = () => {
                 </div>
 
                 {/* Main Action Group (Right Aligned) */}
-                <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '100%' }}>
                     {/* Assignment Mode Toggle - Only shown in schedule view for admins */}
                     {view === 'schedule' && user.role === 'admin' && (
                         <button
                             onClick={() => setIsAssignmentMode(!isAssignmentMode)}
                             style={{
-                                width: '105px', // Fixed width for consistency
+                                minWidth: '98px',
                                 height: '34px',
+                                padding: '0 10px',
                                 borderRadius: '10px',
                                 border: '1px solid #e2e8f0',
                                 backgroundColor: isAssignmentMode ? 'var(--color-primary)' : 'white',
@@ -721,6 +722,7 @@ const StaffTaskBoard = () => {
                                 gap: '4px',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s',
+                                whiteSpace: 'nowrap'
                             }}
                         >
                             <Edit2 size={14} />
@@ -735,8 +737,9 @@ const StaffTaskBoard = () => {
                         }}
                         disabled={!sideDishSummary.hasAny}
                         style={{
-                            width: '115px',
+                            minWidth: '108px',
                             height: '34px',
+                            padding: '0 10px',
                             borderRadius: '10px',
                             border: `1px solid ${sideDishSummary.hasAny ? '#15803d' : '#cbd5e0'}`,
                             backgroundColor: sideDishSummary.hasAny ? '#22c55e' : '#e2e8f0',
@@ -747,7 +750,8 @@ const StaffTaskBoard = () => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             cursor: sideDishSummary.hasAny ? 'pointer' : 'not-allowed',
-                            transition: 'all 0.2s'
+                            transition: 'all 0.2s',
+                            whiteSpace: 'nowrap'
                         }}
                     >
                         {sideDishSummary.hasAny ? '반찬신청 있음' : '반찬신청 없음'}
@@ -761,8 +765,9 @@ const StaffTaskBoard = () => {
                             setIsSideDishPopupOpen(false);
                         }}
                         style={{
-                            width: '105px', // Same fixed width
+                            minWidth: '98px',
                             height: '34px',
+                            padding: '0 10px',
                             borderRadius: '10px',
                             border: '1px solid #e2e8f0',
                             backgroundColor: 'white',
@@ -775,6 +780,7 @@ const StaffTaskBoard = () => {
                             gap: '4px',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
+                            whiteSpace: 'nowrap'
                         }}
                     >
                         {view === 'schedule' ? <MessageCircle size={16} /> : <Calendar size={16} />}
@@ -1254,10 +1260,12 @@ const StaffWorkSchedule = ({ branch, isAdmin, isAssignmentMode, setIsAssignmentM
                 borderRadius: '12px',
                 border: '1px solid #e2e8f0',
                 padding: '5px',
-                overflow: 'hidden' // Force no scroll
+                overflowX: 'auto',
+                overflowY: 'hidden'
             }}>
                 <table style={{
                     width: '100%',
+                    minWidth: '560px',
                     borderCollapse: 'collapse',
                     fontSize: '0.7rem', // Smaller font to fit
                     tableLayout: 'fixed' // Force columns to fit width

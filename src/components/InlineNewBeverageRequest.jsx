@@ -147,8 +147,9 @@ const InlineNewBeverageRequest = () => {
         <div style={cardStyle}>
             <style>{'div::-webkit-scrollbar { display: none; }'}</style>
 
-            <p style={{ margin: '0 0 14px 0', fontSize: '1rem', fontWeight: '700', color: '#2d3748' }}>
-                드실 음료를 선택해주세요
+            <p style={{ margin: '0 0 14px 0', fontSize: '1rem', fontWeight: '700', color: '#2d3748', lineHeight: 1.5 }}>
+                신규 회원 음료 신청해주세요<br />
+                기존 회원 신청한 음료도 변경 가능합니다.
             </p>
             <p style={{ margin: '0 0 12px 2px', fontSize: '0.84rem', color: '#9aa3af', fontWeight: '600' }}>
                 * 음료1, 음료2 모두 필수 체크

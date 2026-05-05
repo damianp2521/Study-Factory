@@ -43,6 +43,40 @@ const formatYmdToKorean = (ymd) => {
     return `${year}년 ${month}월 ${day}일`;
 };
 
+const toKstDateStrFromIso = (isoString) => {
+    if (!isoString) return '';
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Seoul',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).formatToParts(new Date(isoString));
+
+    const map = {};
+    parts.forEach((part) => {
+        if (part.type !== 'literal') {
+            map[part.type] = part.value;
+        }
+    });
+
+    return `${map.year}-${map.month}-${map.day}`;
+};
+
+const formatNewBeverage2Text = (row) => {
+    if (!row) return '-';
+    if (row.beverage_2_choice === '안먹음') return '안먹음';
+
+    let beverage2 = row.beverage_2_choice === '기타'
+        ? (row.beverage_2_custom || '기타')
+        : row.beverage_2_choice;
+
+    if (row.use_personal_tumbler) {
+        beverage2 = `텀블러 ${beverage2}`;
+    }
+
+    return beverage2;
+};
+
 const VACATION_STATUS_KEYS = ['vacation_full', 'vacation_half_am', 'vacation_half_pm', 'vacation_cancel'];
 const POPUP_PRESET_REASONS = ['지각', '늦잠', '쉼', '운동', '시험', '아픔'];
 
@@ -1090,6 +1124,17 @@ const StaffDailyAttendance = ({ onBack }) => {
             })
             .subscribe();
 
+        const newBeverageChannel = supabase
+            .channel('new_beverage_attendance_changes')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'new_beverage_requests'
+            }, () => {
+                fetchData();
+            })
+            .subscribe();
+
         return () => {
             attendanceChannel.unsubscribe();
             vacationChannel.unsubscribe();
@@ -1097,6 +1142,7 @@ const StaffDailyAttendance = ({ onBack }) => {
             pendingChannel.unsubscribe();
             pendingTodoChannel.unsubscribe();
             suggestionsChannel.unsubscribe();
+            newBeverageChannel.unsubscribe();
         };
     }, [currentViewDate, branch]);
 
@@ -1128,7 +1174,7 @@ const StaffDailyAttendance = ({ onBack }) => {
             const startDate = dateStr;
             const endDate = dateStr;
 
-            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, beverageRes, todosRes, suggestionsRes] = await Promise.all([
+            const [userRes, logRes, vacRes, dailyMemoRes, memberMemoRes, pendingRes, beverageRes, todosRes, suggestionsRes, newBeverageReqRes] = await Promise.all([
                 supabase.from('profiles').select('*').eq('branch', branch).order('seat_number', { ascending: true, nullsLast: true }),
                 supabase.from('attendance_logs').select('id, user_id, date, period, status').gte('date', startDate).lte('date', endDate),
                 supabase.from('vacation_requests').select('*').gte('date', startDate).lte('date', endDate),
@@ -1144,6 +1190,16 @@ const StaffDailyAttendance = ({ onBack }) => {
                     created_at,
                     author:user_id ( name, branch ),
                     completer:completed_by ( name )
+                `),
+                supabase.from('new_beverage_requests').select(`
+                    user_id,
+                    beverage_1_choice,
+                    beverage_2_choice,
+                    beverage_2_custom,
+                    use_personal_tumbler,
+                    created_at,
+                    updated_at,
+                    requester:user_id ( name, seat_number, branch )
                 `)
             ]);
 
@@ -1153,6 +1209,9 @@ const StaffDailyAttendance = ({ onBack }) => {
             if (beverageRes.error) throw beverageRes.error;
             if (todosRes.error) throw todosRes.error;
             if (suggestionsRes.error) throw suggestionsRes.error;
+            if (newBeverageReqRes.error) {
+                console.warn('New beverage request feed unavailable:', newBeverageReqRes.error);
+            }
 
             const MAX_SEATS = 102;
             const fullRows = [];
@@ -1247,7 +1306,36 @@ const StaffDailyAttendance = ({ onBack }) => {
                     };
                 });
 
-            setDailyMemos([...systemIncomingMemos, ...(dailyMemoRes.data || [])]);
+            const systemBeverageMemos = (newBeverageReqRes.data || [])
+                .filter((row) => {
+                    if (row.requester?.branch && row.requester.branch !== branch) return false;
+                    const createdDate = toKstDateStrFromIso(row.created_at);
+                    const updatedDate = toKstDateStrFromIso(row.updated_at);
+                    return createdDate === dateStr || updatedDate === dateStr;
+                })
+                .map((row) => {
+                    const createdDate = toKstDateStrFromIso(row.created_at);
+                    const updatedDate = toKstDateStrFromIso(row.updated_at);
+                    const createdAtMs = row.created_at ? new Date(row.created_at).getTime() : 0;
+                    const updatedAtMs = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+                    const isChangedToday = updatedDate === dateStr && (createdDate !== dateStr || Math.abs(updatedAtMs - createdAtMs) > 1000);
+                    const actionText = isChangedToday ? '변경' : '새로 신청';
+
+                    const seatText = row.requester?.seat_number ? `${row.requester.seat_number}번 ` : '';
+                    const nameText = row.requester?.name || '회원';
+                    const beverage2Text = formatNewBeverage2Text(row);
+                    const eventTime = updatedAtMs || createdAtMs || 0;
+
+                    return {
+                        id: `beverage_${row.user_id}_${eventTime}`,
+                        content: `${seatText}${nameText} 음료 ${actionText} (${row.beverage_1_choice}, ${beverage2Text})`,
+                        isSystemIncoming: true,
+                        created_at: row.updated_at || row.created_at
+                    };
+                })
+                .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+
+            setDailyMemos([...systemIncomingMemos, ...systemBeverageMemos, ...(dailyMemoRes.data || [])]);
             setMemberMemos(memberMemoRes.data || []);
 
             const formattedSuggestions = (suggestionsRes.data || []).map((suggestion) => {
