@@ -364,7 +364,7 @@ const InlineSideDishRequest = () => {
                 </div>
 
                 <div style={{ fontSize: '0.79rem', color: '#475569', fontWeight: '700', marginBottom: '8px' }}>
-                    실시간 공장 반찬 주문 합계 금액: {formatAmount(factoryTotalAmount)}
+                    실시간 공장반찬 주문합계 금액: {formatAmount(factoryTotalAmount)}
                 </div>
 
                 {deadline.closed && (
@@ -556,7 +556,7 @@ const InlineSideDishRequest = () => {
                 padding: '12px',
                 marginBottom: '12px'
             }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0f766e', marginBottom: '8px' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0f766e', marginBottom: '8px', textAlign: 'center' }}>
                     현재 주문중인 반찬집 : 손찬반찬백화점
                 </div>
                 <a
@@ -581,7 +581,7 @@ const InlineSideDishRequest = () => {
                     쿠팡이츠 바로가기
                 </a>
                 <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#475569', fontWeight: '600' }}>
-                    마감까지 최소주문금액 15,000원 미달시 전체 취소, 개별 연락 드릴게요
+                    마감까지 최소주문금액 15,000원 미달시 전체 취소, 개별 연락 드릴게요.
                 </div>
             </div>
 
