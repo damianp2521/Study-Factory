@@ -32,9 +32,9 @@ const MemberDashboard = () => {
     const slides = [
         { title: '작업계획', component: <DailyWorkPlan /> },
         { title: '휴무계획', component: <InlineVacationRequest /> },
-        { title: '음료신청', component: <InlineNewBeverageRequest /> },
         { title: '반찬신청', component: <InlineSideDishRequest /> },
         { title: '건의사항', component: <InlineSuggestion /> },
+        { title: '음료신청/변경', component: <InlineNewBeverageRequest /> },
     ];
 
     const handleLogout = async () => {

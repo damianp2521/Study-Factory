@@ -1,14 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import EmbeddedCalendar from './EmbeddedCalendar';
+
+const DEADLINE_LIMIT_DISABLED = false;
+const COUPANG_EATS_LINK = 'https://web.coupangeats.com/share?storeId=636864&dishId&key=b29e27b7-ff7a-4d28-952a-ef42687665c0';
 
 const createEmptyRequestState = () => ({
     items: [],
     paymentCompleted: false,
     submittedAt: null
 });
-
-const DEADLINE_LIMIT_DISABLED = false;
 
 const getKstNowParts = (timestamp = Date.now()) => {
     const parts = new Intl.DateTimeFormat('en-CA', {
@@ -35,18 +37,27 @@ const getKstNowParts = (timestamp = Date.now()) => {
     };
 };
 
-const getDeadlineInfo = (period, nowParts) => {
+const formatPanelDateLabel = (dateStr) => {
+    const [year, month, day] = String(dateStr || '').split('-').map(Number);
+    const safeDate = new Date(year, (month || 1) - 1, day || 1);
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    return `${month}/${day}(${weekdays[safeDate.getDay()]})`;
+};
+
+const getDeadlineInfo = (period, nowParts, selectedDate) => {
+    const isSelectedDateToday = selectedDate === nowParts.dateStr;
+
     if (period === 'am') {
         const closed = DEADLINE_LIMIT_DISABLED
             ? false
-            : nowParts.hour > 10 || (nowParts.hour === 10 && nowParts.minute >= 45);
-        return { closed, text: '오전 10:45 마감', closedMessage: '오전 반찬 신청 마감' };
+            : isSelectedDateToday && (nowParts.hour > 10 || (nowParts.hour === 10 && nowParts.minute >= 45));
+        return { closed, text: '당일 10:45AM 마감', closedMessage: '점심 반찬 신청 마감' };
     }
 
     const closed = DEADLINE_LIMIT_DISABLED
         ? false
-        : nowParts.hour > 16 || (nowParts.hour === 16 && nowParts.minute >= 30);
-    return { closed, text: '오후 16:30 마감', closedMessage: '오후 반찬 신청 마감' };
+        : isSelectedDateToday && (nowParts.hour > 16 || (nowParts.hour === 16 && nowParts.minute >= 30));
+    return { closed, text: '당일 16:30PM 마감', closedMessage: '저녁 반찬 신청 마감' };
 };
 
 const parseAmount = (value) => {
@@ -81,65 +92,108 @@ const InlineSideDishRequest = () => {
     const [nowTick, setNowTick] = useState(Date.now());
     const [loading, setLoading] = useState(true);
     const [savingPeriod, setSavingPeriod] = useState('');
+    const [factoryTotals, setFactoryTotals] = useState({ am: 0, pm: 0 });
+
+    const nowParts = useMemo(() => getKstNowParts(nowTick), [nowTick]);
+    const todayKst = nowParts.dateStr;
+    const [selectedDate, setSelectedDate] = useState(() => todayKst);
 
     const [amRequest, setAmRequest] = useState(createEmptyRequestState());
     const [pmRequest, setPmRequest] = useState(createEmptyRequestState());
 
-    const nowParts = useMemo(() => getKstNowParts(nowTick), [nowTick]);
-    const todayKst = nowParts.dateStr;
-
-    const amDeadline = useMemo(() => getDeadlineInfo('am', nowParts), [nowParts]);
-    const pmDeadline = useMemo(() => getDeadlineInfo('pm', nowParts), [nowParts]);
+    const selectedDateLabel = useMemo(() => formatPanelDateLabel(selectedDate), [selectedDate]);
+    const amDeadline = useMemo(() => getDeadlineInfo('am', nowParts, selectedDate), [nowParts, selectedDate]);
+    const pmDeadline = useMemo(() => getDeadlineInfo('pm', nowParts, selectedDate), [nowParts, selectedDate]);
 
     useEffect(() => {
         const timer = setInterval(() => setNowTick(Date.now()), 30000);
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        const loadTodayRequests = async () => {
-            if (!user?.id) return;
+    const fetchFactoryTotals = useCallback(async () => {
+        if (!selectedDate) return;
+        try {
+            const { data, error } = await supabase
+                .from('side_dish_requests')
+                .select('period, total_amount, items')
+                .eq('request_date', selectedDate)
+                .eq('payment_completed', true);
 
-            setLoading(true);
-            try {
-                const { data, error } = await supabase
-                    .from('side_dish_requests')
-                    .select('period, items, payment_completed, submitted_at')
-                    .eq('user_id', user.id)
-                    .eq('request_date', todayKst);
-
-                if (error) throw error;
-
-                const nextAm = createEmptyRequestState();
-                const nextPm = createEmptyRequestState();
-
-                (data || []).forEach((row) => {
-                    const normalizedItems = Array.isArray(row.items)
-                        ? row.items.map((item, idx) => ({
-                            id: `${row.period}-${idx}-${Date.now()}`,
-                            name: item?.name || '',
-                            amount: String(item?.amount ?? ''),
-                            isEditing: false
-                        }))
-                        : [];
-
-                    const target = row.period === 'am' ? nextAm : nextPm;
-                    target.items = normalizedItems;
-                    target.paymentCompleted = Boolean(row.payment_completed);
-                    target.submittedAt = row.submitted_at || null;
-                });
-
-                setAmRequest(nextAm);
-                setPmRequest(nextPm);
-            } catch (error) {
-                console.error('Error loading side dish requests:', error);
-            } finally {
-                setLoading(false);
+            if (error) {
+                console.warn('Error loading factory side dish totals:', error);
+                setFactoryTotals({ am: 0, pm: 0 });
+                return;
             }
-        };
 
-        loadTodayRequests();
-    }, [todayKst, user?.id]);
+            const nextTotals = { am: 0, pm: 0 };
+            (data || []).forEach((row) => {
+                const period = row.period === 'pm' ? 'pm' : 'am';
+                let rowTotal = parseAmount(row.total_amount);
+                if (rowTotal <= 0 && Array.isArray(row.items)) {
+                    rowTotal = row.items.reduce((sum, item) => sum + parseAmount(item?.amount), 0);
+                }
+                nextTotals[period] += rowTotal;
+            });
+            setFactoryTotals(nextTotals);
+        } catch (error) {
+            console.warn('Error loading factory side dish totals:', error);
+            setFactoryTotals({ am: 0, pm: 0 });
+        }
+    }, [selectedDate]);
+
+    const loadSelectedDateRequests = useCallback(async () => {
+        if (!user?.id || !selectedDate) return;
+
+        setLoading(true);
+        try {
+            const myRequestsResult = await supabase
+                .from('side_dish_requests')
+                .select('period, items, payment_completed, submitted_at')
+                .eq('user_id', user.id)
+                .eq('request_date', selectedDate);
+
+            if (myRequestsResult.error) throw myRequestsResult.error;
+
+            const nextAm = createEmptyRequestState();
+            const nextPm = createEmptyRequestState();
+
+            (myRequestsResult.data || []).forEach((row) => {
+                const normalizedItems = Array.isArray(row.items)
+                    ? row.items.map((item, idx) => ({
+                        id: `${row.period}-${idx}-${Date.now()}`,
+                        name: item?.name || '',
+                        amount: String(item?.amount ?? ''),
+                        isEditing: false
+                    }))
+                    : [];
+
+                const target = row.period === 'am' ? nextAm : nextPm;
+                target.items = normalizedItems;
+                target.paymentCompleted = Boolean(row.payment_completed);
+                target.submittedAt = row.submitted_at || null;
+            });
+
+            setAmRequest(nextAm);
+            setPmRequest(nextPm);
+            await fetchFactoryTotals();
+        } catch (error) {
+            console.error('Error loading side dish requests:', error);
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchFactoryTotals, selectedDate, user?.id]);
+
+    useEffect(() => {
+        loadSelectedDateRequests();
+    }, [loadSelectedDateRequests]);
+
+    useEffect(() => {
+        if (!selectedDate) return undefined;
+        const timer = setInterval(() => {
+            fetchFactoryTotals();
+        }, 30000);
+        return () => clearInterval(timer);
+    }, [fetchFactoryTotals, selectedDate]);
 
     const setPeriodState = (period, updater) => {
         if (period === 'am') {
@@ -213,9 +267,9 @@ const InlineSideDishRequest = () => {
     };
 
     const submitRequest = async (period) => {
-        const isMorning = period === 'am';
-        const deadline = isMorning ? amDeadline : pmDeadline;
-        const requestState = isMorning ? amRequest : pmRequest;
+        const isLunch = period === 'am';
+        const deadline = isLunch ? amDeadline : pmDeadline;
+        const requestState = isLunch ? amRequest : pmRequest;
 
         if (deadline.closed) {
             alert(deadline.closedMessage);
@@ -245,28 +299,22 @@ const InlineSideDishRequest = () => {
 
         setSavingPeriod(period);
         try {
-            const { data, error } = await supabase
+            const { error } = await supabase
                 .from('side_dish_requests')
                 .upsert({
                     user_id: user.id,
-                    request_date: todayKst,
+                    request_date: selectedDate,
                     period,
                     items: cleanItems,
                     total_amount: cleanItems.reduce((sum, item) => sum + item.amount, 0),
                     payment_completed: true,
                     submitted_at: new Date().toISOString()
-                }, { onConflict: 'user_id,request_date,period' })
-                .select('submitted_at')
-                .single();
+                }, { onConflict: 'user_id,request_date,period' });
 
             if (error) throw error;
 
-            setPeriodState(period, (prev) => ({
-                ...prev,
-                submittedAt: data?.submitted_at || new Date().toISOString()
-            }));
-
-            alert(`${isMorning ? '오전' : '오후'} 반찬 신청이 완료되었습니다.`);
+            alert(`${isLunch ? '점심' : '저녁'} 반찬 신청이 완료되었습니다.`);
+            loadSelectedDateRequests();
         } catch (error) {
             console.error('Error submitting side dish request:', error);
             alert('반찬 신청 저장에 실패했습니다.');
@@ -277,12 +325,17 @@ const InlineSideDishRequest = () => {
 
     const renderPeriodPanel = (period, title, deadline, requestState) => {
         const totalAmount = getTotalAmount(requestState);
+        const factoryTotalAmount = (factoryTotals.am || 0) + (factoryTotals.pm || 0);
 
         return (
             <div style={panelStyle(deadline.closed)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '8px' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#1f2937' }}>{title}</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', gap: '8px' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: '#1f2937' }}>{`${selectedDateLabel} ${title}`}</h4>
                     <span style={{ fontSize: '0.76rem', color: '#6b7280', fontWeight: '700' }}>{deadline.text}</span>
+                </div>
+
+                <div style={{ fontSize: '0.79rem', color: '#475569', fontWeight: '700', marginBottom: '8px' }}>
+                    실시간 공장 반찬 주문 합계 금액: {formatAmount(factoryTotalAmount)}
                 </div>
 
                 {deadline.closed && (
@@ -386,6 +439,46 @@ const InlineSideDishRequest = () => {
                     합계: {formatAmount(totalAmount)}
                 </div>
 
+                <div style={{ marginTop: '8px', fontSize: '0.8rem', fontWeight: '700', color: '#334155' }}>
+                    사장님 카카오페이 OR 계좌이체
+                </div>
+                <div style={{ marginTop: '6px', display: 'flex', gap: '8px' }}>
+                    <button
+                        type="button"
+                        onClick={() => alert('사장님 카카오페이로 송금 후 신청해주세요')}
+                        style={{
+                            flex: 1,
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 6px',
+                            background: '#fde047',
+                            color: '#1f2937',
+                            fontSize: '0.79rem',
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        사장님 카카오페이
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => alert('신한 110-498-435650 김지원 송금 후 신청해주세요')}
+                        style={{
+                            flex: 1,
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 6px',
+                            background: '#3b82f6',
+                            color: 'white',
+                            fontSize: '0.79rem',
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        계좌이체
+                    </button>
+                </div>
+
                 <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: '#4b5563', fontWeight: '700' }}>
                         <input
@@ -430,19 +523,59 @@ const InlineSideDishRequest = () => {
         <div style={cardStyle}>
             <style>{'div::-webkit-scrollbar { display: none; }'}</style>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '14px' }}>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#4b5563', lineHeight: 1.35 }}>- 단톡방 반찬집 링크로 들어가서 원하는 반찬을 신청해주세요</p>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#4b5563', lineHeight: 1.35 }}>- 2천원짜리 하나도 괜찮아요</p>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#4b5563', lineHeight: 1.35 }}>- 사장 카카오페이로 송금 후 신청 버튼을 눌러주세요</p>
-                <p style={{ margin: 0, fontSize: '0.84rem', color: '#4b5563', lineHeight: 1.35 }}>- 반찬집 공장과 아무 연고 없음</p>
+            <div style={{
+                border: '1px solid #d1fae5',
+                background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%)',
+                borderRadius: '12px',
+                padding: '12px',
+                marginBottom: '12px'
+            }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0f766e', marginBottom: '8px' }}>
+                    [현재 주문중인 반찬집 : 손찬반찬백화점]
+                </div>
+                <a
+                    href={COUPANG_EATS_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                        display: 'inline-block',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        background: '#267E82',
+                        color: 'white',
+                        fontSize: '0.82rem',
+                        fontWeight: '800'
+                    }}
+                >
+                    쿠팡이츠 바로가기
+                </a>
+                <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#475569', fontWeight: '600' }}>
+                    마감까지 최소주문금액 15,000원 미달시 전체 취소, 개별 연락 드릴게요
+                </div>
+            </div>
+
+            <div style={{ marginBottom: '14px', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '10px' }}>
+                <EmbeddedCalendar
+                    selectedDate={selectedDate}
+                    onSelectDate={(dateStr) => {
+                        if (dateStr < todayKst) {
+                            alert('지난 날짜는 신청할 수 없습니다.');
+                            return;
+                        }
+                        setSelectedDate(dateStr);
+                    }}
+                    minDate={todayKst}
+                    showEvents={false}
+                />
             </div>
 
             {loading ? (
                 <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '16px' }}>불러오는 중...</div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {renderPeriodPanel('am', '오전 반찬 신청', amDeadline, amRequest)}
-                    {renderPeriodPanel('pm', '오후 반찬 신청', pmDeadline, pmRequest)}
+                    {renderPeriodPanel('am', '점심 반찬 신청', amDeadline, amRequest)}
+                    {renderPeriodPanel('pm', '저녁 반찬 신청', pmDeadline, pmRequest)}
                 </div>
             )}
         </div>
