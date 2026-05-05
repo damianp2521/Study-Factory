@@ -325,7 +325,7 @@ const InlineSideDishRequest = () => {
 
     const renderPeriodPanel = (period, title, deadline, requestState) => {
         const totalAmount = getTotalAmount(requestState);
-        const factoryTotalAmount = (factoryTotals.am || 0) + (factoryTotals.pm || 0);
+        const factoryTotalAmount = factoryTotals[period] || 0;
 
         return (
             <div style={panelStyle(deadline.closed)}>
