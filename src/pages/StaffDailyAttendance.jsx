@@ -62,6 +62,12 @@ const toKstDateStrFromIso = (isoString) => {
     return `${map.year}-${map.month}-${map.day}`;
 };
 
+const shiftYmdByDays = (ymd, days) => {
+    if (!ymd) return '';
+    const base = createDateFromYmd(ymd);
+    return format(addDays(base, days), 'yyyy-MM-dd');
+};
+
 const formatNewBeverage2Text = (row) => {
     if (!row) return '-';
     if (row.beverage_2_choice === '안먹음') return '안먹음';
@@ -1311,14 +1317,18 @@ const StaffDailyAttendance = ({ onBack }) => {
                     if (row.requester?.branch && row.requester.branch !== branch) return false;
                     const createdDate = toKstDateStrFromIso(row.created_at);
                     const updatedDate = toKstDateStrFromIso(row.updated_at);
-                    return createdDate === dateStr || updatedDate === dateStr;
+                    const createdDisplayDate = shiftYmdByDays(createdDate, 1);
+                    const updatedDisplayDate = shiftYmdByDays(updatedDate, 1);
+                    return createdDisplayDate === dateStr || updatedDisplayDate === dateStr;
                 })
                 .map((row) => {
                     const createdDate = toKstDateStrFromIso(row.created_at);
                     const updatedDate = toKstDateStrFromIso(row.updated_at);
+                    const createdDisplayDate = shiftYmdByDays(createdDate, 1);
+                    const updatedDisplayDate = shiftYmdByDays(updatedDate, 1);
                     const createdAtMs = row.created_at ? new Date(row.created_at).getTime() : 0;
                     const updatedAtMs = row.updated_at ? new Date(row.updated_at).getTime() : 0;
-                    const isChangedToday = updatedDate === dateStr && (createdDate !== dateStr || Math.abs(updatedAtMs - createdAtMs) > 1000);
+                    const isChangedToday = updatedDisplayDate === dateStr && (createdDisplayDate !== dateStr || Math.abs(updatedAtMs - createdAtMs) > 1000);
                     const actionText = isChangedToday ? '변경' : '새로 신청';
 
                     const seatText = row.requester?.seat_number ? `${row.requester.seat_number}번 ` : '';

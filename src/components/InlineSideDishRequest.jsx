@@ -116,7 +116,7 @@ const InlineSideDishRequest = () => {
         try {
             const { data, error } = await supabase
                 .from('side_dish_requests')
-                .select('request_date')
+                .select('request_date, period')
                 .eq('user_id', user.id);
 
             if (error) {
@@ -125,12 +125,13 @@ const InlineSideDishRequest = () => {
                 return;
             }
 
-            const uniqueDateSet = new Set((data || []).map((row) => row.request_date).filter(Boolean));
-            const nextEvents = Array.from(uniqueDateSet).map((date) => ({
-                date,
-                type: 'special',
-                reason: '신청'
-            }));
+            const nextEvents = (data || [])
+                .filter((row) => row.request_date && row.period)
+                .map((row) => ({
+                    date: row.request_date,
+                    type: 'special',
+                    reason: row.period === 'am' ? '오전' : '오후'
+                }));
             setCalendarEvents(nextEvents);
         } catch (error) {
             console.warn('Error loading side dish calendar events:', error);
@@ -557,7 +558,7 @@ const InlineSideDishRequest = () => {
                 marginBottom: '12px'
             }}>
                 <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0f766e', marginBottom: '8px', textAlign: 'center' }}>
-                    현재 주문중인 반찬집 : 손찬반찬백화점
+                    현재 주문중인 반찬집 : 손찬반찬백화점 센텀점
                 </div>
                 <a
                     href={COUPANG_EATS_LINK}
@@ -581,7 +582,7 @@ const InlineSideDishRequest = () => {
                     쿠팡이츠 바로가기
                 </a>
                 <div style={{ marginTop: '8px', fontSize: '0.78rem', color: '#475569', fontWeight: '600' }}>
-                    마감까지 최소주문금액 15,000원 미달시 전체 취소, 개별 연락 드릴게요.
+                    마감시간까지 최소주문금액 15,000원 미달시, 주문취소됩니다. 개별연락 드릴게요.
                 </div>
             </div>
 
